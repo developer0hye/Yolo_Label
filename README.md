@@ -26,8 +26,10 @@ But... I reinvented it...
  See the below picture! It's the **SENSITIVE** image labeling tool for object detection!
 ![uibaaaam](https://user-images.githubusercontent.com/35001605/47629477-a8d9ac00-db7e-11e8-90e4-be3b71e1a2ca.PNG)
 
+
  ## HMM... I SAW THIS DESIGN SOMEWHERE
-  I refered to https://pjreddie.com/darknet/, which is the website of Joseph Redmon who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
+  I refered to [the website of Joseph Redmon](https://pjreddie.com/darknet/
+) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
 # USAGE
 
