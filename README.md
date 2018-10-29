@@ -34,11 +34,13 @@ But... I reinvented it...
 
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
 # TUTORIAL / USAGE
-1. put your .jpg, .png -images into some directory
+1. Put your .jpg, .png -images into some directory
+(In this tutorial I will use the Kangarooo and the Raccoon Images. These images are in the 'Samples' folder.)
 
 ![image](https://user-images.githubusercontent.com/35001605/47640641-5791e280-dba7-11e8-8709-83fba08bbbcd.png)
 
-2. 
+2. Put names of objects, one for each line in some file( .txt, .names)
 
+![image](https://user-images.githubusercontent.com/35001605/47643863-0803e480-dbb0-11e8-87b1-2becf72f4a43.png)
 
 
