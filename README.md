@@ -13,14 +13,20 @@ But... I reinvented it...
 
  When I use the pre-existing program to annotate a training set for YOLO V3, I am sooooooooooo bored...
  
- So I thought about Why this is so fxxking bored??
+ So I thought about why it is so fxxking bored??
 
  And I found that anwer.
  
- The answer is that pre-existing programs are not 'sensitive' 
- Baaaaam!
+ The answer is that pre-existing programs are not **sensitive**.
  
- See the below picture!
+ So I decided to make a **sesnsitive** image labeling tool for object detection.
+ 
+ ## SHOW ME YOUR SENSITIVE IMAGE LABELING TOOL!!
+
+ See the below picture! It's the
 ![uibaaaam](https://user-images.githubusercontent.com/35001605/47629477-a8d9ac00-db7e-11e8-90e4-be3b71e1a2ca.PNG)
+
+ ## WTF?
+  Sorry
 
 
