@@ -50,7 +50,7 @@ void MainWindow::on_pushButton_open_files_clicked()
     m_fileDir = QFileDialog::getExistingDirectory(
                 this,
                 tr("Open Dataset Directory"),
-                "C://");
+                "./");
 
     QDir dir(m_fileDir);
 
@@ -70,7 +70,7 @@ void MainWindow::on_pushButton_open_files_clicked()
     QString fileLabelList = QFileDialog::getOpenFileName(
                         this,
                         tr("Open LabelList file"),
-                        "C://",
+                        "./",
                         tr("LabelList Files (*.txt *.names)"));
 
     if(fileLabelList.size() == 0)
@@ -227,10 +227,12 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
             m_labelNameList << qstrLabel;
 
             ui->tableWidget_label->insertRow(nRow);
+
             ui->tableWidget_label->setItem(nRow, 0, new QTableWidgetItem(qstrLabel));
+            ui->tableWidget_label->item(nRow, 0)->setFlags(ui->tableWidget_label->item(nRow, 0)->flags() ^  Qt::ItemIsEditable);
+
             ui->tableWidget_label->setItem(nRow, 1, new QTableWidgetItem(QString().fromStdString("")));
             ui->tableWidget_label->item(nRow, 1)->setBackgroundColor(labelColor);
-            ui->tableWidget_label->item(nRow, 0)->setFlags(ui->tableWidget_label->item(nRow, 0)->flags() ^  Qt::ItemIsEditable);
             ui->tableWidget_label->item(nRow, 1)->setFlags(ui->tableWidget_label->item(nRow, 1)->flags() ^  Qt::ItemIsEditable ^  Qt::ItemIsSelectable);
 
             ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
