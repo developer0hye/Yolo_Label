@@ -33,11 +33,12 @@ But... I reinvented it...
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
 
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
-# TUTORIAL AND USAGE
+# TUTORIAL / USAGE
 1. put your .jpg, .png -images into some directory
 
 ![image](https://user-images.githubusercontent.com/35001605/47640641-5791e280-dba7-11e8-8709-83fba08bbbcd.png)
 
+2. 
 
 
 
