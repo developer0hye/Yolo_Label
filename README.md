@@ -23,9 +23,9 @@ But... I reinvented it...
  
  ## SHOW ME YOUR SENSITIVE IMAGE LABELING TOOL!!
 
- See the below picture! It's the **SENSITIVE** image labeling tool for object detection!
+ It's the **SENSITIVE** image labeling tool for object detection!
  
-![uibaaaam](https://user-images.githubusercontent.com/35001605/47629477-a8d9ac00-db7e-11e8-90e4-be3b71e1a2ca.PNG)
+![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
 
 
  ## HMM... I SAW THIS DESIGN SOMEWHERE
@@ -43,4 +43,9 @@ But... I reinvented it...
 
 ![image](https://user-images.githubusercontent.com/35001605/47643863-0803e480-dbb0-11e8-87b1-2becf72f4a43.png)
 
+3. Run Yolo label!
 
+![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
+
+4. Click the button 'Open Files' and open the directory that you saved your custom images.
+ 
