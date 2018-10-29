@@ -9,7 +9,7 @@
  
 But... I reinvented it...
  
-## WHY DID YOU REINVENTED THE WHEEL? ARE YOU STUPID?
+## WHY DID YOU REINVENT THE WHEEL? ARE YOU STUPID?
 
  When I use the pre-existing program to annotate a training set for YOLO V3, I am sooooooooooo bored...
  
