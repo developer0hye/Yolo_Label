@@ -19,7 +19,7 @@ But... I reinvented it...
  
  The answer is that pre-existing programs are not **sensitive**.
  
- So I decided to make a **sesnsitive** image labeling tool for object detection.
+ So I decided to make a **sensitive** image labeling tool for object detection.
  
  ## SHOW ME YOUR SENSITIVE IMAGE LABELING TOOL!!
 
@@ -31,7 +31,13 @@ But... I reinvented it...
  ## HMM... I SAW THIS DESIGN SOMEWHERE
   I referred to [the website of Joseph Redmon](https://pjreddie.com/darknet/
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
+
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
-# USAGE
+# TUTORIAL AND USAGE
+1. put your .jpg, .png -images into some directory
+
+![image](https://user-images.githubusercontent.com/35001605/47640641-5791e280-dba7-11e8-8709-83fba08bbbcd.png)
+
+
 
 
