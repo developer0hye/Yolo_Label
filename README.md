@@ -28,7 +28,7 @@ But... I reinvented it...
 
 
  ## HMM... I SAW THIS DESIGN SOMEWHERE
-  I refered to [the website of Joseph Redmon](https://pjreddie.com/darknet/
+  I reffered to [the website of Joseph Redmon](https://pjreddie.com/darknet/
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
 # USAGE
