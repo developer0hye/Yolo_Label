@@ -32,7 +32,7 @@
    <enum>Qt::StrongFocus</enum>
   </property>
   <property name="windowTitle">
-   <string>Image Labeling Tool</string>
+   <string>YoloLabel</string>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color : rgb(0, 0, 17);</string>
@@ -284,10 +284,10 @@ QSlider::handle:horizontal {
                <number>0</number>
               </property>
               <property name="pageStep">
-               <number>10</number>
+               <number>0</number>
               </property>
               <property name="tracking">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -635,7 +635,7 @@ QTableView {
            <bool>true</bool>
           </attribute>
           <attribute name="horizontalHeaderHighlightSections">
-           <bool>true</bool>
+           <bool>false</bool>
           </attribute>
           <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
            <bool>true</bool>

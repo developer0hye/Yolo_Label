@@ -73,9 +73,9 @@ private:
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
 
-    void removeFocusedObjectBox(QPoint point);
+    void removeFocusedObjectBox(QPoint);
 
-    QRect getRectFromTwoPoints(QPoint p1, QPoint p2);
+    QRect getRectFromTwoPoints(QPoint , QPoint);
 
 
 };

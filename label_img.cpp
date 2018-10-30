@@ -96,12 +96,14 @@ void label_img::setMousePosition(int x, int y)
 void label_img::openImage(const QString &qstrImg)
 {
     m_inputImg      = QImage(qstrImg);
+    m_inputImg      = m_inputImg.convertToFormat(QImage::Format_RGB888);
     m_inputImgCopy  = m_inputImg;
 
     m_aspectRatioWidth  = static_cast<double>(m_inputImg.width()) / this->width();
     m_aspectRatioHeight = static_cast<double>(m_inputImg.height()) / this->height();
 
     m_objBoundingBoxes.clear();
+    m_drawObjectBoxColor.clear();
 
     m_objStartPoint = QPoint();
 

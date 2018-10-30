@@ -212,6 +212,10 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
 
     if(inputLabelListFile.is_open())
     {
+
+        for(int i = 0 ; i <= ui->tableWidget_label->rowCount(); i++)
+            ui->tableWidget_label->removeRow(ui->tableWidget_label->currentRow());
+
         m_labelNameList.clear();
 
         string strLabel;
@@ -221,7 +225,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
         while(inputLabelListFile >> strLabel)
         {
             int nRow = ui->tableWidget_label->rowCount();
-
+            std::cout << nRow << endl;
             QString qstrLabel   = QString().fromStdString(strLabel);
             QColor  labelColor  = label_img::BOX_COLORS[(fileIndex++)%10];
             m_labelNameList << qstrLabel;
@@ -339,14 +343,6 @@ void MainWindow::mouseReleased()
 
 }
 
-void MainWindow::on_horizontalSlider_images_valueChanged(int value)
-{
-
-   // cout<<"kiff"<<endl;
-   // save_label_data(); //prev data save
-   // goto_img(value);
-}
-
 void MainWindow::on_pushButton_save_clicked()
 {
     save_label_data();
@@ -379,5 +375,4 @@ void MainWindow::on_horizontalSlider_images_sliderMoved(int position)
 
 void MainWindow::on_horizontalSlider_images_sliderPressed()
 {
-   //save_label_data(); //prev data save
 }

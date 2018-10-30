@@ -27,11 +27,8 @@ private slots:
     void on_pushButton_open_files_clicked();
     void on_pushButton_save_clicked();
 
-
     void on_pushButton_prev_clicked();
     void on_pushButton_next_clicked();
-
-    void on_horizontalSlider_images_valueChanged(int value);
 
     void keyPressEvent(QKeyEvent *);
 
@@ -51,7 +48,6 @@ private slots:
     void on_tableWidget_label_cellClicked(int row, int column);
 
     void on_horizontalSlider_images_sliderMoved(int position);
-
     void on_horizontalSlider_images_sliderPressed();
 
 private:
