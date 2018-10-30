@@ -56,3 +56,19 @@ But... I reinvented it...
  ![image](https://user-images.githubusercontent.com/35001605/47694149-d20e4100-dc3f-11e8-9d97-fba87a6e1b5a.png)
 
 5. And... Drag and Drop... Welcome to Hell... I really hate this work in the world
+
+![ezgif-5-805073516651](https://user-images.githubusercontent.com/35001605/47698872-5bc80980-dc54-11e8-8984-e3e1230eccaf.gif)
+
+6. End
+## Shorcuts
+
+| Key | Action |
+|---|:---:|
+| `A` | Save and Next Image  |
+| `D, Space` | Save and Next Image |
+| `W` | 위치 상 부모(조상)요소를 기준으로 배치 |
+| `S` | 브라우저 창을 기준으로 배치 |
+| `Ctrl + S` | 브라우저 창을 기준으로 배치 |
+| `Ctrl + C` | 브라우저 창을 기준으로 배치 |
+
+## Mouse Events
