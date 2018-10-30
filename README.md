@@ -81,3 +81,6 @@ Additionally, you can access all image by moving horizontal slider bar. But when
 
 ![ezgif-5-53abf38b3387](https://user-images.githubusercontent.com/35001605/47708528-97bd9780-dc71-11e8-94f1-5ee23776d5fe.gif)
 
+# Conclusions
+I reinvented the wheel.
+![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
