@@ -239,7 +239,7 @@ void label_img::removeFocusedObjectBox(QPoint point)
 
         if(objBox.contains(point))
         {
-            double distance = sqrt(pow(objBox.center().x() - point.x(), 2)+ pow(objBox.center().y() - point.y(), 2));
+            double distance = objBox.width() + objBox.height();
             if(distance < nearestBoxDistance)
             {
                 nearestBoxDistance = distance;
