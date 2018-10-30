@@ -52,4 +52,7 @@ But... I reinvented it...
 ![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
 
 4. Click the button 'Open Files'and open the directory that you saved your custom images and object name lists file that you saved at step 2.
- 
+
+ ![image](https://user-images.githubusercontent.com/35001605/47694149-d20e4100-dc3f-11e8-9d97-fba87a6e1b5a.png)
+
+5. And... Drag and Drop... Welcome to Hell... I really hate this work in the world
