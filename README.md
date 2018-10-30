@@ -71,4 +71,8 @@ But... I reinvented it...
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete All Rect Box |
 
+| Mouse | Action |
+|---|:---:|
+| `Right Click` | Delete Focused Rect Box |
+
 ## Mouse Events
