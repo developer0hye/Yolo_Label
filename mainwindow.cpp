@@ -217,6 +217,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
             ui->tableWidget_label->removeRow(ui->tableWidget_label->currentRow());
 
         m_labelNameList.clear();
+        ui->label_image->m_drawObjectBoxColor.clear();
 
         string strLabel;
         QStringList verticalHeaderLabels;

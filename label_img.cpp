@@ -103,7 +103,6 @@ void label_img::openImage(const QString &qstrImg)
     m_aspectRatioHeight = static_cast<double>(m_inputImg.height()) / this->height();
 
     m_objBoundingBoxes.clear();
-    m_drawObjectBoxColor.clear();
 
     m_objStartPoint = QPoint();
 
