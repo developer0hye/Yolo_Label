@@ -31,7 +31,6 @@ But... I reinvented it...
 
 ![ezgif-5-c57fe634145b](https://user-images.githubusercontent.com/35001605/47693028-3f6ba300-dc3b-11e8-9e22-70c448d59398.gif)
 
-
  ## HMM... I SAW THIS DESIGN SOMEWHERE
   I referred to [the website of Joseph Redmon](https://pjreddie.com/darknet/
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
@@ -76,4 +75,6 @@ But... I reinvented it...
 
 | Mouse | Action |
 |---|:---:|
-| `Right Click` | Delete Focused Rect Box |
+| `Right Click` | Delete Focused Rect Box <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
+
+Additionally, you can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So you should save and move horizontal slider bar.  
