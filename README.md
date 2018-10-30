@@ -74,5 +74,3 @@ But... I reinvented it...
 | Mouse | Action |
 |---|:---:|
 | `Right Click` | Delete Focused Rect Box |
-
-## Mouse Events
