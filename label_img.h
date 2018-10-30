@@ -27,7 +27,6 @@ public:
     QImage m_inputImg;
     QImage m_inputImgCopy;//for drawing
 
-    QPoint m_mouse_pos_in_ui_coordinate;
     QPoint m_mouse_pos_in_image_coordinate;
 
     QVector<QColor> m_drawObjectBoxColor;
@@ -64,8 +63,7 @@ private:
     double m_aspectRatioWidth;
     double m_aspectRatioHeight;
 
-    QPoint  m_objStartPoint;
-    QPoint  m_objEndPoint;
+    QPoint  m_leftButtonClickedPoint;
 
     void setMousePosition(int , int);
 

@@ -46,7 +46,7 @@ void label_img::mousePressEvent(QMouseEvent *ev)
     else if(ev->button() == Qt::LeftButton)
     {
        m_bMouseLeftButtonClicked = true;
-       m_objStartPoint = m_mouse_pos_in_image_coordinate;
+       m_leftButtonClickedPoint = m_mouse_pos_in_image_coordinate;
     }
 
     emit Mouse_Pressed();
@@ -56,26 +56,24 @@ void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
     std::cout<< "released"<< std::endl;
 
-    if(ev->button() == Qt::LeftButton)
+    if(ev->button() == Qt::LeftButton && m_bMouseLeftButtonClicked == true)
     {
-        m_bMouseLeftButtonClicked = false;
-
         setMousePosition(ev->x(), ev->y());
-        m_objEndPoint = m_mouse_pos_in_image_coordinate;
 
         ObjectLabelingBox objBoundingbox;
+
         objBoundingbox.label    = m_focusedObjectLabel;
-        objBoundingbox.box      = getRectFromTwoPoints(m_objEndPoint, m_objStartPoint);
+        objBoundingbox.box      = getRectFromTwoPoints(m_mouse_pos_in_image_coordinate, m_leftButtonClickedPoint);
 
         bool width_is_too_small     = objBoundingbox.box.width()    < m_inputImg.width() * 0.01;
         bool height_is_too_small    = objBoundingbox.box.height()   < m_inputImg.height() * 0.01;
 
         if(!width_is_too_small && !height_is_too_small)
-        {
             m_objBoundingBoxes.push_back(objBoundingbox);
-        }
 
         showImage();
+
+        m_bMouseLeftButtonClicked = false;
     }
     emit Mouse_Release();
 }
@@ -88,9 +86,8 @@ void label_img::setMousePosition(int x, int y)
     if(x > this->width())   x = this->width() - 1;
     if(y > this->height())  y = this->height() - 1;
 
-    m_mouse_pos_in_ui_coordinate    = QPoint(x, y);
-    m_mouse_pos_in_image_coordinate = QPoint(static_cast<int>(m_mouse_pos_in_ui_coordinate.x() * m_aspectRatioWidth),
-                                             static_cast<int>(m_mouse_pos_in_ui_coordinate.y() * m_aspectRatioHeight));
+    m_mouse_pos_in_image_coordinate = QPoint(static_cast<int>(x * m_aspectRatioWidth),
+                                             static_cast<int>(y * m_aspectRatioHeight));
 }
 
 void label_img::openImage(const QString &qstrImg)
@@ -104,20 +101,20 @@ void label_img::openImage(const QString &qstrImg)
 
     m_objBoundingBoxes.clear();
 
-    m_objStartPoint = QPoint();
+    m_leftButtonClickedPoint = QPoint();
 
-    QPoint curMousePos = this->mapFromGlobal(QCursor::pos());
-    bool mouse_is_not_in_image =        (curMousePos.x() < 0 || curMousePos.x() > this->width() - 1)
-                                    ||  (curMousePos.y() < 0 || curMousePos.y() > this->height() - 1);
+    m_bMouseLeftButtonClicked = false;
 
-    if  (mouse_is_not_in_image)
+    QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
+    bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
+
+    if  (mouse_is_in_image)
     {
-        m_objEndPoint = QPoint();
+        setMousePosition(mousePosInUi.x(), mousePosInUi.y());
     }
     else
     {
-        setMousePosition(curMousePos.x(), curMousePos.y());
-        m_objEndPoint = m_mouse_pos_in_image_coordinate;
+        m_mouse_pos_in_image_coordinate = QPoint();
     }
 }
 
@@ -144,8 +141,8 @@ void label_img::loadLabelData(const QString& labelFilePath)
 {
     ifstream inputFile(labelFilePath.toStdString());
 
-    if(inputFile.is_open()){
-
+    if(inputFile.is_open())
+    {
         double          inputFileValue;
         QVector<double> inputFileValues;
 
@@ -156,7 +153,7 @@ void label_img::loadLabelData(const QString& labelFilePath)
         {
             try {
                 ObjectLabelingBox objBox;
-                objBox.label = static_cast<int>(inputFileValues[i]);
+                objBox.label = static_cast<int>(inputFileValues.at(i));
 
                 double midX = inputFileValues.at(i + 1) * m_inputImg.width();
                 double midY = inputFileValues.at(i + 2) * m_inputImg.height();
@@ -189,7 +186,7 @@ void label_img::setFocusObjectName(QString qstrName)
 
 void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
 {
-    if(m_objEndPoint == QPoint()) return;
+    if(m_mouse_pos_in_image_coordinate == QPoint()) return;
 
     QPen pen;
     pen.setWidth(thickWidth);
@@ -200,6 +197,8 @@ void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
     //draw cross line
     painter.drawLine(QPoint(m_mouse_pos_in_image_coordinate.x(),0), QPoint(m_mouse_pos_in_image_coordinate.x(),m_inputImg.height() - 1));
     painter.drawLine(QPoint(0,m_mouse_pos_in_image_coordinate.y()), QPoint(m_inputImg.width() - 1, m_mouse_pos_in_image_coordinate.y()));
+
+    std::cout << "draw Cross Line" << std::endl;
 }
 
 void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, int thickWidth)
@@ -211,7 +210,7 @@ void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, i
 
         pen.setColor(color);
         painter.setPen(pen);
-        painter.drawRect(QRect(m_objStartPoint, m_mouse_pos_in_image_coordinate));
+        painter.drawRect(QRect(m_leftButtonClickedPoint, m_mouse_pos_in_image_coordinate));
     }
 }
 
