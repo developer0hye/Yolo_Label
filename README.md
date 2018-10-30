@@ -65,10 +65,12 @@ But... I reinvented it...
 | Key | Action |
 |---|:---:|
 | `A` | Save and Next Image  |
-| `D, Space` | Save and Next Image |
-| `W` | 위치 상 부모(조상)요소를 기준으로 배치 |
-| `S` | 브라우저 창을 기준으로 배치 |
-| `Ctrl + S` | 브라우저 창을 기준으로 배치 |
-| `Ctrl + C` | 브라우저 창을 기준으로 배치 |
+| `D, Space` | Save and Prev Image |
+| `W` | Prev Label 
+![ezgif-5-ee915c66dad8](https://user-images.githubusercontent.com/35001605/47703191-d39d3080-dc62-11e8-800b-986ec214b80c.gif) |
+| `S` | Next Label 
+![ezgif-5-f7ee77cd24c3](https://user-images.githubusercontent.com/35001605/47703190-d3049a00-dc62-11e8-846f-5bd91e98bdbc.gif) |
+| `Ctrl + S` | Save |
+| `Ctrl + C` | Delete All Rect Box |
 
 ## Mouse Events
