@@ -76,6 +76,8 @@ But... I reinvented it...
 | Mouse | Action |
 |---|:---:|
 | `Right Click` | Delete Focused Rect Box <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
+| `Wheel Down` | Save and Next Image  |
+| `Wheel Up` | Save and Prev Image |
 
 Additionally, you can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So you should save and move horizontal slider bar.  
 
