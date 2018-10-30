@@ -41,11 +41,11 @@ But... I reinvented it...
 1. Put your .jpg, .png -images into some directory
 (In this tutorial I will use the Kangarooo and the Raccoon Images. These images are in the 'Samples' folder.)
 
-![image](https://user-images.githubusercontent.com/35001605/47640641-5791e280-dba7-11e8-8709-83fba08bbbcd.png)
+![dataset](https://user-images.githubusercontent.com/35001605/47704306-8e7afd80-dc66-11e8-9f28-13010bd2d825.PNG)
 
 2. Put names of objects, one for each line in some file( .txt, .names) and save
 
-![image](https://user-images.githubusercontent.com/35001605/47643863-0803e480-dbb0-11e8-87b1-2becf72f4a43.png)
+![objnames](https://user-images.githubusercontent.com/35001605/47704259-75724c80-dc66-11e8-9ed1-2f84d0240ebc.PNG)
 
 3. Run Yolo label!
 
@@ -60,6 +60,9 @@ But... I reinvented it...
 ![ezgif-5-805073516651](https://user-images.githubusercontent.com/35001605/47698872-5bc80980-dc54-11e8-8984-e3e1230eccaf.gif)
 
 6. End
+
+![endimage](https://user-images.githubusercontent.com/35001605/47704336-a6528180-dc66-11e8-8551-3ecb612b7353.PNG)
+
 ## Shorcuts
 
 | Key | Action |
