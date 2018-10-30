@@ -27,6 +27,10 @@ But... I reinvented it...
  
 ![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
 
+![ezgif-5-85c0613befb3](https://user-images.githubusercontent.com/35001605/47693025-3d094900-dc3b-11e8-9d96-ea2f7e37cf7a.gif)
+
+![ezgif-5-c57fe634145b](https://user-images.githubusercontent.com/35001605/47693028-3f6ba300-dc3b-11e8-9e22-70c448d59398.gif)
+
 
  ## HMM... I SAW THIS DESIGN SOMEWHERE
   I referred to [the website of Joseph Redmon](https://pjreddie.com/darknet/
