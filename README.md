@@ -7,7 +7,7 @@
 
  In the world, there are many good image labeling tools for object detection. -e.g. , ([Yolo_mark](https://github.com/AlexeyAB/Yolo_mark), [BBox-Label-Tool](https://github.com/puzzledqs/BBox-Label-Tool), [labelImg](https://github.com/tzutalin/labelImg)). 
  
-But... I reinvented it...
+But... I've reinvented it...
  
 ## WHY DID YOU REINVENT THE WHEEL? ARE YOU STUPID?
 
@@ -32,7 +32,7 @@ But... I reinvented it...
 ![ezgif-5-c57fe634145b](https://user-images.githubusercontent.com/35001605/47693028-3f6ba300-dc3b-11e8-9e22-70c448d59398.gif)
 
  ## HMM... I SAW THIS DESIGN SOMEWHERE
-  I referred to [the website of Joseph Redmon](https://pjreddie.com/darknet/
+  I refer [the website of Joseph Redmon](https://pjreddie.com/darknet/
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
 
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
@@ -84,5 +84,5 @@ Additionally, you can access all image by moving horizontal slider bar. But when
 ![ezgif-5-53abf38b3387](https://user-images.githubusercontent.com/35001605/47708528-97bd9780-dc71-11e8-94f1-5ee23776d5fe.gif)
 
 # Conclusions
-I reinvented the wheel.
+I've reinvented the wheel.
 ![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
