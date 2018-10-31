@@ -86,8 +86,8 @@ void label_img::setMousePosition(int x, int y)
     if(x > this->width())   x = this->width() - 1;
     if(y > this->height())  y = this->height() - 1;
 
-    m_mouse_pos_in_image_coordinate = QPoint(static_cast<int>(x * m_aspectRatioWidth),
-                                             static_cast<int>(y * m_aspectRatioHeight));
+    m_mouse_pos_in_image_coordinate = QPoint(static_cast<int>(x * m_aspectRatioWidth + 0.5),
+                                             static_cast<int>(y * m_aspectRatioHeight + 0.5));
 }
 
 void label_img::openImage(const QString &qstrImg)
@@ -160,10 +160,15 @@ void label_img::loadLabelData(const QString& labelFilePath)
                 double width = inputFileValues.at(i + 3) * m_inputImg.width();
                 double height = inputFileValues.at(i + 4) * m_inputImg.height();
 
-                objBox.box.setX(static_cast<int>(midX - width/2));
-                objBox.box.setY(static_cast<int>(midY - height/2));
-                objBox.box.setWidth(static_cast<int>(width));
-                objBox.box.setHeight(static_cast<int>(height));
+
+                std::cout << "midX: " << midX << std::endl;
+                std::cout << "midX: " << midY << std::endl;
+
+
+                objBox.box.setX(static_cast<int>(midX - width/2 + 0.5));
+                objBox.box.setY(static_cast<int>(midY - height/2 + 0.5));
+                objBox.box.setWidth(static_cast<int>(width + 0.5));
+                objBox.box.setHeight(static_cast<int>(height + 0.5));
 
                 m_objBoundingBoxes.push_back(objBox);
             }
