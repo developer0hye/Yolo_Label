@@ -62,7 +62,7 @@ But... I've reinvented it...
 
 ![endimage](https://user-images.githubusercontent.com/35001605/47704336-a6528180-dc66-11e8-8551-3ecb612b7353.PNG)
 
-## Shorcuts
+## SHORTCUTS
 
 | Key | Action |
 |---|:---:|
@@ -71,18 +71,27 @@ But... I've reinvented it...
 | `S` | Next Label <br> ![ezgif-5-f7ee77cd24c3](https://user-images.githubusercontent.com/35001605/47703190-d3049a00-dc62-11e8-846f-5bd91e98bdbc.gif)  |
 | `W` | Prev Label <br> ![ezgif-5-ee915c66dad8](https://user-images.githubusercontent.com/35001605/47703191-d39d3080-dc62-11e8-800b-986ec214b80c.gif)  |
 | `Ctrl + S` | Save |
-| `Ctrl + C` | Delete All Rect Box |
+| `Ctrl + C` | Delete all existing bounding boxes in the image |
 
 | Mouse | Action |
 |---|:---:|
-| `Right Click` | Delete Focused Rect Box <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
+| `Right Click` | Delete Focused Bounding Box in the image <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
 
-Additionally, you can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So you should save and move horizontal slider bar.  
+
+## ETC
+
+You can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So you should save and move horizontal slider bar, if you want not to lose your work.  
 
 ![ezgif-5-53abf38b3387](https://user-images.githubusercontent.com/35001605/47708528-97bd9780-dc71-11e8-94f1-5ee23776d5fe.gif)
 
-# Conclusions
+
+
+
+
+
+
+# CONCLUSIONS
 I've reinvented the wheel.
 ![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
