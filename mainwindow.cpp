@@ -68,10 +68,10 @@ void MainWindow::on_pushButton_open_files_clicked()
 
 
     QString fileLabelList = QFileDialog::getOpenFileName(
-                        this,
-                        tr("Open LabelList file"),
-                        "./",
-                        tr("LabelList Files (*.txt *.names)"));
+                this,
+                tr("Open LabelList file"),
+                "./",
+                tr("LabelList Files (*.txt *.names)"));
 
     if(fileLabelList.size() == 0)
     {
@@ -168,6 +168,16 @@ void MainWindow::save_label_data()const
 
             ObjectLabelingBox objBox = ui->label_image->m_objBoundingBoxes[i];
 
+            if(ui->checkBox_cropping->isChecked())
+            {
+                QImage cropped = ui->label_image->m_inputImgCopy.copy(objBox.box);
+
+                string strImgFile   = m_fileList.at(m_fileIndex).toStdString();
+                strImgFile = strImgFile.substr( strImgFile.find_last_of('/') + 1,
+                                                strImgFile.find_last_of('.') - strImgFile.find_last_of('/') - 1);
+
+                cropped.save(QString().fromStdString(strImgFile) + "_cropped_" + QString::number(i) + ".png");
+            }
             double midX     = static_cast<double>(objBox.box.center().x())  / ui->label_image->m_inputImg.width();
             double midY     = static_cast<double>(objBox.box.center().y()) / ui->label_image->m_inputImg.height();
             double width    = static_cast<double>(objBox.box.width())   / ui->label_image->m_inputImg.width();

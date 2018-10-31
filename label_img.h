@@ -24,6 +24,7 @@ public:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
 
+
     QImage m_inputImg;
     QImage m_inputImgCopy;//for drawing
 

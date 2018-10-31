@@ -112,7 +112,7 @@
            </font>
           </property>
           <property name="cursor">
-           <cursorShape>ArrowCursor</cursorShape>
+           <cursorShape>CrossCursor</cursorShape>
           </property>
           <property name="mouseTracking">
            <bool>true</bool>
@@ -342,7 +342,7 @@ border-color: rgb(0, 255, 255);</string>
              <widget class="QPushButton" name="pushButton_open_files">
               <property name="minimumSize">
                <size>
-                <width>291</width>
+                <width>271</width>
                 <height>91</height>
                </size>
               </property>
@@ -386,7 +386,7 @@ border-color: rgb(0, 255, 255);</string>
               </property>
               <property name="minimumSize">
                <size>
-                <width>291</width>
+                <width>271</width>
                 <height>91</height>
                </size>
               </property>
@@ -426,6 +426,34 @@ border-color: rgb(0, 255, 255);</string>
               </property>
               <property name="flat">
                <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBox_cropping">
+              <property name="minimumSize">
+               <size>
+                <width>90</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>ArrowCursor</cursorShape>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
+border-style: outset;
+border-width: 2px;
+border-color: rgb(0, 255, 255);</string>
+              </property>
+              <property name="text">
+               <string>with crop</string>
               </property>
              </widget>
             </item>
@@ -632,7 +660,7 @@ QTableView {
            <number>2</number>
           </property>
           <attribute name="horizontalHeaderVisible">
-           <bool>true</bool>
+           <bool>false</bool>
           </attribute>
           <attribute name="horizontalHeaderHighlightSections">
            <bool>false</bool>
@@ -684,6 +712,7 @@ QTableView {
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="separator"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
