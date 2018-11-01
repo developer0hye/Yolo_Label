@@ -34,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_D), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
 
+    init_tableWidget();
 }
 
 MainWindow::~MainWindow()
@@ -45,10 +46,22 @@ void MainWindow::on_pushButton_open_files_clicked()
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
 
+//    QFileDialog datasetDirectoryDialog;
+
+//    datasetDirectoryDialog.setStyleSheet("background-color : rgb(0, 0, 17);color : rgb(0, 255, 0);\
+//                                         border-style: outset;\
+//                                         border-width: 2px;\
+//                                         border-color: rgb(0, 255, 255);");
+//                                         //datasetDirectoryDialog.
+//    datasetDirectoryDialog.getSaveFileName(0, QString(), QString(), QString(), 0, QFileDialog::DontUseNativeDialog);
+//    //datasetDirectoryDialog.show();
+//    datasetDirectoryDialog.exec();
+
+//    return ;
     m_fileDir = QFileDialog::getExistingDirectory(
                 this,
                 tr("Open Dataset Directory"),
-                "./");
+                "./", QFileDialog::DontUseSheet);
 
     QDir dir(m_fileDir);
 
@@ -176,8 +189,12 @@ void MainWindow::save_label_data()const
 
                 cropped.save(QString().fromStdString(strImgFile) + "_cropped_" + QString::number(i) + ".png");
             }
-            double midX     = static_cast<double>(objBox.box.center().x())  / ui->label_image->m_inputImg.width();
-            double midY     = static_cast<double>(objBox.box.center().y()) / ui->label_image->m_inputImg.height();
+
+            int iMidX = static_cast<int>(objBox.box.x() + objBox.box.width()/2. + 0.5);
+            int iMidY = static_cast<int>(objBox.box.y() + objBox.box.height()/2. + 0.5);
+
+            double midX     = static_cast<double>(iMidX)  / ui->label_image->m_inputImg.width();
+            double midY     = static_cast<double>(iMidY) / ui->label_image->m_inputImg.height();
             double width    = static_cast<double>(objBox.box.width())   / ui->label_image->m_inputImg.width();
             double height   = static_cast<double>(objBox.box.height())  / ui->label_image->m_inputImg.height();
 
