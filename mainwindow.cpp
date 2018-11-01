@@ -190,11 +190,8 @@ void MainWindow::save_label_data()const
                 cropped.save(QString().fromStdString(strImgFile) + "_cropped_" + QString::number(i) + ".png");
             }
 
-            int iMidX = static_cast<int>(objBox.box.x() + objBox.box.width()/2. + 0.5);
-            int iMidY = static_cast<int>(objBox.box.y() + objBox.box.height()/2. + 0.5);
-
-            double midX     = static_cast<double>(iMidX)  / ui->label_image->m_inputImg.width();
-            double midY     = static_cast<double>(iMidY) / ui->label_image->m_inputImg.height();
+            double midX     = static_cast<double>(objBox.box.x() + objBox.box.width() / 2.)  / ui->label_image->m_inputImg.width();
+            double midY     = static_cast<double>(objBox.box.y() + objBox.box.height() / 2.) / ui->label_image->m_inputImg.height();
             double width    = static_cast<double>(objBox.box.width())   / ui->label_image->m_inputImg.width();
             double height   = static_cast<double>(objBox.box.height())  / ui->label_image->m_inputImg.height();
 
