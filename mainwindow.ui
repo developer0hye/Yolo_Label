@@ -433,8 +433,14 @@ border-color: rgb(0, 255, 255);</string>
              <widget class="QCheckBox" name="checkBox_cropping">
               <property name="minimumSize">
                <size>
-                <width>90</width>
+                <width>100</width>
                 <height>21</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>16777215</height>
                </size>
               </property>
               <property name="font">
@@ -473,13 +479,13 @@ border-color: rgb(0, 255, 255);</string>
                 <property name="minimumSize">
                  <size>
                   <width>41</width>
-                  <height>12</height>
+                  <height>15</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
-                  <height>12</height>
+                  <height>15</height>
                  </size>
                 </property>
                 <property name="font">
@@ -507,7 +513,7 @@ border-color: rgb(0, 255, 255);</string>
                 </property>
                 <property name="minimumSize">
                  <size>
-                  <width>640</width>
+                  <width>545</width>
                   <height>70</height>
                  </size>
                 </property>
@@ -660,7 +666,7 @@ QTableView {
            <number>2</number>
           </property>
           <attribute name="horizontalHeaderVisible">
-           <bool>false</bool>
+           <bool>true</bool>
           </attribute>
           <attribute name="horizontalHeaderHighlightSections">
            <bool>false</bool>

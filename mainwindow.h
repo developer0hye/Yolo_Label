@@ -60,6 +60,9 @@ private:
     QStringList     m_labelNameList;
     int             m_labelIndex;
 
+
+    void            init_tableWidget();
+
     void            init();
 
     void            img_open(const int);

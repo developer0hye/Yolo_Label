@@ -34,8 +34,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_D), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
 
-    ui->tableWidget_label->horizontalHeader()->setStyleSheet("");
-    disconnect(ui->tableWidget_label->horizontalHeader(), SIGNAL(sectionPressed(int)),ui->tableWidget_label, SLOT(selectColumn(int)));
 }
 
 MainWindow::~MainWindow()
@@ -290,6 +288,7 @@ void MainWindow::pjreddie_style_msgBox(QMessageBox::Icon icon, QString title, QS
     msgBox.setFont(font);
     msgBox.button(QMessageBox::Ok)->setFont(font);
     msgBox.button(QMessageBox::Ok)->setStyleSheet("border-style: outset; border-width: 2px; border-color: rgb(0, 255, 0); color : rgb(0, 255, 0);");
+    msgBox.button(QMessageBox::Ok)->setFocusPolicy(Qt::ClickFocus);
     msgBox.setStyleSheet("background-color : rgb(34, 0, 85); color : rgb(0, 255, 0);");
 
     msgBox.exec();
@@ -386,4 +385,12 @@ void MainWindow::on_horizontalSlider_images_sliderMoved(int position)
 
 void MainWindow::on_horizontalSlider_images_sliderPressed()
 {
+}
+
+void MainWindow::init_tableWidget()
+{
+    ui->tableWidget_label->horizontalHeader()->setVisible(true);
+    ui->tableWidget_label->horizontalHeader()->setStyleSheet("");
+
+    disconnect(ui->tableWidget_label->horizontalHeader(), SIGNAL(sectionPressed(int)),ui->tableWidget_label, SLOT(selectColumn(int)));
 }
