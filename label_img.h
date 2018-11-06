@@ -11,7 +11,7 @@
 struct ObjectLabelingBox
 {
     int     label;
-    QRect   box;
+    QRectF  box;
 };
 
 class label_img : public QLabel
@@ -23,11 +23,6 @@ public:
     void mouseMoveEvent(QMouseEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
-
-    QImage m_inputImg;
-    QImage m_inputImgCopy;//for drawing
-
-    QPoint m_mouse_pos_in_image_coordinate;
 
     QVector<QColor> m_drawObjectBoxColor;
 
@@ -51,6 +46,17 @@ public:
     void setFocusObjectLabel(int);
     void setFocusObjectName(QString);
 
+    QImage crop(QRect);
+
+    QRect   getAbsoluteRectFromTwoPoints(QPoint , QPoint);
+    QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
+
+    QRect   cvtRelativeToAbsoluteRectInUi(QRectF);
+    QRect   cvtRelativeToAbsoluteRectInImage(QRectF);
+
+    QPoint cvtRelativeToAbsolutePoint(QPointF);
+    QPointF cvtAbsoluteToRelativePoint(QPoint);
+
 signals:
     void Mouse_Moved();
     void Mouse_Pressed();
@@ -63,7 +69,10 @@ private:
     double m_aspectRatioWidth;
     double m_aspectRatioHeight;
 
-    QPoint  m_leftButtonClickedPoint;
+    QImage m_inputImg;
+
+    QPointF m_relative_mouse_pos_in_ui;
+    QPointF m_relatvie_mouse_pos_LBtnClicked_in_ui;
 
     void setMousePosition(int , int);
 
@@ -71,11 +80,7 @@ private:
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
 
-    void removeFocusedObjectBox(QPoint);
-
-    QRect getRectFromTwoPoints(QPoint , QPoint);
-
-
+    void removeFocusedObjectBox(QPointF);
 };
 
 #endif // LABEL_IMG_H

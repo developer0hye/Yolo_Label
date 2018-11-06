@@ -169,19 +169,22 @@ void MainWindow::save_label_data()const
 
             if(ui->checkBox_cropping->isChecked())
             {
-                QImage cropped = ui->label_image->m_inputImgCopy.copy(objBox.box);
+                QImage cropped = ui->label_image->crop(ui->label_image->cvtRelativeToAbsoluteRectInImage(objBox.box));
 
-                string strImgFile   = m_fileList.at(m_fileIndex).toStdString();
-                strImgFile = strImgFile.substr( strImgFile.find_last_of('/') + 1,
-                                                strImgFile.find_last_of('.') - strImgFile.find_last_of('/') - 1);
+                if(!cropped.isNull())
+                {
+                    string strImgFile   = m_fileList.at(m_fileIndex).toStdString();
+                    strImgFile = strImgFile.substr( strImgFile.find_last_of('/') + 1,
+                                                    strImgFile.find_last_of('.') - strImgFile.find_last_of('/') - 1);
 
-                cropped.save(QString().fromStdString(strImgFile) + "_cropped_" + QString::number(i) + ".png");
+                    cropped.save(QString().fromStdString(strImgFile) + "_cropped_" + QString::number(i) + ".png");
+                }
             }
 
-            double midX     = static_cast<double>(objBox.box.x() + objBox.box.width() / 2.)  / ui->label_image->m_inputImg.width();
-            double midY     = static_cast<double>(objBox.box.y() + objBox.box.height() / 2.) / ui->label_image->m_inputImg.height();
-            double width    = static_cast<double>(objBox.box.width())   / ui->label_image->m_inputImg.width();
-            double height   = static_cast<double>(objBox.box.height())  / ui->label_image->m_inputImg.height();
+            double midX     = objBox.box.x() + objBox.box.width() / 2.;
+            double midY     = objBox.box.y() + objBox.box.height() / 2.;
+            double width    = objBox.box.width();
+            double height   = objBox.box.height();
 
             fileOutputLabelData << objBox.label;
             fileOutputLabelData << " ";
@@ -227,6 +230,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
             ui->tableWidget_label->removeRow(ui->tableWidget_label->currentRow());
 
         m_labelNameList.clear();
+
         ui->label_image->m_drawObjectBoxColor.clear();
 
         string strLabel;
