@@ -21,8 +21,6 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-Q_SIGNALS:
-
 private slots:
     void on_pushButton_open_files_clicked();
     void on_pushButton_save_clicked();
