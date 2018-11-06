@@ -46,22 +46,10 @@ void MainWindow::on_pushButton_open_files_clicked()
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
 
-//    QFileDialog datasetDirectoryDialog;
-
-//    datasetDirectoryDialog.setStyleSheet("background-color : rgb(0, 0, 17);color : rgb(0, 255, 0);\
-//                                         border-style: outset;\
-//                                         border-width: 2px;\
-//                                         border-color: rgb(0, 255, 255);");
-//                                         //datasetDirectoryDialog.
-//    datasetDirectoryDialog.getSaveFileName(0, QString(), QString(), QString(), 0, QFileDialog::DontUseNativeDialog);
-//    //datasetDirectoryDialog.show();
-//    datasetDirectoryDialog.exec();
-
-//    return ;
     m_fileDir = QFileDialog::getExistingDirectory(
                 this,
                 tr("Open Dataset Directory"),
-                "./", QFileDialog::DontUseSheet);
+                "./",QFileDialog::ShowDirsOnly);
 
     QDir dir(m_fileDir);
 
