@@ -81,7 +81,6 @@ void MainWindow::on_pushButton_open_files_clicked()
     m_fileList = fileList;
     for(QString& str: m_fileList) str = m_fileDir + "/" + str;
 
-
     load_label_list_data(fileLabelList);
 
     init();

@@ -48,13 +48,12 @@ public:
 
     QImage crop(QRect);
 
-    QRect   getAbsoluteRectFromTwoPoints(QPoint , QPoint);
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
 
     QRect   cvtRelativeToAbsoluteRectInUi(QRectF);
     QRect   cvtRelativeToAbsoluteRectInImage(QRectF);
 
-    QPoint cvtRelativeToAbsolutePoint(QPointF);
+    QPoint  cvtRelativeToAbsolutePoint(QPointF);
     QPointF cvtAbsoluteToRelativePoint(QPoint);
 
 signals:

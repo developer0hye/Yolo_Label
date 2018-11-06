@@ -264,19 +264,6 @@ void label_img::removeFocusedObjectBox(QPointF point)
     }
 }
 
-QRect label_img::getAbsoluteRectFromTwoPoints(QPoint p1, QPoint p2)
-{
-    int midX    = (p1.x() + p2.x()) / 2;
-    int midY    = (p1.y() + p2.y()) / 2;
-    int width   = abs(p1.x() - p2.x());
-    int height  = abs(p1.y() - p2.y());
-
-    QPoint topLeftPoint(midX - width/2, midY - height/2);
-    QPoint bottomRightPoint(midX + width/2, midY + height/2);
-
-    return QRect(topLeftPoint, bottomRightPoint);
-}
-
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
 {
     double midX    = (p1.x() + p2.x()) / 2.;
