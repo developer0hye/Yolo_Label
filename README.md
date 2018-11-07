@@ -54,7 +54,11 @@ But... I've reinvented it...
 
  ![image](https://user-images.githubusercontent.com/35001605/47694149-d20e4100-dc3f-11e8-9d97-fba87a6e1b5a.png)
 
-5. And... Drag and Drop... Welcome to Hell... I really hate this work in the world
+5. And... Label!... Welcome to Hell... I really hate this work in the world
+
+This program has adopted a different labeling method from other programs that adopt 'drag and drop' method.
+
+To minimize wrist strain when labeling, I adopted the method "twice left button click" method.
 
 ![ezgif-5-805073516651](https://user-images.githubusercontent.com/35001605/47698872-5bc80980-dc54-11e8-8984-e3e1230eccaf.gif)
 
