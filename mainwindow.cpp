@@ -95,6 +95,11 @@ void MainWindow::init()
 
     ui->horizontalSlider_images->setRange(0, m_fileList.size() - 1);
 
+
+    ui->horizontalSlider_images->blockSignals(true);
+    ui->horizontalSlider_images->setValue(0);
+    ui->horizontalSlider_images->blockSignals(false);
+
     set_label(0);
     goto_img(0);
 }
@@ -326,9 +331,7 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
 
     if(graveAccentKeyIsPressed)
     {
-        ui->label_image->setFocusObjectLabel(0);
-        ui->label_image->setFocusObjectName(m_labelNameList.at(0));
-        ui->tableWidget_label->setCurrentCell(0, 0); //foucs cell(0,0)
+        set_label(0);
     }
     else if(numKeyIsPressed)
     {
@@ -336,9 +339,7 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
 
         if(asciiToNumber < m_labelNameList.size() )
         {
-            ui->label_image->setFocusObjectLabel(asciiToNumber);
-            ui->label_image->setFocusObjectName(m_labelNameList.at(asciiToNumber));
-            ui->tableWidget_label->setCurrentCell(asciiToNumber, 0);
+            set_label(asciiToNumber);
         }
     }
 }
