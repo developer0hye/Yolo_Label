@@ -326,8 +326,9 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
 {
     cout << "key pressed" <<endl;
     int     nKey = event->key();
+
     bool    graveAccentKeyIsPressed    = (nKey == Qt::Key_QuoteLeft);
-    bool    numKeyIsPressed            = (nKey >= Qt::Key_0 &&  nKey <= Qt::Key_9 );
+    bool    numKeyIsPressed            = (nKey >= Qt::Key_0 && nKey <= Qt::Key_9 );
 
     if(graveAccentKeyIsPressed)
     {
@@ -397,6 +398,7 @@ void MainWindow::init_tableWidget()
 {
     ui->tableWidget_label->horizontalHeader()->setVisible(true);
     ui->tableWidget_label->horizontalHeader()->setStyleSheet("");
+    ui->tableWidget_label->horizontalHeader()->setStretchLastSection(true);
 
     disconnect(ui->tableWidget_label->horizontalHeader(), SIGNAL(sectionPressed(int)),ui->tableWidget_label, SLOT(selectColumn(int)));
 }

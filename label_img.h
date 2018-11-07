@@ -32,12 +32,13 @@ public:
     int m_imgX;
     int m_imgY;
 
-    bool m_bMouseLeftButtonClicked;
+    bool m_bLabelingStarted;
 
     static  QColor BOX_COLORS[10];
 
     QVector <ObjectLabelingBox>     m_objBoundingBoxes;
 
+    void init();
     void openImage(const QString &);
     void showImage();
 

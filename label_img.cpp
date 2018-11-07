@@ -15,11 +15,9 @@ QColor label_img::BOX_COLORS[10] ={  Qt::green,
         Qt::darkCyan};
 
 label_img::label_img(QWidget *parent)
-    :QLabel(parent),
-    m_bMouseLeftButtonClicked(false),
-    m_focusedObjectLabel(0)
-
+    :QLabel(parent)
 {
+    init();
 }
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
@@ -45,8 +43,31 @@ void label_img::mousePressEvent(QMouseEvent *ev)
     }
     else if(ev->button() == Qt::LeftButton)
     {
-       m_bMouseLeftButtonClicked                = true;
-       m_relatvie_mouse_pos_LBtnClicked_in_ui   = m_relative_mouse_pos_in_ui;
+        if(m_bLabelingStarted == false)
+        {
+            m_relatvie_mouse_pos_LBtnClicked_in_ui      = m_relative_mouse_pos_in_ui;
+            m_bLabelingStarted                          = true;
+        }
+        else
+        {
+            setMousePosition(ev->x(), ev->y());
+
+            ObjectLabelingBox objBoundingbox;
+
+            objBoundingbox.label    = m_focusedObjectLabel;
+            objBoundingbox.box      = getRelativeRectFromTwoPoints(m_relative_mouse_pos_in_ui,
+                                                                   m_relatvie_mouse_pos_LBtnClicked_in_ui);
+
+            bool width_is_too_small     = objBoundingbox.box.width()  < 0.01;
+            bool height_is_too_small    = objBoundingbox.box.height() < 0.01;
+
+            if(!width_is_too_small && !height_is_too_small)
+                m_objBoundingBoxes.push_back(objBoundingbox);
+
+            m_bLabelingStarted              = false;
+
+            showImage();
+        }
     }
 
     emit Mouse_Pressed();
@@ -55,28 +76,27 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
     std::cout<< "released"<< std::endl;
-
-    if(ev->button() == Qt::LeftButton && m_bMouseLeftButtonClicked == true)
-    {
-        setMousePosition(ev->x(), ev->y());
-
-        ObjectLabelingBox objBoundingbox;
-
-        objBoundingbox.label    = m_focusedObjectLabel;
-        objBoundingbox.box      = getRelativeRectFromTwoPoints(m_relative_mouse_pos_in_ui,
-                                                               m_relatvie_mouse_pos_LBtnClicked_in_ui);
-
-        bool width_is_too_small     = objBoundingbox.box.width()  < 0.01;
-        bool height_is_too_small    = objBoundingbox.box.height() < 0.01;
-
-        if(!width_is_too_small && !height_is_too_small)
-            m_objBoundingBoxes.push_back(objBoundingbox);
-
-        m_bMouseLeftButtonClicked = false;
-    }
-
-    showImage();
     emit Mouse_Release();
+}
+
+void label_img::init()
+{
+    m_objBoundingBoxes.clear();
+
+    m_bLabelingStarted              = false;
+    m_focusedObjectLabel            = 0;
+
+    QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
+    bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
+
+    if  (mouse_is_in_image)
+    {
+        setMousePosition(mousePosInUi.x(), mousePosInUi.y());
+    }
+    else
+    {
+        setMousePosition(0., 0.);
+    }
 }
 
 void label_img::setMousePosition(int x, int y)
@@ -95,19 +115,7 @@ void label_img::openImage(const QString &qstrImg)
     m_inputImg      = QImage(qstrImg);
     m_inputImg      = m_inputImg.convertToFormat(QImage::Format_RGB888);
 
-    m_objBoundingBoxes.clear();
-
-    m_relatvie_mouse_pos_LBtnClicked_in_ui = QPointF();
-
-    m_bMouseLeftButtonClicked = false;
-
-    QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
-    bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
-
-    if  (mouse_is_in_image)
-    {
-        setMousePosition(mousePosInUi.x(), mousePosInUi.y());
-    }
+    init();
 }
 
 void label_img::showImage()
@@ -187,7 +195,7 @@ QImage label_img::crop(QRect rect)
 
 void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
 {
-    if(m_relative_mouse_pos_in_ui == QPointF()) return;
+    if(m_relative_mouse_pos_in_ui == QPointF(0., 0.)) return;
 
     QPen pen;
     pen.setWidth(thickWidth);
@@ -207,7 +215,7 @@ void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
 
 void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, int thickWidth)
 {
-    if(m_bMouseLeftButtonClicked)
+    if(m_bLabelingStarted == true)
     {
         QPen pen;
         pen.setWidth(thickWidth);
