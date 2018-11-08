@@ -99,3 +99,6 @@ You can access all image by moving horizontal slider bar. But when you control h
 # CONCLUSIONS
 I've reinvented the wheel.
 ![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
+
+# TO DO LISTS
+Ui event optimzation for ubuntu
