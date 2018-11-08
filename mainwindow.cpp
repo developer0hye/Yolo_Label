@@ -83,6 +83,7 @@ void MainWindow::on_pushButton_open_files_clicked()
 
     load_label_list_data(fileLabelList);
 
+    ui->label_image->init();
     init();
 }
 
@@ -277,6 +278,7 @@ void MainWindow::set_label(int labelIndex)
 
     if(!indexIsOutOfRange)
     {
+        std::cout << "m_labelIndex = "<< m_labelIndex << std::endl;
         m_labelIndex = labelIndex;
         ui->label_image->setFocusObjectLabel(m_labelIndex);
         ui->label_image->setFocusObjectName(m_labelNameList.at(m_labelIndex));

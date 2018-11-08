@@ -82,7 +82,6 @@ void label_img::mouseReleaseEvent(QMouseEvent *ev)
 void label_img::init()
 {
     m_objBoundingBoxes.clear();
-
     m_bLabelingStarted              = false;
     m_focusedObjectLabel            = 0;
 
@@ -115,7 +114,20 @@ void label_img::openImage(const QString &qstrImg)
     m_inputImg      = QImage(qstrImg);
     m_inputImg      = m_inputImg.convertToFormat(QImage::Format_RGB888);
 
-    init();
+    m_objBoundingBoxes.clear();
+    m_bLabelingStarted              = false;
+
+    QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
+    bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
+
+    if  (mouse_is_in_image)
+    {
+        setMousePosition(mousePosInUi.x(), mousePosInUi.y());
+    }
+    else
+    {
+        setMousePosition(0., 0.);
+    }
 }
 
 void label_img::showImage()
