@@ -239,10 +239,8 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
         ui->label_image->m_drawObjectBoxColor.clear();
 
         string strLabel;
-        QStringList verticalHeaderLabels;
-
         int fileIndex = 0;
-        while(inputLabelListFile >> strLabel)
+        while(getline(inputLabelListFile, strLabel))
         {
             int nRow = ui->tableWidget_label->rowCount();
             std::cout << nRow << endl;
