@@ -37,6 +37,20 @@ But... I've reinvented it...
 
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
 # TUTORIAL / USAGE
+
+0. Download this project
+
+**For Windows**
+
+0.1 Download [this](https://drive.google.com/open?id=1MJyMcqRKhiNPzJkRPQ2CmGePK9XddBNP)
+
+0.2 Unzip
+
+0.3 Run YoloLabel.exe
+
+![download_guide](https://user-images.githubusercontent.com/35001605/48674490-4168b800-eb90-11e8-83fb-8ef7b5fd1040.PNG)
+
+
 1. Put your .jpg, .png -images into some directory
 (In this tutorial I will use the Kangarooo and the Raccoon Images. These images are in the 'Samples' folder.)
 
