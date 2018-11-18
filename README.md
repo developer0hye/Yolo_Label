@@ -61,10 +61,12 @@ This program has adopted a different labeling method from other programs that ad
 To minimize wrist strain when labeling, I adopted the method "twice left button click" method.
 
 **drag and drop**
+
 ![draganddrop](https://user-images.githubusercontent.com/35001605/48674135-6fe49400-eb8c-11e8-963c-c343867b7565.gif)
 
 
 **twice left button click""
+
 ![twiceleftbuttonclickmethod](https://user-images.githubusercontent.com/35001605/48674136-71ae5780-eb8c-11e8-8d8f-8cb511009491.gif)
 
 
