@@ -60,6 +60,14 @@ This program has adopted a different labeling method from other programs that ad
 
 To minimize wrist strain when labeling, I adopted the method "twice left button click" method.
 
+**drag and drop**
+![draganddrop](https://user-images.githubusercontent.com/35001605/48674135-6fe49400-eb8c-11e8-963c-c343867b7565.gif)
+
+
+**twice left button click""
+![twiceleftbuttonclickmethod](https://user-images.githubusercontent.com/35001605/48674136-71ae5780-eb8c-11e8-8d8f-8cb511009491.gif)
+
+
 ![ezgif-5-805073516651](https://user-images.githubusercontent.com/35001605/47698872-5bc80980-dc54-11e8-8984-e3e1230eccaf.gif)
 
 6. End
@@ -101,4 +109,6 @@ I've reinvented the wheel.
 ![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
 
 # TO DO LISTS
+Upload binary file for easy usage
 Ui event optimzation for ubuntu
+
