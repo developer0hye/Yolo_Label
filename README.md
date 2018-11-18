@@ -56,16 +56,16 @@ But... I've reinvented it...
 
 5. And... Label!... Welcome to Hell... I really hate this work in the world
 
-This program has adopted a different labeling method from other programs that adopt 'drag and drop' method.
+This program has adopted a different labeling method from other programs that adopt **"drag and drop"** method.
 
-To minimize wrist strain when labeling, I adopted the method "twice left button click" method.
+To minimize wrist strain when labeling, I adopted the method **"twice left button click"** method more convenient than **"drag and drop"** method.
 
 **drag and drop**
 
 ![draganddrop](https://user-images.githubusercontent.com/35001605/48674135-6fe49400-eb8c-11e8-963c-c343867b7565.gif)
 
 
-**twice left button click""
+**twice left button click**
 
 ![twiceleftbuttonclickmethod](https://user-images.githubusercontent.com/35001605/48674136-71ae5780-eb8c-11e8-8d8f-8cb511009491.gif)
 
