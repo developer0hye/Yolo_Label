@@ -50,8 +50,6 @@ void label_img::mousePressEvent(QMouseEvent *ev)
         }
         else
         {
-            setMousePosition(ev->x(), ev->y());
-
             ObjectLabelingBox objBoundingbox;
 
             objBoundingbox.label    = m_focusedObjectLabel;
