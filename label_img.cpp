@@ -109,11 +109,12 @@ void label_img::setMousePosition(int x, int y)
 
 void label_img::openImage(const QString &qstrImg)
 {
-    m_inputImg      = QImage(qstrImg);
-    m_inputImg      = m_inputImg.convertToFormat(QImage::Format_RGB888);
-
     m_objBoundingBoxes.clear();
-    m_bLabelingStarted              = false;
+
+    m_inputImg          = QImage(qstrImg);
+    m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
+
+    m_bLabelingStarted  = false;
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
     bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);

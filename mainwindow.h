@@ -30,10 +30,6 @@ private slots:
 
     void keyPressEvent(QKeyEvent *);
 
-    void mouseCurrentPos();
-    void mousePressed();
-    void mouseReleased();
-
     void next_img();
     void prev_img();
     void save_label_data() const;
@@ -57,28 +53,27 @@ private:
     void            set_label_progress(const int);
     void            set_focused_file(const int);
 
-    void            goto_img(int);
+    void            goto_img(const int);
 
     void            load_label_list_data(QString);
     QString         get_labeling_data(QString)const;
 
-    void            set_label(int);
-    void            set_label_color(int , QColor);
+    void            set_label(const int);
+    void            set_label_color(const int , QColor);
 
     void            pjreddie_style_msgBox(QMessageBox::Icon, QString, QString);
 
     void            openImgDir(bool&);
     void            openObjListFile(bool&);
 
-
     Ui::MainWindow *ui;
 
     QString         m_imgDir;
-    QStringList     m_fileList;
-    int             m_fileIndex;
+    QStringList     m_imgList;
+    int             m_imgIndex;
 
-    QStringList     m_labelNameList;
-    int             m_labelIndex;
+    QStringList     m_objList;
+    int             m_objIndex;
 
 protected:
     void    wheelEvent(QWheelEvent *);

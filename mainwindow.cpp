@@ -21,10 +21,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->label_image, SIGNAL(Mouse_Moved()), this, SLOT(mouseCurrentPos()));
-    connect(ui->label_image, SIGNAL(Mouse_Pressed()), this, SLOT(mousePressed()));
-    connect(ui->label_image, SIGNAL(Mouse_Release()), this, SLOT(mouseReleased()));
-
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this), SIGNAL(activated()), this, SLOT(save_label_data()));
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_C), this), SIGNAL(activated()), this, SLOT(clear_label_data()));
 
@@ -67,8 +63,7 @@ void MainWindow::init()
     ui->pushButton_prev->setEnabled(true);
     ui->pushButton_save->setEnabled(true);
 
-    ui->horizontalSlider_images->setRange(0, m_fileList.size() - 1);
-
+    ui->horizontalSlider_images->setRange(0, m_imgList.size() - 1);
 
     ui->horizontalSlider_images->blockSignals(true);
     ui->horizontalSlider_images->setValue(0);
@@ -81,59 +76,59 @@ void MainWindow::init()
 void MainWindow::set_label_progress(const int fileIndex)
 {
     QString strCurFileIndex = QString::number(fileIndex);
-    QString strEndFileIndex = QString::number(m_fileList.size() - 1);
+    QString strEndFileIndex = QString::number(m_imgList.size() - 1);
 
     ui->label_progress->setText(strCurFileIndex + " / " + strEndFileIndex);
 }
 
 void MainWindow::set_focused_file(const int fileIndex)
 {
-    ui->label_file->setText("File: " + m_fileList.at(fileIndex));
+    ui->label_file->setText("File: " + m_imgList.at(fileIndex));
 }
 
-void MainWindow::goto_img(int fileIndex)
+void MainWindow::goto_img(const int fileIndex)
 {
-    bool indexIsOutOfRange = (fileIndex < 0 || fileIndex > m_fileList.size() - 1);
+    bool indexIsOutOfRange = (fileIndex < 0 || fileIndex > m_imgList.size() - 1);
 
     if(!indexIsOutOfRange)
     {
-        m_fileIndex = fileIndex;
+        m_imgIndex = fileIndex;
 
-        ui->label_image->openImage(m_fileList.at(m_fileIndex));
-        ui->label_image->loadLabelData(get_labeling_data(m_fileList.at(m_fileIndex)));
+        ui->label_image->openImage(m_imgList.at(m_imgIndex));
+        ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
         ui->label_image->showImage();
 
-        set_label_progress(m_fileIndex);
-        set_focused_file(m_fileIndex);
+        set_label_progress(m_imgIndex);
+        set_focused_file(m_imgIndex);
     }
 }
 
 void MainWindow::next_img()
 {
     save_label_data();
-    goto_img(m_fileIndex + 1);
+    goto_img(m_imgIndex + 1);
 
     ui->horizontalSlider_images->blockSignals(true);
-    ui->horizontalSlider_images->setValue(m_fileIndex);
+    ui->horizontalSlider_images->setValue(m_imgIndex);
     ui->horizontalSlider_images->blockSignals(false);
 }
 
 void MainWindow::prev_img()
 {
     save_label_data();
-    goto_img(m_fileIndex - 1);
+    goto_img(m_imgIndex - 1);
 
     //it blocks crash with slider change
     ui->horizontalSlider_images->blockSignals(true);
-    ui->horizontalSlider_images->setValue(m_fileIndex);
+    ui->horizontalSlider_images->setValue(m_imgIndex);
     ui->horizontalSlider_images->blockSignals(false);
 }
 
 void MainWindow::save_label_data()const
 {
-    if(m_fileList.size() == 0) return;
+    if(m_imgList.size() == 0) return;
 
-    QString qstrOutputLabelData = get_labeling_data(m_fileList.at(m_fileIndex));
+    QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
 
     ofstream fileOutputLabelData(qstrOutputLabelData.toStdString());
 
@@ -151,7 +146,8 @@ void MainWindow::save_label_data()const
 
                 if(!cropped.isNull())
                 {
-                    string strImgFile   = m_fileList.at(m_fileIndex).toStdString();
+                    string strImgFile   = m_imgList.at(m_imgIndex).toStdString();
+
                     strImgFile = strImgFile.substr( strImgFile.find_last_of('/') + 1,
                                                     strImgFile.find_last_of('.') - strImgFile.find_last_of('/') - 1);
 
@@ -189,12 +185,12 @@ void MainWindow::clear_label_data()
 
 void MainWindow::next_label()
 {
-    set_label(m_labelIndex + 1);
+    set_label(m_objIndex + 1);
 }
 
 void MainWindow::prev_label()
 {
-    set_label(m_labelIndex - 1);
+    set_label(m_objIndex - 1);
 }
 
 void MainWindow::load_label_list_data(QString qstrLabelListFile)
@@ -207,7 +203,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
         for(int i = 0 ; i <= ui->tableWidget_label->rowCount(); i++)
             ui->tableWidget_label->removeRow(ui->tableWidget_label->currentRow());
 
-        m_labelNameList.clear();
+        m_objList.clear();
 
         ui->label_image->m_drawObjectBoxColor.clear();
 
@@ -219,7 +215,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
             std::cout << nRow << endl;
             QString qstrLabel   = QString().fromStdString(strLabel);
             QColor  labelColor  = label_img::BOX_COLORS[(fileIndex++)%10];
-            m_labelNameList << qstrLabel;
+            m_objList << qstrLabel;
 
             ui->tableWidget_label->insertRow(nRow);
 
@@ -243,17 +239,16 @@ QString MainWindow::get_labeling_data(QString qstrImgFile)const
     return QString().fromStdString(strLabelData);
 }
 
-void MainWindow::set_label(int labelIndex)
+void MainWindow::set_label(const int labelIndex)
 {
-    bool indexIsOutOfRange = (labelIndex < 0 || labelIndex > m_labelNameList.size() - 1);
+    bool bIndexIsOutOfRange = (labelIndex < 0 || labelIndex > m_objList.size() - 1);
 
-    if(!indexIsOutOfRange)
+    if(!bIndexIsOutOfRange)
     {
-        std::cout << "m_labelIndex = "<< m_labelIndex << std::endl;
-        m_labelIndex = labelIndex;
-        ui->label_image->setFocusObjectLabel(m_labelIndex);
-        ui->label_image->setFocusObjectName(m_labelNameList.at(m_labelIndex));
-        ui->tableWidget_label->setCurrentCell(m_labelIndex, 0);
+        m_objIndex = labelIndex;
+        ui->label_image->setFocusObjectLabel(m_objIndex);
+        ui->label_image->setFocusObjectName(m_objList.at(m_objIndex));
+        ui->tableWidget_label->setCurrentCell(m_objIndex, 0);
     }
 }
 
@@ -300,9 +295,9 @@ void MainWindow::openImgDir(bool& ret)
     else
     {
         m_imgDir    = imgDir;
-        m_fileList  = fileList;
+        m_imgList  = fileList;
 
-        for(QString& str: m_fileList)
+        for(QString& str: m_imgList)
             str = m_imgDir + "/" + str;
         ret = true;
     }
@@ -364,26 +359,11 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
     {
         int asciiToNumber = nKey - Qt::Key_0;
 
-        if(asciiToNumber < m_labelNameList.size() )
+        if(asciiToNumber < m_objList.size() )
         {
             set_label(asciiToNumber);
         }
     }
-}
-
-void MainWindow::mouseCurrentPos()
-{
-
-}
-
-void MainWindow::mousePressed()
-{
-
-}
-
-void MainWindow::mouseReleased()
-{
-
 }
 
 void MainWindow::on_pushButton_save_clicked()
@@ -393,7 +373,9 @@ void MainWindow::on_pushButton_save_clicked()
 
 void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
 {
-    if(column == 1)
+    bool bColorAttributeClicked = (column == 1);
+
+    if(bColorAttributeClicked)
     {
         QColor color = QColorDialog::getColor(Qt::white,this,"Set Label Color");
         if(color.isValid())
