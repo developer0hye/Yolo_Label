@@ -24,30 +24,31 @@ public:
 private slots:
     void on_pushButton_open_files_clicked();
     void on_pushButton_save_clicked();
+    void on_pushButton_remove_clicked();
 
     void on_pushButton_prev_clicked();
     void on_pushButton_next_clicked();
 
     void keyPressEvent(QKeyEvent *);
 
-    void next_img();
-    void prev_img();
+    void next_img(bool bSavePrev = true);
+    void prev_img(bool bSavePrev = true);
     void save_label_data() const;
     void clear_label_data();
 
     void next_label();
     void prev_label();
 
-    void on_tableWidget_label_cellDoubleClicked(int row, int column);
-    void on_tableWidget_label_cellClicked(int row, int column);
+    void on_tableWidget_label_cellDoubleClicked(int , int );
+    void on_tableWidget_label_cellClicked(int , int );
 
-    void on_horizontalSlider_images_sliderMoved(int position);
-    void on_horizontalSlider_images_sliderPressed();
+    void on_horizontalSlider_images_sliderMoved(int );
 
 private:
-    void            init_tableWidget();
-
     void            init();
+    void            init_table_widget();
+    void            init_button_event();
+    void            init_horizontal_slider();
 
     void            img_open(const int);
     void            set_label_progress(const int);
@@ -59,12 +60,14 @@ private:
     QString         get_labeling_data(QString)const;
 
     void            set_label(const int);
-    void            set_label_color(const int , QColor);
+    void            set_label_color(const int , const QColor);
 
     void            pjreddie_style_msgBox(QMessageBox::Icon, QString, QString);
 
-    void            openImgDir(bool&);
-    void            openObjListFile(bool&);
+    void            open_img_dir(bool&);
+    void            open_obj_file(bool&);
+
+    void            reupdate_img_list();
 
     Ui::MainWindow *ui;
 

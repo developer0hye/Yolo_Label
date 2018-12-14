@@ -39,7 +39,7 @@ public:
     QVector <ObjectLabelingBox>     m_objBoundingBoxes;
 
     void init();
-    void openImage(const QString &);
+    void openImage(const QString &, bool& ret);
     void showImage();
 
     void loadLabelData(const QString & );
@@ -47,6 +47,8 @@ public:
     void setFocusObjectLabel(int);
     void setFocusObjectName(QString);
 
+
+    bool isOpened();
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);

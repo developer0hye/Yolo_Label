@@ -107,25 +107,37 @@ void label_img::setMousePosition(int x, int y)
     m_relative_mouse_pos_in_ui = cvtAbsoluteToRelativePoint(QPoint(x, y));
 }
 
-void label_img::openImage(const QString &qstrImg)
+void label_img::openImage(const QString &qstrImg, bool &ret)
 {
-    m_objBoundingBoxes.clear();
+    QImage img(qstrImg);
 
-    m_inputImg          = QImage(qstrImg);
-    m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
-
-    m_bLabelingStarted  = false;
-
-    QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
-    bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
-
-    if  (mouse_is_in_image)
+    if(img.isNull())
     {
-        setMousePosition(mousePosInUi.x(), mousePosInUi.y());
+        m_inputImg = QImage();
+        ret = false;
     }
     else
     {
-        setMousePosition(0., 0.);
+        ret = true;
+
+        m_objBoundingBoxes.clear();
+
+        m_inputImg          = img.copy();
+        m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
+
+        m_bLabelingStarted  = false;
+
+        QPoint mousePosInUi     = this->mapFromGlobal(QCursor::pos());
+        bool mouse_is_in_image  = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
+
+        if  (mouse_is_in_image)
+        {
+            setMousePosition(mousePosInUi.x(), mousePosInUi.y());
+        }
+        else
+        {
+            setMousePosition(0., 0.);
+        }
     }
 }
 
@@ -197,6 +209,11 @@ void label_img::setFocusObjectLabel(int nLabel)
 void label_img::setFocusObjectName(QString qstrName)
 {
     m_foucsedObjectName = qstrName;
+}
+
+bool label_img::isOpened()
+{
+    return !m_inputImg.isNull();
 }
 
 QImage label_img::crop(QRect rect)

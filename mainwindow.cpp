@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_D), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
 
-    init_tableWidget();
+    init_table_widget();
 }
 
 MainWindow::~MainWindow()
@@ -43,11 +43,11 @@ void MainWindow::on_pushButton_open_files_clicked()
     bool bRetImgDir     = false;
     bool bRetObjFile    = false;
 
-    openImgDir(bRetImgDir);
+    open_img_dir(bRetImgDir);
 
     if (!bRetImgDir) return ;
 
-    openObjListFile(bRetObjFile);
+    open_obj_file(bRetObjFile);
 
     if (!bRetObjFile) return ;
 
@@ -58,16 +58,8 @@ void MainWindow::init()
 {
     ui->label_image->init();
 
-    ui->horizontalSlider_images->setEnabled(true);
-    ui->pushButton_next->setEnabled(true);
-    ui->pushButton_prev->setEnabled(true);
-    ui->pushButton_save->setEnabled(true);
-
-    ui->horizontalSlider_images->setRange(0, m_imgList.size() - 1);
-
-    ui->horizontalSlider_images->blockSignals(true);
-    ui->horizontalSlider_images->setValue(0);
-    ui->horizontalSlider_images->blockSignals(false);
+    init_button_event();
+    init_horizontal_slider();
 
     set_label(0);
     goto_img(0);
@@ -88,40 +80,36 @@ void MainWindow::set_focused_file(const int fileIndex)
 
 void MainWindow::goto_img(const int fileIndex)
 {
-    bool indexIsOutOfRange = (fileIndex < 0 || fileIndex > m_imgList.size() - 1);
+    bool bIndexIsOutOfRange = (fileIndex < 0 || fileIndex > m_imgList.size() - 1);
+    if (bIndexIsOutOfRange) return;
 
-    if(!indexIsOutOfRange)
-    {
-        m_imgIndex = fileIndex;
+    m_imgIndex = fileIndex;
 
-        ui->label_image->openImage(m_imgList.at(m_imgIndex));
-        ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
-        ui->label_image->showImage();
+    bool bImgOpened;
+    ui->label_image->openImage(m_imgList.at(m_imgIndex), bImgOpened);
 
-        set_label_progress(m_imgIndex);
-        set_focused_file(m_imgIndex);
-    }
-}
+    ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
+    ui->label_image->showImage();
 
-void MainWindow::next_img()
-{
-    save_label_data();
-    goto_img(m_imgIndex + 1);
-
-    ui->horizontalSlider_images->blockSignals(true);
-    ui->horizontalSlider_images->setValue(m_imgIndex);
-    ui->horizontalSlider_images->blockSignals(false);
-}
-
-void MainWindow::prev_img()
-{
-    save_label_data();
-    goto_img(m_imgIndex - 1);
+    set_label_progress(m_imgIndex);
+    set_focused_file(m_imgIndex);
 
     //it blocks crash with slider change
     ui->horizontalSlider_images->blockSignals(true);
     ui->horizontalSlider_images->setValue(m_imgIndex);
     ui->horizontalSlider_images->blockSignals(false);
+}
+
+void MainWindow::next_img(bool bSavePrev)
+{
+    if(bSavePrev && ui->label_image->isOpened()) save_label_data();
+    goto_img(m_imgIndex + 1);
+}
+
+void MainWindow::prev_img(bool bSavePrev)
+{
+    if(bSavePrev) save_label_data();
+    goto_img(m_imgIndex - 1);
 }
 
 void MainWindow::save_label_data()const
@@ -252,7 +240,7 @@ void MainWindow::set_label(const int labelIndex)
     }
 }
 
-void MainWindow::set_label_color(int index, QColor color)
+void MainWindow::set_label_color(const int index, const QColor color)
 {
     ui->label_image->m_drawObjectBoxColor.replace(index, color);
 }
@@ -272,7 +260,7 @@ void MainWindow::pjreddie_style_msgBox(QMessageBox::Icon icon, QString title, QS
     msgBox.exec();
 }
 
-void MainWindow::openImgDir(bool& ret)
+void MainWindow::open_img_dir(bool& ret)
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
 
@@ -289,21 +277,21 @@ void MainWindow::openImgDir(bool& ret)
 
     if(fileList.empty())
     {
-        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "This folder is empty");
         ret = false;
+        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "This folder is empty");
     }
     else
     {
+        ret = true;
         m_imgDir    = imgDir;
         m_imgList  = fileList;
 
         for(QString& str: m_imgList)
             str = m_imgDir + "/" + str;
-        ret = true;
     }
 }
 
-void MainWindow::openObjListFile(bool& ret)
+void MainWindow::open_obj_file(bool& ret)
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 2. Open Your Label List File(*.txt or *.names)");
 
@@ -315,14 +303,19 @@ void MainWindow::openObjListFile(bool& ret)
 
     if(fileLabelList.size() == 0)
     {
-        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "LabelList file is not opened()");
         ret = false;
+        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "LabelList file is not opened()");
     }
     else
     {
-        load_label_list_data(fileLabelList);
         ret = true;
+        load_label_list_data(fileLabelList);
     }
+}
+
+void MainWindow::reupdate_img_list()
+{
+
 }
 
 void MainWindow::wheelEvent(QWheelEvent *ev)
@@ -371,6 +364,30 @@ void MainWindow::on_pushButton_save_clicked()
     save_label_data();
 }
 
+void MainWindow::on_pushButton_remove_clicked()
+{
+    //remove a image
+    QFile::remove(m_imgList.at(m_imgIndex));
+
+    //remove a txt file
+    QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
+    QFile::remove(qstrOutputLabelData);
+
+    m_imgList.removeAt(m_imgIndex);
+
+    if(m_imgList.size() == 0)
+    {
+        pjreddie_style_msgBox(QMessageBox::Information,"End", "In directory, there are not any image. program quit.");
+        QCoreApplication::quit();
+    }
+    else if( m_imgIndex == m_imgList.size())
+    {
+        m_imgIndex --;
+    }
+
+    goto_img(m_imgIndex);
+}
+
 void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
 {
     bool bColorAttributeClicked = (column == 1);
@@ -398,11 +415,24 @@ void MainWindow::on_horizontalSlider_images_sliderMoved(int position)
     goto_img(position);
 }
 
-void MainWindow::on_horizontalSlider_images_sliderPressed()
+void MainWindow::init_button_event()
 {
+    ui->pushButton_next->setEnabled(true);
+    ui->pushButton_prev->setEnabled(true);
+    ui->pushButton_save->setEnabled(true);
+    ui->pushButton_remove->setEnabled(true);
 }
 
-void MainWindow::init_tableWidget()
+void MainWindow::init_horizontal_slider()
+{
+    ui->horizontalSlider_images->setEnabled(true);
+    ui->horizontalSlider_images->setRange(0, m_imgList.size() - 1);
+    ui->horizontalSlider_images->blockSignals(true);
+    ui->horizontalSlider_images->setValue(0);
+    ui->horizontalSlider_images->blockSignals(false);
+}
+
+void MainWindow::init_table_widget()
 {
     ui->tableWidget_label->horizontalHeader()->setVisible(true);
     ui->tableWidget_label->horizontalHeader()->setStyleSheet("");
