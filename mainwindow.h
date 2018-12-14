@@ -49,16 +49,6 @@ private slots:
     void on_horizontalSlider_images_sliderPressed();
 
 private:
-    Ui::MainWindow *ui;
-
-    QString         m_fileDir;
-    QStringList     m_fileList;
-    int             m_fileIndex;
-
-    QStringList     m_labelNameList;
-    int             m_labelIndex;
-
-
     void            init_tableWidget();
 
     void            init();
@@ -76,6 +66,19 @@ private:
     void            set_label_color(int , QColor);
 
     void            pjreddie_style_msgBox(QMessageBox::Icon, QString, QString);
+
+    void            openImgDir(bool&);
+    void            openObjListFile(bool&);
+
+
+    Ui::MainWindow *ui;
+
+    QString         m_imgDir;
+    QStringList     m_fileList;
+    int             m_fileIndex;
+
+    QStringList     m_labelNameList;
+    int             m_labelIndex;
 
 protected:
     void    wheelEvent(QWheelEvent *);

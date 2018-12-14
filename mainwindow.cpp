@@ -44,51 +44,24 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_open_files_clicked()
 {
-    pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
+    bool bRetImgDir     = false;
+    bool bRetObjFile    = false;
 
-    m_fileDir = QFileDialog::getExistingDirectory(
-                this,
-                tr("Open Dataset Directory"),
-                "./",QFileDialog::ShowDirsOnly);
+    openImgDir(bRetImgDir);
 
-    QDir dir(m_fileDir);
+    if (!bRetImgDir) return ;
 
-    QStringList fileList = dir.entryList(
-                QStringList() << "*.jpg" << "*.JPG" << "*.png",
-                QDir::Files);
+    openObjListFile(bRetObjFile);
 
-    if(fileList.size() == 0)
-    {
-        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "This folder is empty");
-        return;
-    }
+    if (!bRetObjFile) return ;
 
-    pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 2. Open Your Label List File(*.txt or *.names)");
-
-
-    QString fileLabelList = QFileDialog::getOpenFileName(
-                this,
-                tr("Open LabelList file"),
-                "./",
-                tr("LabelList Files (*.txt *.names)"));
-
-    if(fileLabelList.size() == 0)
-    {
-        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "LabelList file is not opened()");
-        return;
-    }
-
-    m_fileList = fileList;
-    for(QString& str: m_fileList) str = m_fileDir + "/" + str;
-
-    load_label_list_data(fileLabelList);
-
-    ui->label_image->init();
     init();
 }
 
 void MainWindow::init()
 {
+    ui->label_image->init();
+
     ui->horizontalSlider_images->setEnabled(true);
     ui->pushButton_next->setEnabled(true);
     ui->pushButton_prev->setEnabled(true);
@@ -302,6 +275,59 @@ void MainWindow::pjreddie_style_msgBox(QMessageBox::Icon icon, QString title, QS
     msgBox.setStyleSheet("background-color : rgb(34, 0, 85); color : rgb(0, 255, 0);");
 
     msgBox.exec();
+}
+
+void MainWindow::openImgDir(bool& ret)
+{
+    pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
+
+    QString imgDir = QFileDialog::getExistingDirectory(
+                this,
+                tr("Open Dataset Directory"),
+                "./",QFileDialog::ShowDirsOnly);
+
+    QDir dir(imgDir);
+
+    QStringList fileList = dir.entryList(
+                QStringList() << "*.jpg" << "*.JPG" << "*.png",
+                QDir::Files);
+
+    if(fileList.empty())
+    {
+        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "This folder is empty");
+        ret = false;
+    }
+    else
+    {
+        m_imgDir    = imgDir;
+        m_fileList  = fileList;
+
+        for(QString& str: m_fileList)
+            str = m_imgDir + "/" + str;
+        ret = true;
+    }
+}
+
+void MainWindow::openObjListFile(bool& ret)
+{
+    pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 2. Open Your Label List File(*.txt or *.names)");
+
+    QString fileLabelList = QFileDialog::getOpenFileName(
+                this,
+                tr("Open LabelList file"),
+                "./",
+                tr("LabelList Files (*.txt *.names)"));
+
+    if(fileLabelList.size() == 0)
+    {
+        pjreddie_style_msgBox(QMessageBox::Critical,"Error", "LabelList file is not opened()");
+        ret = false;
+    }
+    else
+    {
+        load_label_list_data(fileLabelList);
+        ret = true;
+    }
 }
 
 void MainWindow::wheelEvent(QWheelEvent *ev)
