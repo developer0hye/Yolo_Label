@@ -109,6 +109,11 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
 
+## Button Events
+
+### Remove
+
+![ezgif-2-90fb8205437e](https://user-images.githubusercontent.com/35001605/49983945-fbddb600-ffa8-11e8-9672-f7b71e4e603b.gif)
 
 ## ETC
 
