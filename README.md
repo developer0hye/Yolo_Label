@@ -131,7 +131,5 @@ Upload binary file for easy usage for windows and ubuntu
 
 filename sorting by index
 
-manage deleted file while labeling
-
 Ui event optimzation for ubuntu
 
