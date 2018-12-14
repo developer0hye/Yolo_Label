@@ -112,7 +112,7 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 
 ## ETC
 
-You can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So you should save and move horizontal slider bar, if you want not to lose your work.  
+You can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So if you want not to lose your work, you should save before moving the horizontal slider bar.
 
 ![ezgif-5-53abf38b3387](https://user-images.githubusercontent.com/35001605/47708528-97bd9780-dc71-11e8-94f1-5ee23776d5fe.gif)
 
