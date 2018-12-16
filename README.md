@@ -135,6 +135,3 @@ I've reinvented the wheel.
 Upload binary file for easy usage for windows and ubuntu
 
 filename sorting by index
-
-Ui event optimzation for ubuntu
-
