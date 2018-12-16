@@ -265,7 +265,7 @@ void MainWindow::open_img_dir(bool& ret)
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
 
     QString imgDir = QFileDialog::getExistingDirectory(
-                this,
+                nullptr,
                 tr("Open Dataset Directory"),
                 "./",QFileDialog::ShowDirsOnly);
 
@@ -296,7 +296,7 @@ void MainWindow::open_obj_file(bool& ret)
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 2. Open Your Label List File(*.txt or *.names)");
 
     QString fileLabelList = QFileDialog::getOpenFileName(
-                this,
+                nullptr,
                 tr("Open LabelList file"),
                 "./",
                 tr("LabelList Files (*.txt *.names)"));
