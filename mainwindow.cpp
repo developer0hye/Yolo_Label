@@ -394,7 +394,7 @@ void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
 
     if(bColorAttributeClicked)
     {
-        QColor color = QColorDialog::getColor(Qt::white,this,"Set Label Color");
+        QColor color = QColorDialog::getColor(Qt::white,nullptr,"Set Label Color");
         if(color.isValid())
         {
             set_label_color(row, color);
