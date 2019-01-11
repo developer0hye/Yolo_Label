@@ -145,7 +145,7 @@ void label_img::showImage()
 {
     if(m_inputImg.isNull()) return;
 
-    QImage imageOnUi = m_inputImg.scaled(this->width(), this->height());
+    QImage imageOnUi = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
 
     QPainter painter(&imageOnUi);
 
