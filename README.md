@@ -56,7 +56,7 @@ But... I've reinvented one...
 
 ![dataset](https://user-images.githubusercontent.com/35001605/47704306-8e7afd80-dc66-11e8-9f28-13010bd2d825.PNG)
 
-2. Put the names of the objects, one for each line in a file( .txt, .names) and save it.
+2. Put the names of the objects, each name on a separate line and save the file( .txt, .names).
 
 ![objnames](https://user-images.githubusercontent.com/35001605/47704259-75724c80-dc66-11e8-9ed1-2f84d0240ebc.PNG)
 
@@ -64,7 +64,7 @@ But... I've reinvented one...
 
 ![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
 
-4. Click the button 'Open Files'and open the directory where you saved your custom images and object name lists file that you saved at step 2.
+4. Click the button 'Open Files' and open the folder with the images and the file('*'.names or '*'.txt) with the names of the objects.
 
  ![image](https://user-images.githubusercontent.com/35001605/47694149-d20e4100-dc3f-11e8-9d97-fba87a6e1b5a.png)
 
@@ -120,12 +120,6 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 You can access all image by moving horizontal slider bar. But when you control horizontal slider bar, the last processed image will not be saved automatically. So if you want not to lose your work, you should save before moving the horizontal slider bar.
 
 ![ezgif-5-53abf38b3387](https://user-images.githubusercontent.com/35001605/47708528-97bd9780-dc71-11e8-94f1-5ee23776d5fe.gif)
-
-
-
-
-
-
 
 # CONCLUSIONS
 I've reinvented the wheel.
