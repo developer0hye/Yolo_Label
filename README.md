@@ -13,7 +13,7 @@ But... I've reinvented one...
 
  When I used the pre-existing programs to annotate a training set for YOLO V3, I was sooooooooooo bored...
  
- So I thought why it is so fxxking boring??
+ So I thought why it is so boring??
 
  And I found an answer.
  
