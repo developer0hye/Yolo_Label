@@ -1,29 +1,29 @@
 # Yolo_label
 
 ## WHAT IS THIS?!
- Reinventing The Wheel!!!!
+ Reinventing The Wheel?!!!!
  
  ![1_hfyjxxcfingbcyzcgksaiq](https://user-images.githubusercontent.com/35001605/47629997-b47aa200-db81-11e8-8873-71ae653563e0.png)
 
- In the world, there are many good image labeling tools for object detection. -e.g. , ([Yolo_mark](https://github.com/AlexeyAB/Yolo_mark), [BBox-Label-Tool](https://github.com/puzzledqs/BBox-Label-Tool), [labelImg](https://github.com/tzutalin/labelImg)). 
+ In the world, there are many good image-labeling tools for object detection. -e.g. , ([Yolo_mark](https://github.com/AlexeyAB/Yolo_mark), [BBox-Label-Tool](https://github.com/puzzledqs/BBox-Label-Tool), [labelImg](https://github.com/tzutalin/labelImg)). 
  
-But... I've reinvented it...
+But... I've reinvented one...
  
 ## WHY DID YOU REINVENT THE WHEEL? ARE YOU STUPID?
 
- When I use the pre-existing program to annotate a training set for YOLO V3, I am sooooooooooo bored...
+ When I used the pre-existing programs to annotate a training set for YOLO V3, I was sooooooooooo bored...
  
- So I thought about why it is so fxxking bored??
+ So I thought why it is so fxxking boring??
 
- And I found that anwer.
+ And I found an answer.
  
  The answer is that pre-existing programs are not **sensitive**.
  
- So I decided to make a **sensitive** image labeling tool for object detection.
+ So I decided to make a **sensitive** image-labeling tool for object detection.
  
- ## SHOW ME YOUR SENSITIVE IMAGE LABELING TOOL!!
+ ## SHOW ME YOUR SENSITIVE IMAGE-LABELING TOOL!!
 
- It's the **SENSITIVE** image labeling tool for object detection!
+ It's the **SENSITIVE** image-labeling tool for object detection!
  
 ![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
 
