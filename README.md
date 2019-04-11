@@ -32,7 +32,7 @@ But... I've reinvented one...
 ![ezgif-5-c57fe634145b](https://user-images.githubusercontent.com/35001605/47693028-3f6ba300-dc3b-11e8-9e22-70c448d59398.gif)
 
  ## HMM... I SAW THIS DESIGN SOMEWHERE
-  I refer [the website of Joseph Redmon](https://pjreddie.com/darknet/
+  I refer to [the website of Joseph Redmon](https://pjreddie.com/darknet/
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
 
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
@@ -51,20 +51,20 @@ But... I've reinvented one...
 ![download_guide](https://user-images.githubusercontent.com/35001605/48674490-4168b800-eb90-11e8-83fb-8ef7b5fd1040.PNG)
 
 
-1. Put your .jpg, .png -images into some directory
+1. Put your .jpg, .png -images into a directory
 (In this tutorial I will use the Kangarooo and the Raccoon Images. These images are in the 'Samples' folder.)
 
 ![dataset](https://user-images.githubusercontent.com/35001605/47704306-8e7afd80-dc66-11e8-9f28-13010bd2d825.PNG)
 
-2. Put names of objects, one for each line in some file( .txt, .names) and save
+2. Put the names of the objects, one for each line in a file( .txt, .names) and save it.
 
 ![objnames](https://user-images.githubusercontent.com/35001605/47704259-75724c80-dc66-11e8-9ed1-2f84d0240ebc.PNG)
 
-3. Run Yolo label!
+3. Run Yolo Label!
 
 ![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
 
-4. Click the button 'Open Files'and open the directory that you saved your custom images and object name lists file that you saved at step 2.
+4. Click the button 'Open Files'and open the directory where you saved your custom images and object name lists file that you saved at step 2.
 
  ![image](https://user-images.githubusercontent.com/35001605/47694149-d20e4100-dc3f-11e8-9d97-fba87a6e1b5a.png)
 
