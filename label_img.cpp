@@ -1,5 +1,6 @@
 #include "label_img.h"
 #include <QPainter>
+#include <math.h>       /* fabs */
 
 using std::ifstream;
 
