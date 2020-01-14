@@ -23,6 +23,7 @@ public:
 
 private slots:
     void on_pushButton_open_files_clicked();
+    void on_pushButton_change_dir_clicked();
     void on_pushButton_save_clicked();
     void on_pushButton_remove_clicked();
 

@@ -54,6 +54,19 @@ void MainWindow::on_pushButton_open_files_clicked()
     init();
 }
 
+void MainWindow::on_pushButton_change_dir_clicked()
+{
+    bool bRetImgDir     = false;
+    bool bRetObjFile    = false;
+
+    open_img_dir(bRetImgDir);
+
+    if (!bRetImgDir) return ;
+
+    init();
+}
+
+
 void MainWindow::init()
 {
     ui->label_image->init();
@@ -193,6 +206,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
 
         m_objList.clear();
 
+        ui->tableWidget_label->setRowCount(0);
         ui->label_image->m_drawObjectBoxColor.clear();
 
         string strLabel;
@@ -417,6 +431,7 @@ void MainWindow::on_horizontalSlider_images_sliderMoved(int position)
 
 void MainWindow::init_button_event()
 {
+    ui->pushButton_change_dir->setEnabled(true);
     ui->pushButton_next->setEnabled(true);
     ui->pushButton_prev->setEnabled(true);
     ui->pushButton_save->setEnabled(true);
