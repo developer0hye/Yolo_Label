@@ -57,8 +57,8 @@ void label_img::mousePressEvent(QMouseEvent *ev)
             objBoundingbox.box      = getRelativeRectFromTwoPoints(m_relative_mouse_pos_in_ui,
                                                                    m_relatvie_mouse_pos_LBtnClicked_in_ui);
 
-            bool width_is_too_small     = objBoundingbox.box.width()  < 0.01;
-            bool height_is_too_small    = objBoundingbox.box.height() < 0.01;
+            bool width_is_too_small     = objBoundingbox.box.width() * m_inputImg.width()  < 4;
+            bool height_is_too_small    = objBoundingbox.box.height() * m_inputImg.height() < 4;
 
             if(!width_is_too_small && !height_is_too_small)
                 m_objBoundingBoxes.push_back(objBoundingbox);
