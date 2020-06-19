@@ -42,7 +42,7 @@ But... I've reinvented one...
 
 **For Windows**
 
-0.1 Download [this](https://drive.google.com/open?id=1MJyMcqRKhiNPzJkRPQ2CmGePK9XddBNP)
+0.1 Download [this](https://drive.google.com/file/d/1lanO8SyY2QlbVCbOR0LlwQjQYbhoteTd/view?usp=sharing)
 
 0.2 Unzip
 
