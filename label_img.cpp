@@ -37,36 +37,49 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 
     setMousePosition(ev->x(), ev->y());
 
-    if(ev->button() == Qt::RightButton)
-    {
-        removeFocusedObjectBox(m_relative_mouse_pos_in_ui);
-        showImage();
-    }
-    else if(ev->button() == Qt::LeftButton)
-    {
-        if(m_bLabelingStarted == false)
-        {
-            m_relatvie_mouse_pos_LBtnClicked_in_ui      = m_relative_mouse_pos_in_ui;
-            m_bLabelingStarted                          = true;
-        }
-        else
-        {
-            ObjectLabelingBox objBoundingbox;
+    switch(ev->button()) {
 
-            objBoundingbox.label    = m_focusedObjectLabel;
-            objBoundingbox.box      = getRelativeRectFromTwoPoints(m_relative_mouse_pos_in_ui,
-                                                                   m_relatvie_mouse_pos_LBtnClicked_in_ui);
-
-            bool width_is_too_small     = objBoundingbox.box.width()  < 0.01;
-            bool height_is_too_small    = objBoundingbox.box.height() < 0.01;
-
-            if(!width_is_too_small && !height_is_too_small)
-                m_objBoundingBoxes.push_back(objBoundingbox);
-
-            m_bLabelingStarted              = false;
-
+        case Qt::RightButton:
+            // Delete the selected bounding box
+            editFocusedObjectBox(m_relative_mouse_pos_in_ui, 'd');
             showImage();
-        }
+            break;
+
+        case Qt::MiddleButton:
+            // Set a new class label for the selected bounding box
+            editFocusedObjectBox(m_relative_mouse_pos_in_ui, 'c');
+            showImage();
+            break;
+
+        case Qt::LeftButton:
+            // Create a new bounding box
+            if(m_bLabelingStarted == false)
+            {
+                m_relatvie_mouse_pos_LBtnClicked_in_ui      = m_relative_mouse_pos_in_ui;
+                m_bLabelingStarted                          = true;
+            }
+            else
+            {
+                ObjectLabelingBox objBoundingbox;
+
+                objBoundingbox.label    = m_focusedObjectLabel;
+                objBoundingbox.box      = getRelativeRectFromTwoPoints(m_relative_mouse_pos_in_ui,
+                                                                       m_relatvie_mouse_pos_LBtnClicked_in_ui);
+
+                bool width_is_too_small     = objBoundingbox.box.width()  < 0.01;
+                bool height_is_too_small    = objBoundingbox.box.height() < 0.01;
+
+                if(!width_is_too_small && !height_is_too_small)
+                    m_objBoundingBoxes.push_back(objBoundingbox);
+
+                m_bLabelingStarted              = false;
+
+                showImage();
+            }
+            break;
+
+        default:
+            break;
     }
 
     emit Mouse_Pressed();
@@ -275,9 +288,9 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
     }
 }
 
-void label_img::removeFocusedObjectBox(QPointF point)
+void label_img::editFocusedObjectBox(QPointF point, const char op)
 {
-    int     removeBoxIdx = -1;
+    int     editBoxIdx = -1;
     double  nearestBoxDistance   = 99999999999999.;
 
     for(int i = 0; i < m_objBoundingBoxes.size(); i++)
@@ -290,14 +303,23 @@ void label_img::removeFocusedObjectBox(QPointF point)
             if(distance < nearestBoxDistance)
             {
                 nearestBoxDistance = distance;
-                removeBoxIdx = i;
+                editBoxIdx = i;
             }
         }
     }
 
-    if(removeBoxIdx != -1)
+    if(editBoxIdx != -1)
     {
-        m_objBoundingBoxes.remove(removeBoxIdx);
+        switch(op) {
+            case 'd':
+                // delete
+                m_objBoundingBoxes.remove(editBoxIdx);
+                break;
+            case 'c':
+                // change class
+                m_objBoundingBoxes[editBoxIdx].label = m_focusedObjectLabel;
+                break;
+        }
     }
 }
 

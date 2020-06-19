@@ -82,7 +82,9 @@ private:
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
 
-    void removeFocusedObjectBox(QPointF);
+    // op == 'd' -> delete box
+    // op == 'c' -> change class
+    void editFocusedObjectBox(QPointF, const char op = 'd');
 };
 
 #endif // LABEL_IMG_H
