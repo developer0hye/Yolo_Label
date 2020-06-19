@@ -503,40 +503,83 @@ border-color: rgb(0, 255, 255);</string>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_cropping">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>21</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>100</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="cursor">
-             <cursorShape>ArrowCursor</cursorShape>
-            </property>
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
+           <widget class="QWidget" name="widget" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+             <item>
+              <widget class="QCheckBox" name="checkBox_showhelp">
+               <property name="minimumSize">
+                <size>
+                 <width>105</width>
+                 <height>21</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="cursor">
+                <cursorShape>ArrowCursor</cursorShape>
+               </property>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
 border-style: outset;
 border-width: 2px;
 border-color: rgb(0, 255, 255);</string>
-            </property>
-            <property name="text">
-             <string>with crop</string>
-            </property>
+               </property>
+               <property name="text">
+                <string>show help</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="checkBox_cropping">
+               <property name="minimumSize">
+                <size>
+                 <width>105</width>
+                 <height>21</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="cursor">
+                <cursorShape>ArrowCursor</cursorShape>
+               </property>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
+border-style: outset;
+border-width: 2px;
+border-color: rgb(0, 255, 255);</string>
+               </property>
+               <property name="text">
+                <string>save crop</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
@@ -744,11 +787,11 @@ QTableView {
         <attribute name="horizontalHeaderVisible">
          <bool>false</bool>
         </attribute>
-        <attribute name="horizontalHeaderHighlightSections">
-         <bool>false</bool>
-        </attribute>
         <attribute name="horizontalHeaderMinimumSectionSize">
          <number>40</number>
+        </attribute>
+        <attribute name="horizontalHeaderHighlightSections">
+         <bool>false</bool>
         </attribute>
         <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
          <bool>true</bool>
@@ -787,7 +830,7 @@ QTableView {
      <x>0</x>
      <y>0</y>
      <width>1528</width>
-     <height>23</height>
+     <height>27</height>
     </rect>
    </property>
   </widget>
