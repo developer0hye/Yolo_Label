@@ -137,8 +137,6 @@ void MainWindow::save_label_data()const
     {
         for(int i = 0; i < ui->label_image->m_objBoundingBoxes.size(); i++)
         {
-            if(i != 0) fileOutputLabelData << '\n';
-
             ObjectLabelingBox objBox = ui->label_image->m_objBoundingBoxes[i];
 
             if(ui->checkBox_cropping->isChecked())
@@ -169,7 +167,7 @@ void MainWindow::save_label_data()const
             fileOutputLabelData << " ";
             fileOutputLabelData << std::fixed << std::setprecision(6) << width;
             fileOutputLabelData << " ";
-            fileOutputLabelData << std::fixed << std::setprecision(6) << height;
+            fileOutputLabelData << std::fixed << std::setprecision(6) << height << std::endl;
         }
 
         fileOutputLabelData.close();
