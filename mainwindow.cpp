@@ -212,7 +212,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
         while(getline(inputLabelListFile, strLabel))
         {
             int nRow = ui->tableWidget_label->rowCount();
-            std::cout << nRow << endl;
+  
             QString qstrLabel   = QString().fromStdString(strLabel);
             QColor  labelColor  = label_img::BOX_COLORS[(fileIndex++)%10];
             m_objList << qstrLabel;
@@ -350,7 +350,6 @@ void MainWindow::on_pushButton_next_clicked()
 
 void MainWindow::keyPressEvent(QKeyEvent * event)
 {
-    cout << "key pressed" <<endl;
     int     nKey = event->key();
 
     bool    graveAccentKeyIsPressed    = (nKey == Qt::Key_QuoteLeft);
