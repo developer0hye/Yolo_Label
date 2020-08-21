@@ -23,8 +23,6 @@ label_img::label_img(QWidget *parent)
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
-    std::cout<< "moved"<< std::endl;
-
     setMousePosition(ev->x(), ev->y());
 
     showImage();
@@ -33,8 +31,6 @@ void label_img::mouseMoveEvent(QMouseEvent *ev)
 
 void label_img::mousePressEvent(QMouseEvent *ev)
 {
-    std::cout<< "clicked"<< std::endl;
-
     setMousePosition(ev->x(), ev->y());
 
     if(ev->button() == Qt::RightButton)
@@ -74,7 +70,6 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
-    std::cout<< "released"<< std::endl;
     emit Mouse_Release();
 }
 
