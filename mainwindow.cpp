@@ -29,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_A), this), SIGNAL(activated()), this, SLOT(prev_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_D), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
 
     init_table_widget();
 }
@@ -180,6 +181,32 @@ void MainWindow::clear_label_data()
 {
     ui->label_image->m_objBoundingBoxes.clear();
     ui->label_image->showImage();
+}
+
+void MainWindow::remove_img()
+{
+    if(m_imgList.size() > 0) {
+        //remove a image
+        QFile::remove(m_imgList.at(m_imgIndex));
+
+        //remove a txt file
+        QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
+        QFile::remove(qstrOutputLabelData);
+
+        m_imgList.removeAt(m_imgIndex);
+
+        if(m_imgList.size() == 0)
+        {
+            pjreddie_style_msgBox(QMessageBox::Information,"End", "In directory, there are not any image. program quit.");
+            QCoreApplication::quit();
+        }
+        else if( m_imgIndex == m_imgList.size())
+        {
+            m_imgIndex --;
+        }
+
+        goto_img(m_imgIndex);
+    }
 }
 
 void MainWindow::next_label()
@@ -377,26 +404,7 @@ void MainWindow::on_pushButton_save_clicked()
 
 void MainWindow::on_pushButton_remove_clicked()
 {
-    //remove a image
-    QFile::remove(m_imgList.at(m_imgIndex));
-
-    //remove a txt file
-    QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
-    QFile::remove(qstrOutputLabelData);
-
-    m_imgList.removeAt(m_imgIndex);
-
-    if(m_imgList.size() == 0)
-    {
-        pjreddie_style_msgBox(QMessageBox::Information,"End", "In directory, there are not any image. program quit.");
-        QCoreApplication::quit();
-    }
-    else if( m_imgIndex == m_imgList.size())
-    {
-        m_imgIndex --;
-    }
-
-    goto_img(m_imgIndex);
+    remove_img();
 }
 
 void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)

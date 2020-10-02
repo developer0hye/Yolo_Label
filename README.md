@@ -102,6 +102,7 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `W` | Prev Label <br> ![ezgif-5-ee915c66dad8](https://user-images.githubusercontent.com/35001605/47703191-d39d3080-dc62-11e8-800b-986ec214b80c.gif)  |
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete all existing bounding boxes in the image |
+| `Ctrl + D` | Delete current image |
 
 | Mouse | Action |
 |---|:---:|

@@ -36,6 +36,7 @@ private slots:
     void prev_img(bool bSavePrev = true);
     void save_label_data() const;
     void clear_label_data();
+    void remove_img();
 
     void next_label();
     void prev_label();
