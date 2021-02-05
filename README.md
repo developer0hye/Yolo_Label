@@ -51,6 +51,21 @@ But... I've reinvented one...
 ![download_guide](https://user-images.githubusercontent.com/35001605/48674490-4168b800-eb90-11e8-83fb-8ef7b5fd1040.PNG)
 
 
+**For macOS**
+
+0.1 Clone or download the source code of this repository
+
+0.2 Open terminal and type command in the downloaded directory.
+```console
+yourMacOS:Yolo_Label you$ qmake
+yourMacOS:Yolo_Label you$ make
+```
+
+0.3 Run YoloLabel.app/Contents/MacOS/YoloLabel in terminal or double click YoloLabel.app to run
+```console
+yourMacOS:Yolo_Label you$ ./YoloLabel.app/MacOS/YoloLabel
+```
+
 1. Put your .jpg, .png -images into a directory
 (In this tutorial I will use the Kangarooo and the Raccoon Images. These images are in the 'Samples' folder.)
 
