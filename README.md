@@ -38,33 +38,37 @@ But... I've reinvented one...
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
 # TUTORIAL / USAGE
 
-0. Download this project
+## Install and Run
 
-**For Windows**
+1. Download this project
 
-0.1 Download [this](https://drive.google.com/file/d/1lanO8SyY2QlbVCbOR0LlwQjQYbhoteTd/view?usp=sharing)
+### For Windows
 
-0.2 Unzip
+2. Download [this](https://drive.google.com/file/d/1lanO8SyY2QlbVCbOR0LlwQjQYbhoteTd/view?usp=sharing)
 
-0.3 Run YoloLabel.exe
+3. Unzip
+
+4. Run YoloLabel.exe
 
 ![download_guide](https://user-images.githubusercontent.com/35001605/48674490-4168b800-eb90-11e8-83fb-8ef7b5fd1040.PNG)
 
 
-**For macOS**
+### For macOS
 
-0.1 Clone or download the source code of this repository
+2. Clone or download the source code of this repository
 
-0.2 Open terminal and type command in the downloaded directory.
+3. Open terminal and type command in the downloaded directory.
 ```console
 yourMacOS:Yolo_Label you$ qmake
 yourMacOS:Yolo_Label you$ make
 ```
 
-0.3 Run YoloLabel.app/Contents/MacOS/YoloLabel in terminal or double click YoloLabel.app to run
+4. Run YoloLabel.app/Contents/MacOS/YoloLabel in terminal or double click YoloLabel.app to run
 ```console
 yourMacOS:Yolo_Label you$ ./YoloLabel.app/MacOS/YoloLabel
 ```
+
+## Prepare Custom Dataset and Load
 
 1. Put your .jpg, .png -images into a directory
 (In this tutorial I will use the Kangarooo and the Raccoon Images. These images are in the 'Samples' folder.)
