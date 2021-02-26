@@ -1,5 +1,11 @@
 # Yolo_label
 
+## Adertisment
+
+[plotbbox](https://github.com/developer0hye/plotbbox) : A tool to plot pretty bounding boxes on image
+
+[YOLOv3Tiny](https://github.com/developer0hye/YOLOv3Tiny) : PyTorch based YOLOv3Tiny implementation
+
 ## WHAT IS THIS?!
  Reinventing The Wheel?!!!!
  
@@ -144,9 +150,6 @@ You can access all image by moving horizontal slider bar. But when you control h
 # CONCLUSIONS
 I've reinvented the wheel.
 ![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
-
-If you are interested in implementing YOLOv3 and familiar with PyTorch, refer to [developer0hye/YOLOv3Tiny](https://github.com/developer0hye/YOLOv3Tiny)! I tried to re-implement YOLOv3Tiny of which code is easily redable.
-
 
 # TO DO LISTS
 Upload binary file for easy usage for windows and ubuntu
