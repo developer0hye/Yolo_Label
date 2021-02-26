@@ -1,6 +1,6 @@
 # Yolo_label
 
-## Adertisment
+## Advertisement
 
 [plotbbox](https://github.com/developer0hye/plotbbox) : A tool to plot pretty bounding boxes on image
 
