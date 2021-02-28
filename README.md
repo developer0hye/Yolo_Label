@@ -2,7 +2,7 @@
 
 ## Advertisement
 
-[plotbbox](https://github.com/developer0hye/plotbbox) : A tool to plot pretty bounding boxes on image
+[plotbbox](https://github.com/developer0hye/plotbbox) : A Python package to plot pretty bounding boxes on image
 
 [YOLOv3Tiny](https://github.com/developer0hye/YOLOv3Tiny) : PyTorch based YOLOv3Tiny implementation
 
