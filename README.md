@@ -56,8 +56,7 @@ But... I've reinvented one...
 
 4. Run YoloLabel.exe
 
-![download_guide](https://user-images.githubusercontent.com/35001605/48674490-4168b800-eb90-11e8-83fb-8ef7b5fd1040.PNG)
-
+![image](https://user-images.githubusercontent.com/35001605/111152300-e74b5680-85d3-11eb-8df7-178148548c12.png)
 
 ### For macOS
 
