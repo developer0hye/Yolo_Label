@@ -50,7 +50,7 @@ But... I've reinvented one...
 
 ### For Windows
 
-2. Download [this](https://drive.google.com/file/d/1lanO8SyY2QlbVCbOR0LlwQjQYbhoteTd/view?usp=sharing)
+2. Download [this](https://drive.google.com/file/d/17Et4vv51agm8DOAxV-siK3nkTIEuL6jB/view?usp=sharing)
 
 3. Unzip
 
