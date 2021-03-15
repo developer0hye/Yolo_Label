@@ -21,15 +21,16 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this), SIGNAL(activated()), this, SLOT(save_label_data()));
-    connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_C), this), SIGNAL(activated()), this, SLOT(clear_label_data()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), SIGNAL(activated()), this, SLOT(save_label_data()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), SIGNAL(activated()), this, SLOT(clear_label_data()));
 
     connect(new QShortcut(QKeySequence(Qt::Key_S), this), SIGNAL(activated()), this, SLOT(next_label()));
     connect(new QShortcut(QKeySequence(Qt::Key_W), this), SIGNAL(activated()), this, SLOT(prev_label()));
     connect(new QShortcut(QKeySequence(Qt::Key_A), this), SIGNAL(activated()), this, SLOT(prev_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_D), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
-    connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
+    connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), SIGNAL(activated()), this, SLOT(remove_img()));
 
     init_table_widget();
 }
@@ -58,7 +59,6 @@ void MainWindow::on_pushButton_open_files_clicked()
 void MainWindow::on_pushButton_change_dir_clicked()
 {
     bool bRetImgDir     = false;
-    bool bRetObjFile    = false;
 
     open_img_dir(bRetImgDir);
 
@@ -250,7 +250,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
             ui->tableWidget_label->item(nRow, 0)->setFlags(ui->tableWidget_label->item(nRow, 0)->flags() ^  Qt::ItemIsEditable);
 
             ui->tableWidget_label->setItem(nRow, 1, new QTableWidgetItem(QString().fromStdString("")));
-            ui->tableWidget_label->item(nRow, 1)->setBackgroundColor(labelColor);
+            ui->tableWidget_label->item(nRow, 1)->setBackground(labelColor);
             ui->tableWidget_label->item(nRow, 1)->setFlags(ui->tableWidget_label->item(nRow, 1)->flags() ^  Qt::ItemIsEditable ^  Qt::ItemIsSelectable);
 
             ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
@@ -303,10 +303,15 @@ void MainWindow::open_img_dir(bool& ret)
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
 
+    QString opened_dir;
+    if(m_imgDir.size() > 0) opened_dir = m_imgDir;
+    else opened_dir = QDir::currentPath();
+
     QString imgDir = QFileDialog::getExistingDirectory(
                 nullptr,
                 tr("Open Dataset Directory"),
-                "./",QFileDialog::ShowDirsOnly);
+                opened_dir,
+                QFileDialog::ShowDirsOnly);
 
     QDir dir(imgDir);
 
@@ -334,10 +339,14 @@ void MainWindow::open_obj_file(bool& ret)
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 2. Open Your Label List File(*.txt or *.names)");
 
+    QString opened_dir;
+    if(m_imgDir.size() > 0) opened_dir = m_imgDir;
+    else opened_dir = QDir::currentPath();
+
     QString fileLabelList = QFileDialog::getOpenFileName(
                 nullptr,
                 tr("Open LabelList file"),
-                "./",
+                opened_dir,
                 tr("LabelList Files (*.txt *.names)"));
 
     if(fileLabelList.size() == 0)
@@ -359,9 +368,9 @@ void MainWindow::reupdate_img_list()
 
 void MainWindow::wheelEvent(QWheelEvent *ev)
 {
-    if(ev->delta() > 0) // up Wheel
+    if(ev->angleDelta().y() > 0) // up Wheel
         prev_img();
-    else if(ev->delta() < 0) //down Wheel
+    else if(ev->angleDelta().y() < 0) //down Wheel
         next_img();
 }
 
@@ -417,7 +426,7 @@ void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
         if(color.isValid())
         {
             set_label_color(row, color);
-            ui->tableWidget_label->item(row, 1)->setBackgroundColor(color);
+            ui->tableWidget_label->item(row, 1)->setBackground(color);
         }
         set_label(row);
         ui->label_image->showImage();

@@ -191,7 +191,7 @@ void label_img::loadLabelData(const QString& labelFilePath)
                 m_objBoundingBoxes.push_back(objBox);
             }
             catch (const std::out_of_range& e) {
-                std::cout << "loadLabelData: Out of Range error.";
+//                std::cout << "loadLabelData: Out of Range error.";
             }
         }
     }
@@ -229,12 +229,9 @@ void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
 
     QPoint absolutePoint = cvtRelativeToAbsolutePoint(m_relative_mouse_pos_in_ui);
 
-    std::cout <<"absolutePoint.x() = "<< absolutePoint.x() << std::endl;
     //draw cross line
     painter.drawLine(QPoint(absolutePoint.x(),0), QPoint(absolutePoint.x(), this->height() - 1));
     painter.drawLine(QPoint(0,absolutePoint.y()), QPoint(this->width() - 1, absolutePoint.y()));
-
-    std::cout << "draw Cross Line" << std::endl;
 }
 
 void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, int thickWidth)
