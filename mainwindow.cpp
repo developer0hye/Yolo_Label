@@ -6,7 +6,7 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QShortcut>
-
+#include <QCollator>
 #include <iomanip>
 
 using std::cout;
@@ -314,10 +314,14 @@ void MainWindow::open_img_dir(bool& ret)
                 QFileDialog::ShowDirsOnly);
 
     QDir dir(imgDir);
+    QCollator collator;
+    collator.setNumericMode(true);
 
     QStringList fileList = dir.entryList(
-                QStringList() << "*.jpg" << "*.JPG" << "*.png",
+                QStringList() << "*.jpg" << "*.JPG" << "*.png" << "*.bmp",
                 QDir::Files);
+
+    std::sort(fileList.begin(), fileList.end(), collator);
 
     if(fileList.empty())
     {
