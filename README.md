@@ -153,10 +153,6 @@ I've reinvented the wheel.
 # TO DO LISTS
 Upload binary file for easy usage for windows and ubuntu
 
-filename sorting by index
-
 deployment for ubuntu
 
 Image zoom
-
-LTRB
