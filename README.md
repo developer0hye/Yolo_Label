@@ -50,7 +50,7 @@ But... I've reinvented one...
 
 ### For Windows
 
-2. Download [YoloLabel_20210523_v3.1.zip](https://drive.google.com/file/d/1_v3qbwhTGNjvemMmjSnGwcVvIq2Elm16/view?usp=sharing)
+2. Download [YOLOLabel_20210606_v3.2](https://drive.google.com/file/d/1h_7LRm-dYX3D653A1Sb6Mq0iWxjzugNw/view?usp=sharing)
 
 3. Unzip
 
