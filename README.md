@@ -50,7 +50,7 @@ But... I've reinvented one...
 
 ### For Windows
 
-2. Download [this](https://drive.google.com/file/d/17Et4vv51agm8DOAxV-siK3nkTIEuL6jB/view?usp=sharing)
+2. Download [YoloLabel_20210523_v3.1.zip](https://drive.google.com/file/d/1_v3qbwhTGNjvemMmjSnGwcVvIq2Elm16/view?usp=sharing)
 
 3. Unzip
 
@@ -153,10 +153,6 @@ I've reinvented the wheel.
 # TO DO LISTS
 Upload binary file for easy usage for windows and ubuntu
 
-filename sorting by index
-
 deployment for ubuntu
 
 Image zoom
-
-LTRB
