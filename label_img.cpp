@@ -1,5 +1,6 @@
 #include "label_img.h"
 #include <QPainter>
+#include <QImageReader>
 #include <math.h>       /* fabs */
 
 using std::ifstream;
@@ -105,7 +106,9 @@ void label_img::setMousePosition(int x, int y)
 
 void label_img::openImage(const QString &qstrImg, bool &ret)
 {
-    QImage img(qstrImg);
+    QImageReader imgReader(qstrImg);
+    imgReader.setAutoTransform(true);
+    QImage img = imgReader.read();
 
     if(img.isNull())
     {
