@@ -131,8 +131,7 @@ void MainWindow::save_label_data()const
     if(m_imgList.size() == 0) return;
 
     QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
-
-    ofstream fileOutputLabelData(qstrOutputLabelData.toStdString());
+    ofstream fileOutputLabelData(qPrintable(qstrOutputLabelData));
 
     if(fileOutputLabelData.is_open())
     {
@@ -221,11 +220,10 @@ void MainWindow::prev_label()
 
 void MainWindow::load_label_list_data(QString qstrLabelListFile)
 {
-    ifstream inputLabelListFile(qstrLabelListFile.toStdString());
+    ifstream inputLabelListFile(qPrintable(qstrLabelListFile));
 
     if(inputLabelListFile.is_open())
     {
-
         for(int i = 0 ; i <= ui->tableWidget_label->rowCount(); i++)
             ui->tableWidget_label->removeRow(ui->tableWidget_label->currentRow());
 

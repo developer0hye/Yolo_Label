@@ -161,7 +161,7 @@ void label_img::showImage()
 
 void label_img::loadLabelData(const QString& labelFilePath)
 {
-    ifstream inputFile(labelFilePath.toStdString());
+    ifstream inputFile(qPrintable(labelFilePath));
 
     if(inputFile.is_open())
     {
