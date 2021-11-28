@@ -31,11 +31,13 @@ But... I've reinvented one...
 
  It's the **SENSITIVE** image-labeling tool for object detection!
  
-![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
+![image](https://user-images.githubusercontent.com/35001605/143729836-b2ee1188-f829-473f-aff0-d13569b3fc39.png)
 
 ![ezgif-5-85c0613befb3](https://user-images.githubusercontent.com/35001605/47693025-3d094900-dc3b-11e8-9d96-ea2f7e37cf7a.gif)
 
 ![ezgif-5-c57fe634145b](https://user-images.githubusercontent.com/35001605/47693028-3f6ba300-dc3b-11e8-9e22-70c448d59398.gif)
+
+![cut (2)](https://user-images.githubusercontent.com/35001605/143729909-b2da3669-020a-4769-ab1d-2646dd7bbb6b.gif)
 
  ## HMM... I SAW THIS DESIGN SOMEWHERE
   I refer to [the website of Joseph Redmon](https://pjreddie.com/darknet/
@@ -86,7 +88,7 @@ yourMacOS:Yolo_Label you$ ./YoloLabel.app/MacOS/YoloLabel
 
 3. Run Yolo Label!
 
-![image](https://user-images.githubusercontent.com/35001605/47644151-bd369c80-dbb0-11e8-9505-d7ada78911c2.png)
+![image](https://user-images.githubusercontent.com/35001605/143729836-b2ee1188-f829-473f-aff0-d13569b3fc39.png)
 
 4. Click the button 'Open Files' and open the folder with the images and the file('*'.names or '*'.txt) with the names of the objects.
 
