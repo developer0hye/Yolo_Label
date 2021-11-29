@@ -1,10 +1,12 @@
-# Yolo_Label
+# YOLO-Label
 
-## Advertisement
+## Sponsors
 
-[plotbbox](https://github.com/developer0hye/plotbbox) : A Python package to plot pretty bounding boxes on image
+- AIM(https://www.aimdefence.com/)
+<a href="https://www.aimdefence.com/">
+ <img src="https://user-images.githubusercontent.com/35001605/143895639-79b0b6b1-365f-4132-b272-f161d3ef5cb4.png" width="200">
+</a>
 
-[YOLOv3Tiny](https://github.com/developer0hye/YOLOv3Tiny) : PyTorch based YOLOv3Tiny implementation
 
 ## WHAT IS THIS?!
  Reinventing The Wheel?!!!!
