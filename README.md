@@ -54,7 +54,7 @@ But... I've reinvented one...
 
 ### For Windows
 
-2. Download [YOLOLabel_20211126_v1.0](https://github.com/developer0hye/Yolo_Label/releases/download/v1.0.0/YoloLabel_v1.0.0.zip)
+2. Download [YOLOLabel_20211130_v1.1.1](https://github.com/developer0hye/Yolo_Label/releases/download/v1.1.1/YoloLabel_v1.1.1.zip)
 
 3. Unzip
 
