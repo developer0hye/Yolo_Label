@@ -43,33 +43,36 @@ MainWindow::~MainWindow()
 void MainWindow::on_pushButton_open_files_clicked()
 {
     bool bRetImgDir     = false;
-    bool bRetObjFile    = false;
-
     open_img_dir(bRetImgDir);
 
     if (!bRetImgDir) return ;
 
-    open_obj_file(bRetObjFile);
-
-    if (!bRetObjFile) return ;
-
-    init();
-}
-
-void MainWindow::on_pushButton_change_dir_clicked()
-{
-    bool bRetImgDir     = false;
-
-    open_img_dir(bRetImgDir);
-
-    if (!bRetImgDir) return ;
+    if (m_objList.empty())
+    {
+        bool bRetObjFile    = false;
+        open_obj_file(bRetObjFile);
+        if (!bRetObjFile) return ;
+    }
 
     init();
 }
+
+//void MainWindow::on_pushButton_change_dir_clicked()
+//{
+//    bool bRetImgDir     = false;
+
+//    open_img_dir(bRetImgDir);
+
+//    if (!bRetImgDir) return ;
+
+//    init();
+//}
 
 
 void MainWindow::init()
 {
+    m_lastLabeledImgIndex = -1;
+
     ui->label_image->init();
 
     init_button_event();
@@ -89,7 +92,17 @@ void MainWindow::set_label_progress(const int fileIndex)
 
 void MainWindow::set_focused_file(const int fileIndex)
 {
-    ui->label_file->setText("File: " + m_imgList.at(fileIndex));
+    QString str = "";
+
+    if(m_lastLabeledImgIndex >= 0)
+    {
+        str += "Last Labeled Image: " + m_imgList.at(m_lastLabeledImgIndex);
+        str += '\n';
+    }
+
+    str += "Current Image: " + m_imgList.at(fileIndex);
+
+    ui->textEdit_log->setText(str);
 }
 
 void MainWindow::goto_img(const int fileIndex)
@@ -126,7 +139,7 @@ void MainWindow::prev_img(bool bSavePrev)
     goto_img(m_imgIndex - 1);
 }
 
-void MainWindow::save_label_data()const
+void MainWindow::save_label_data()
 {
     if(m_imgList.size() == 0) return;
 
@@ -138,21 +151,6 @@ void MainWindow::save_label_data()const
         for(int i = 0; i < ui->label_image->m_objBoundingBoxes.size(); i++)
         {
             ObjectLabelingBox objBox = ui->label_image->m_objBoundingBoxes[i];
-
-            if(ui->checkBox_cropping->isChecked())
-            {
-                QImage cropped = ui->label_image->crop(ui->label_image->cvtRelativeToAbsoluteRectInImage(objBox.box));
-
-                if(!cropped.isNull())
-                {
-                    string strImgFile   = m_imgList.at(m_imgIndex).toStdString();
-
-                    strImgFile = strImgFile.substr( strImgFile.find_last_of('/') + 1,
-                                                    strImgFile.find_last_of('.') - strImgFile.find_last_of('/') - 1);
-
-                    cropped.save(QString().fromStdString(strImgFile) + "_cropped_" + QString::number(i) + ".png");
-                }
-            }
 
             double midX     = objBox.box.x() + objBox.box.width() / 2.;
             double midY     = objBox.box.y() + objBox.box.height() / 2.;
@@ -169,10 +167,8 @@ void MainWindow::save_label_data()const
             fileOutputLabelData << " ";
             fileOutputLabelData << std::fixed << std::setprecision(6) << height << std::endl;
         }
-
+        m_lastLabeledImgIndex = m_imgIndex;
         fileOutputLabelData.close();
-
-        ui->textEdit_log->setText(qstrOutputLabelData + " saved.");
     }
 }
 
@@ -408,15 +404,15 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
     }
 }
 
-void MainWindow::on_pushButton_save_clicked()
-{
-    save_label_data();
-}
+//void MainWindow::on_pushButton_save_clicked()
+//{
+//    save_label_data();
+//}
 
-void MainWindow::on_pushButton_remove_clicked()
-{
-    remove_img();
-}
+//void MainWindow::on_pushButton_remove_clicked()
+//{
+//    remove_img();
+//}
 
 void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
 {
@@ -447,11 +443,7 @@ void MainWindow::on_horizontalSlider_images_sliderMoved(int position)
 
 void MainWindow::init_button_event()
 {
-    ui->pushButton_change_dir->setEnabled(true);
-    ui->pushButton_next->setEnabled(true);
-    ui->pushButton_prev->setEnabled(true);
-    ui->pushButton_save->setEnabled(true);
-    ui->pushButton_remove->setEnabled(true);
+//    ui->pushButton_change_dir->setEnabled(true);
 }
 
 void MainWindow::init_horizontal_slider()
@@ -461,6 +453,12 @@ void MainWindow::init_horizontal_slider()
     ui->horizontalSlider_images->blockSignals(true);
     ui->horizontalSlider_images->setValue(0);
     ui->horizontalSlider_images->blockSignals(false);
+
+    ui->horizontalSlider_contrast->setEnabled(true);
+    ui->horizontalSlider_contrast->setRange(0, 1000);
+    ui->horizontalSlider_contrast->setValue(ui->horizontalSlider_contrast->maximum()/2);
+    ui->label_image->setContrastGamma(1.0);
+    ui->label_contrast->setText(QString("Contrast(%) ") + QString::number(50));
 }
 
 void MainWindow::init_table_widget()
@@ -470,4 +468,13 @@ void MainWindow::init_table_widget()
     ui->tableWidget_label->horizontalHeader()->setStretchLastSection(true);
 
     disconnect(ui->tableWidget_label->horizontalHeader(), SIGNAL(sectionPressed(int)),ui->tableWidget_label, SLOT(selectColumn(int)));
+}
+
+void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
+{
+    float valueToPercentage = float(value)/ui->horizontalSlider_contrast->maximum(); //[0, 1.0]
+    float percentageToGamma = pow(1/(valueToPercentage + 0.5), 7.);
+
+    ui->label_image->setContrastGamma(percentageToGamma);
+    ui->label_contrast->setText(QString("Contrast(%) ") + QString::number(int(valueToPercentage * 100.)));
 }

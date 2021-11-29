@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QImageReader>
 #include <math.h>       /* fabs */
+#include <algorithm>
+//#include <omp.h>
 
 using std::ifstream;
 
@@ -123,6 +125,7 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 
         m_inputImg          = img.copy();
         m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
+        m_resized_inputImg  = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
 
         m_bLabelingStarted  = false;
 
@@ -143,10 +146,16 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 void label_img::showImage()
 {
     if(m_inputImg.isNull()) return;
+    if(m_resized_inputImg.width() != this->width() or m_resized_inputImg.height() != this->height())
+    {
+        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+    }
 
-    QImage imageOnUi = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+    QImage img = m_resized_inputImg;
 
-    QPainter painter(&imageOnUi);
+    gammaTransform(img);
+
+    QPainter painter(&img);
 
     int penThick = 3;
 
@@ -156,7 +165,7 @@ void label_img::showImage()
     drawFocusedObjectBox(painter, Qt::magenta, penThick);
     drawObjectBoxes(painter, penThick);
 
-    this->setPixmap(QPixmap::fromImage(imageOnUi));
+    this->setPixmap(QPixmap::fromImage(img));
 }
 
 void label_img::loadLabelData(const QString& labelFilePath)
@@ -270,6 +279,31 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
     }
 }
 
+void label_img::gammaTransform(QImage &image)
+{
+    uchar* bits = image.bits();
+
+    int h = image.height();
+    int w = image.width();
+
+    //#pragma omp parallel for collapse(2)
+    for(int y = 0 ; y < h; ++y)
+    {
+        for(int x = 0; x < w; ++x)
+        {
+            int index_pixel = (y*w+x)*3;
+
+            unsigned char r = bits[index_pixel + 0];
+            unsigned char g = bits[index_pixel + 1];
+            unsigned char b = bits[index_pixel + 2];
+
+            bits[index_pixel + 0] = m_gammatransform_lut[r];
+            bits[index_pixel + 1] = m_gammatransform_lut[g];
+            bits[index_pixel + 2] = m_gammatransform_lut[b];
+        }
+    }
+}
+
 void label_img::removeFocusedObjectBox(QPointF point)
 {
     int     removeBoxIdx = -1;
@@ -333,4 +367,15 @@ QPoint label_img::cvtRelativeToAbsolutePoint(QPointF p)
 QPointF label_img::cvtAbsoluteToRelativePoint(QPoint p)
 {
     return QPointF(static_cast<double>(p.x()) / this->width(), static_cast<double>(p.y()) / this->height());
+}
+
+void label_img::setContrastGamma(float gamma)
+{
+    for(int i=0; i < 256; i++)
+    {
+        int s = (int)(pow((float)i/255., gamma) * 255.);
+        s = std::clamp(s, 0, 255);
+        m_gammatransform_lut[i] = (unsigned char)s;
+    }
+    showImage();
 }

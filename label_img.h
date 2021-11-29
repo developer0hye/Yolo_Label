@@ -46,7 +46,7 @@ public:
 
     void setFocusObjectLabel(int);
     void setFocusObjectName(QString);
-
+    void setContrastGamma(float);
 
     bool isOpened();
     QImage crop(QRect);
@@ -58,6 +58,7 @@ public:
 
     QPoint  cvtRelativeToAbsolutePoint(QPointF);
     QPointF cvtAbsoluteToRelativePoint(QPoint);
+
 
 signals:
     void Mouse_Moved();
@@ -72,16 +73,20 @@ private:
     double m_aspectRatioHeight;
 
     QImage m_inputImg;
+    QImage m_resized_inputImg;
 
     QPointF m_relative_mouse_pos_in_ui;
     QPointF m_relatvie_mouse_pos_LBtnClicked_in_ui;
+
+    unsigned char m_gammatransform_lut[256];
+    QVector<QRgb> colorTable;
 
     void setMousePosition(int , int);
 
     void drawCrossLine(QPainter& , QColor , int thickWidth = 3);
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
-
+    void gammaTransform(QImage& image);
     void removeFocusedObjectBox(QPointF);
 };
 

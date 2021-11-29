@@ -23,9 +23,9 @@ public:
 
 private slots:
     void on_pushButton_open_files_clicked();
-    void on_pushButton_change_dir_clicked();
-    void on_pushButton_save_clicked();
-    void on_pushButton_remove_clicked();
+//    void on_pushButton_change_dir_clicked();
+//    void on_pushButton_save_clicked();
+//    void on_pushButton_remove_clicked();
 
     void on_pushButton_prev_clicked();
     void on_pushButton_next_clicked();
@@ -34,7 +34,7 @@ private slots:
 
     void next_img(bool bSavePrev = true);
     void prev_img(bool bSavePrev = true);
-    void save_label_data() const;
+    void save_label_data();
     void clear_label_data();
     void remove_img();
 
@@ -45,6 +45,8 @@ private slots:
     void on_tableWidget_label_cellClicked(int , int );
 
     void on_horizontalSlider_images_sliderMoved(int );
+
+    void on_horizontalSlider_contrast_sliderMoved(int value);
 
 private:
     void            init();
@@ -79,6 +81,8 @@ private:
 
     QStringList     m_objList;
     int             m_objIndex;
+    int             m_lastDeletedImgIndex;
+    int             m_lastLabeledImgIndex;
 
 protected:
     void    wheelEvent(QWheelEvent *);
