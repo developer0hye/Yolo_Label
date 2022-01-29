@@ -8,6 +8,7 @@
 #include <QShortcut>
 #include <QCollator>
 #include <iomanip>
+#include <cmath>
 
 using std::cout;
 using std::endl;
@@ -473,7 +474,7 @@ void MainWindow::init_table_widget()
 void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
 {
     float valueToPercentage = float(value)/ui->horizontalSlider_contrast->maximum(); //[0, 1.0]
-    float percentageToGamma = pow(1/(valueToPercentage + 0.5), 7.);
+    float percentageToGamma = std::pow(1/(valueToPercentage + 0.5), 7.);
 
     ui->label_image->setContrastGamma(percentageToGamma);
     ui->label_contrast->setText(QString("Contrast(%) ") + QString::number(int(valueToPercentage * 100.)));
