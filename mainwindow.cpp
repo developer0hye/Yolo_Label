@@ -250,6 +250,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
 
             ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
         }
+        ui->label_image->m_objList = m_objList;
     }
 }
 

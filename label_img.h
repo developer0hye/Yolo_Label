@@ -25,6 +25,7 @@ public:
     void mouseReleaseEvent(QMouseEvent *ev);
 
     QVector<QColor> m_drawObjectBoxColor;
+    QStringList     m_objList;
 
     int m_uiX;
     int m_uiY;

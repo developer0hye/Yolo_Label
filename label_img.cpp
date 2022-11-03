@@ -269,13 +269,19 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
 {
     QPen pen;
     pen.setWidth(thickWidth);
+    QFont font = painter.font();
+    font.setPixelSize(12);
+    font.setBold(true);
+    painter.setFont(font);
 
     for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
     {
         pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
         painter.setPen(pen);
 
-        painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
+        QRect rectUi = cvtRelativeToAbsoluteRectInUi(boundingbox.box);
+        painter.drawRect(rectUi);
+        painter.drawText(rectUi.topLeft() + QPoint(5, 14 + 14 * boundingbox.label), m_objList.at(boundingbox.label));
     }
 }
 
