@@ -33,11 +33,9 @@ But... I've reinvented one...
 
  It's the **SENSITIVE** image-labeling tool for object detection!
  
-![image](https://user-images.githubusercontent.com/35001605/143729836-b2ee1188-f829-473f-aff0-d13569b3fc39.png)
+![image](https://user-images.githubusercontent.com/35001605/211553495-66e81a7d-df00-44ca-82e4-966000cddbd1.png)
 
-![ezgif-5-85c0613befb3](https://user-images.githubusercontent.com/35001605/47693025-3d094900-dc3b-11e8-9d96-ea2f7e37cf7a.gif)
-
-![ezgif-5-c57fe634145b](https://user-images.githubusercontent.com/35001605/47693028-3f6ba300-dc3b-11e8-9e22-70c448d59398.gif)
+https://user-images.githubusercontent.com/35001605/211560039-367f27d7-63ab-4342-824e-9f47f2afbc35.mp4
 
 ![cut (2)](https://user-images.githubusercontent.com/35001605/143729909-b2da3669-020a-4769-ab1d-2646dd7bbb6b.gif)
 
@@ -94,7 +92,7 @@ yourMacOS:Yolo_Label you$ ./YoloLabel.app/MacOS/YoloLabel
 
 4. Click the button 'Open Files' and open the folder with the images and the file('*'.names or '*'.txt) with the names of the objects.
 
- ![image](https://user-images.githubusercontent.com/35001605/47694149-d20e4100-dc3f-11e8-9d97-fba87a6e1b5a.png)
+![image](https://user-images.githubusercontent.com/35001605/211560758-f119f562-9462-4ebe-86fa-a9c169b18993.png)
 
 5. And... Label!... Welcome to Hell... I really hate this work in the world.
 
@@ -128,6 +126,8 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `D,  Space` | Save and Next Image |
 | `S` | Next Label <br> ![ezgif-5-f7ee77cd24c3](https://user-images.githubusercontent.com/35001605/47703190-d3049a00-dc62-11e8-846f-5bd91e98bdbc.gif)  |
 | `W` | Prev Label <br> ![ezgif-5-ee915c66dad8](https://user-images.githubusercontent.com/35001605/47703191-d39d3080-dc62-11e8-800b-986ec214b80c.gif)  |
+| `O` | Open Files |
+| `V` | Visualize Calss Name |
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete all existing bounding boxes in the image |
 | `Ctrl + D` | Delete current image |
@@ -153,10 +153,13 @@ You can access all image by moving horizontal slider bar. But when you control h
 ![ezgif-5-53abf38b3387](https://user-images.githubusercontent.com/35001605/47708528-97bd9780-dc71-11e8-94f1-5ee23776d5fe.gif)
 
 # CONCLUSIONS
+
 I've reinvented the wheel.
+
 ![dont-reinvent-the-wheel](https://user-images.githubusercontent.com/35001605/47709289-46160c80-dc73-11e8-8ef6-6af3a3c52403.jpg)
 
 # TO DO LISTS
+
 Upload binary file for easy usage for windows and ubuntu
 
 deployment for ubuntu
