@@ -52,7 +52,7 @@ https://user-images.githubusercontent.com/35001605/211560039-367f27d7-63ab-4342-
 
 ### For Windows
 
-2. Download [YOLOLabel_20211130_v1.1.1](https://github.com/developer0hye/Yolo_Label/releases/download/v1.1.1/YoloLabel_v1.1.1.zip)
+2. Download [YOLOLabel_v1.2.0](https://github.com/developer0hye/Yolo_Label/releases/download/v1.2.0/YoloLabel_v1.2.0.zip)
 
 3. Unzip
 
