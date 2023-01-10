@@ -57,7 +57,7 @@
     </size>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+    <item row="3" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_5">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -77,6 +77,7 @@
           </property>
           <property name="font">
            <font>
+            <family>Arial</family>
             <pointsize>18</pointsize>
             <weight>75</weight>
             <bold>true</bold>
@@ -106,7 +107,7 @@ border-color: rgb(0, 255, 255);}
            <number>3</number>
           </property>
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a Dataset Directory...&lt;/p&gt;&lt;p&gt;D: Next Image&lt;/p&gt;&lt;p&gt;A: Prev Image&lt;/p&gt;&lt;p&gt;&lt;br/&gt;Ctrl + S: Save&lt;/p&gt;&lt;p&gt;Ctrl + D: Delete an Image&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a Dataset Directory...&lt;/p&gt;&lt;p&gt;D: Next Image&lt;/p&gt;&lt;p&gt;A: Prev Image&lt;/p&gt;&lt;p&gt;S: Next Class&lt;/p&gt;&lt;p&gt;W: Prev Class&lt;/p&gt;&lt;p&gt;V: Visualize Class Name&lt;br/&gt;Ctrl + S: Save&lt;/p&gt;&lt;p&gt;Ctrl + D: Delete an Image&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -571,6 +572,32 @@ QTableView {
           <string>Color</string>
          </property>
         </column>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QCheckBox" name="checkBox_visualize_class_names">
+        <property name="font">
+         <font>
+          <family>Arial</family>
+          <pointsize>12</pointsize>
+          <underline>false</underline>
+          <strikeout>false</strikeout>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
+</string>
+        </property>
+        <property name="text">
+         <string>Visualize Class Names</string>
+        </property>
+        <property name="shortcut">
+         <string>V</string>
+        </property>
        </widget>
       </item>
      </layout>
