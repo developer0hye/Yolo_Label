@@ -107,7 +107,7 @@ border-color: rgb(0, 255, 255);}
            <number>3</number>
           </property>
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a Dataset Directory...&lt;/p&gt;&lt;p&gt;D: Next Image&lt;/p&gt;&lt;p&gt;A: Prev Image&lt;/p&gt;&lt;p&gt;S: Next Class&lt;/p&gt;&lt;p&gt;W: Prev Class&lt;/p&gt;&lt;p&gt;V: Visualize Class Name&lt;br/&gt;Ctrl + S: Save&lt;/p&gt;&lt;p&gt;Ctrl + D: Delete an Image&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a Dataset Directory...&lt;/p&gt;&lt;p&gt;D: Next Image&lt;/p&gt;&lt;p&gt;A: Prev Image&lt;/p&gt;&lt;p&gt;S: Next Class&lt;/p&gt;&lt;p&gt;W: Prev Class&lt;/p&gt;&lt;p&gt;V: Visualize Class Name&lt;/p&gt;&lt;p&gt;O: Open Files&lt;br/&gt;Ctrl + S: Save&lt;/p&gt;&lt;p&gt;Ctrl + D: Delete an Image&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -397,6 +397,9 @@ border-color: rgb(0, 255, 255);</string>
             <property name="text">
              <string>Open Files</string>
             </property>
+            <property name="shortcut">
+             <string>O</string>
+            </property>
             <property name="autoDefault">
              <bool>false</bool>
             </property>
@@ -579,7 +582,7 @@ QTableView {
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
-       <widget class="QCheckBox" name="checkBox_visualize_class_names">
+       <widget class="QCheckBox" name="checkBox_visualize_class_name">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -593,7 +596,7 @@ QTableView {
 </string>
         </property>
         <property name="text">
-         <string>Visualize Class Names</string>
+         <string>Visualize Class Name</string>
         </property>
         <property name="shortcut">
          <string>V</string>
