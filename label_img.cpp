@@ -80,6 +80,7 @@ void label_img::init()
 {
     m_objBoundingBoxes.clear();
     m_bLabelingStarted              = false;
+    m_bVisualizeClassName           = false;
     m_focusedObjectLabel            = 0;
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
@@ -159,7 +160,7 @@ void label_img::showImage()
 
     QPainter painter(&img);
     QFont font = painter.font();
-    int fontSize = 14, xMargin = 5, yMargin = 2;
+    int fontSize = 16, xMargin = 5, yMargin = 2;
     font.setPixelSize(fontSize);
     font.setBold(true);
     painter.setFont(font);
@@ -171,7 +172,8 @@ void label_img::showImage()
     drawCrossLine(painter, crossLineColor, penThick);
     drawFocusedObjectBox(painter, Qt::magenta, penThick);
     drawObjectBoxes(painter, penThick);
-    drawObjectLabels(painter, penThick, fontSize, xMargin, yMargin);
+    if(m_bVisualizeClassName)
+        drawObjectLabels(painter, penThick, fontSize, xMargin, yMargin);
 
     this->setPixmap(QPixmap::fromImage(img));
 }

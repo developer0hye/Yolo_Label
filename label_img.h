@@ -34,6 +34,7 @@ public:
     int m_imgY;
 
     bool m_bLabelingStarted;
+    bool m_bVisualizeClassName;
 
     static  QColor BOX_COLORS[10];
 

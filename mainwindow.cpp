@@ -198,7 +198,7 @@ void MainWindow::remove_img()
         }
         else if( m_imgIndex == m_imgList.size())
         {
-            m_imgIndex --;
+            m_imgIndex--;
         }
 
         goto_img(m_imgIndex);
@@ -361,11 +361,6 @@ void MainWindow::open_obj_file(bool& ret)
     }
 }
 
-void MainWindow::reupdate_img_list()
-{
-
-}
-
 void MainWindow::wheelEvent(QWheelEvent *ev)
 {
     if(ev->angleDelta().y() > 0) // up Wheel
@@ -479,4 +474,10 @@ void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
 
     ui->label_image->setContrastGamma(percentageToGamma);
     ui->label_contrast->setText(QString("Contrast(%) ") + QString::number(int(valueToPercentage * 100.)));
+}
+
+void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
+{
+    ui->label_image->m_bVisualizeClassName = checked;
+    ui->label_image->showImage();
 }
