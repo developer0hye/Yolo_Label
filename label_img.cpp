@@ -80,6 +80,7 @@ void label_img::init()
 {
     m_objBoundingBoxes.clear();
     m_bLabelingStarted              = false;
+    m_bVisualizeClassName           = false;
     m_focusedObjectLabel            = 0;
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
@@ -125,7 +126,8 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 
         m_inputImg          = img.copy();
         m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
-        m_resized_inputImg  = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+        m_resized_inputImg  = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
+                .convertToFormat(QImage::Format_RGB888);
 
         m_bLabelingStarted  = false;
 
@@ -148,7 +150,8 @@ void label_img::showImage()
     if(m_inputImg.isNull()) return;
     if(m_resized_inputImg.width() != this->width() or m_resized_inputImg.height() != this->height())
     {
-        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
+                .convertToFormat(QImage::Format_RGB888);
     }
 
     QImage img = m_resized_inputImg;
@@ -156,6 +159,11 @@ void label_img::showImage()
     gammaTransform(img);
 
     QPainter painter(&img);
+    QFont font = painter.font();
+    int fontSize = 16, xMargin = 5, yMargin = 2;
+    font.setPixelSize(fontSize);
+    font.setBold(true);
+    painter.setFont(font);
 
     int penThick = 3;
 
@@ -164,6 +172,8 @@ void label_img::showImage()
     drawCrossLine(painter, crossLineColor, penThick);
     drawFocusedObjectBox(painter, Qt::magenta, penThick);
     drawObjectBoxes(painter, penThick);
+    if(m_bVisualizeClassName)
+        drawObjectLabels(painter, penThick, fontSize, xMargin, yMargin);
 
     this->setPixmap(QPixmap::fromImage(img));
 }
@@ -276,6 +286,36 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
         painter.setPen(pen);
 
         painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
+    }
+}
+
+void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixelSize, int xMargin, int yMargin)
+{
+    QFontMetrics fontMetrics = painter.fontMetrics();
+    QPen blackPen;
+
+    for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
+    {
+        QColor labelColor = m_drawObjectBoxColor.at(boundingbox.label);
+        QRect rectUi = cvtRelativeToAbsoluteRectInUi(boundingbox.box);
+
+        QRect labelRect = fontMetrics.boundingRect(m_objList.at(boundingbox.label));
+        if (rectUi.top() > fontPixelSize + yMargin * 2 + thickWidth + 1) {
+            labelRect.moveTo(rectUi.topLeft() + QPoint(-thickWidth / 2, -(fontPixelSize + yMargin * 2 + thickWidth + 1)));
+            labelRect.adjust(0, 0, xMargin * 2, yMargin * 2);
+        } else {
+            labelRect.moveTo(rectUi.topLeft() + QPoint(-thickWidth / 2, 0));
+            labelRect.adjust(0, 0, xMargin * 2, yMargin * 2);
+        }
+        painter.fillRect(labelRect, labelColor);
+
+        if (qGray(m_drawObjectBoxColor.at(boundingbox.label).rgb()) > 120) {
+            blackPen.setColor(QColorConstants::Black);
+        } else {
+            blackPen.setColor(QColorConstants::White);
+        }
+        painter.setPen(blackPen);
+        painter.drawText(labelRect.topLeft() + QPoint(xMargin, yMargin + fontPixelSize), m_objList.at(boundingbox.label));
     }
 }
 

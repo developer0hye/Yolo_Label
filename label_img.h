@@ -25,6 +25,7 @@ public:
     void mouseReleaseEvent(QMouseEvent *ev);
 
     QVector<QColor> m_drawObjectBoxColor;
+    QStringList     m_objList;
 
     int m_uiX;
     int m_uiY;
@@ -33,6 +34,7 @@ public:
     int m_imgY;
 
     bool m_bLabelingStarted;
+    bool m_bVisualizeClassName;
 
     static  QColor BOX_COLORS[10];
 
@@ -86,6 +88,7 @@ private:
     void drawCrossLine(QPainter& , QColor , int thickWidth = 3);
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
+    void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
     void removeFocusedObjectBox(QPointF);
 };

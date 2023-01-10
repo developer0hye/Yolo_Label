@@ -23,10 +23,6 @@ public:
 
 private slots:
     void on_pushButton_open_files_clicked();
-//    void on_pushButton_change_dir_clicked();
-//    void on_pushButton_save_clicked();
-//    void on_pushButton_remove_clicked();
-
     void on_pushButton_prev_clicked();
     void on_pushButton_next_clicked();
 
@@ -47,6 +43,8 @@ private slots:
     void on_horizontalSlider_images_sliderMoved(int );
 
     void on_horizontalSlider_contrast_sliderMoved(int value);
+
+    void on_checkBox_visualize_class_name_clicked(bool checked);
 
 private:
     void            init();
@@ -70,8 +68,6 @@ private:
 
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
-
-    void            reupdate_img_list();
 
     Ui::MainWindow *ui;
 
