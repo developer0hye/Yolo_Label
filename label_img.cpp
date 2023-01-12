@@ -80,7 +80,6 @@ void label_img::init()
 {
     m_objBoundingBoxes.clear();
     m_bLabelingStarted              = false;
-    m_bVisualizeClassName           = false;
     m_focusedObjectLabel            = 0;
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
