@@ -78,7 +78,7 @@ sudo apt-get install libxkb*
 ./YoloLabel.sh
 ```
 
-![image](https://user-images.githubusercontent.com/35001605/212230107-ff1019e8-eb67-4801-bd66-a93b6a64290f.png)
+![image](https://user-images.githubusercontent.com/35001605/212230332-7e62bc50-7440-45c8-afc3-faebc0b31318.png)
 
 
 ### For macOS
