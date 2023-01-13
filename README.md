@@ -52,13 +52,34 @@ https://user-images.githubusercontent.com/35001605/211560039-367f27d7-63ab-4342-
 
 ### For Windows
 
-2. Download [YOLOLabel_v1.2.0](https://github.com/developer0hye/Yolo_Label/releases/download/v1.2.0/YoloLabel_v1.2.0.zip)
+2. Download [YOLOLabel_v1.2.1.zip](https://github.com/developer0hye/Yolo_Label/releases/download/v1.2.1/YoloLabel_v1.2.1.zip)
 
 3. Unzip
 
 4. Run YoloLabel.exe
 
 ![image](https://user-images.githubusercontent.com/35001605/111152300-e74b5680-85d3-11eb-8df7-178148548c12.png)
+
+### For Ubuntu 22.04
+
+2. Download [YOLOLabel_v1.2.1.tar](https://github.com/developer0hye/Yolo_Label/releases/download/v1.2.1/YoloLabel_v1.2.1.tar)
+
+3. Unzip and download libraries
+```
+tar -xvf YoloLabel_v1.2.1.tar
+sudo apt update
+sudo apt-get install -y libgl1-mesa-dev
+sudo apt-get install libxcb-*
+sudo apt-get install libxkb*
+```
+
+4. Run YoloLabel.sh
+```
+./YoloLabel.sh
+```
+
+![image](https://user-images.githubusercontent.com/35001605/212230107-ff1019e8-eb67-4801-bd66-a93b6a64290f.png)
+
 
 ### For macOS
 
