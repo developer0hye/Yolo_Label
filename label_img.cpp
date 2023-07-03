@@ -26,7 +26,7 @@ label_img::label_img(QWidget *parent)
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+    setMousePosition(ev->position().x(), ev->position().y());
 
     showImage();
     emit Mouse_Moved();
@@ -34,7 +34,7 @@ void label_img::mouseMoveEvent(QMouseEvent *ev)
 
 void label_img::mousePressEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+    setMousePosition(ev->position().x(), ev->position().y());
 
     if(ev->button() == Qt::RightButton)
     {
@@ -174,6 +174,9 @@ void label_img::showImage()
     if(m_bVisualizeClassName)
         drawObjectLabels(painter, penThick, fontSize, xMargin, yMargin);
 
+    if(m_bVisualizeClassCenter)
+        drawCenter(painter, penThick*1.5);
+
     this->setPixmap(QPixmap::fromImage(img));
 }
 
@@ -271,6 +274,15 @@ void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, i
         QPoint absolutePoint2 = cvtRelativeToAbsolutePoint(m_relative_mouse_pos_in_ui);
 
         painter.drawRect(QRect(absolutePoint1, absolutePoint2));
+
+        if(m_bVisualizeClassCenter)
+        {
+            const auto center = 0.5*(absolutePoint1 + absolutePoint2);
+            painter.drawPoint(center);
+        }
+
+
+
     }
 }
 
@@ -286,6 +298,28 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
 
         painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
     }
+}
+
+void label_img::drawCenter(QPainter& painter, int minThickWidth)
+{
+    QPen pen;
+    for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
+    {
+        pen.setWidth(minThickWidth);
+        pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
+        painter.setPen(pen);
+        const auto center = cvtRelativeToAbsolutePoint(boundingbox.box.center());
+        painter.drawPoint(center);
+
+        const auto relative_box=cvtRelativeToAbsoluteRectInUi(boundingbox.box);
+        const int thickWidth = std::max((int)std::sqrt(std::min(relative_box.width(), relative_box.height())), minThickWidth);
+
+        if(minThickWidth * 2 < thickWidth)
+        {// the square is big, draw a circle too
+            painter.drawEllipse(center, thickWidth, thickWidth);
+        }
+
+    };
 }
 
 void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixelSize, int xMargin, int yMargin)
