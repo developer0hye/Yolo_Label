@@ -79,7 +79,6 @@
            <font>
             <family>Arial</family>
             <pointsize>18</pointsize>
-            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -211,7 +210,6 @@ QSlider::handle:horizontal {
              <font>
               <family>Arial</family>
               <pointsize>12</pointsize>
-              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -322,7 +320,6 @@ QSlider::handle:horizontal {
              <font>
               <family>Arial</family>
               <pointsize>12</pointsize>
-              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -380,7 +377,6 @@ border-color: rgb(0, 255, 255);</string>
              <font>
               <family>Arial</family>
               <pointsize>12</pointsize>
-              <weight>75</weight>
               <bold>true</bold>
               <kerning>true</kerning>
              </font>
@@ -432,7 +428,6 @@ border-color: rgb(0, 255, 255);</string>
              <font>
               <family>Arial</family>
               <pointsize>12</pointsize>
-              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -453,10 +448,13 @@ border-color: rgb(0, 255, 255);</string>
             </property>
             <property name="html">
              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Arial'; font-size:12pt; font-weight:600; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Gulim'; font-size:9pt;&quot;&gt;Last Labeled Image:&lt;br /&gt;Current Image:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Arial'; font-size:12pt; font-weight:700; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Gulim'; font-size:9pt; font-weight:600;&quot;&gt;Last Labeled Image:&lt;br /&gt;Current Image:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
            </widget>
           </item>
@@ -487,7 +485,6 @@ p, li { white-space: pre-wrap; }
         <property name="font">
          <font>
           <pointsize>10</pointsize>
-          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -582,6 +579,28 @@ QTableView {
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
+       <widget class="QCheckBox" name="checkBox_visualize_center">
+        <property name="font">
+         <font>
+          <family>Arial</family>
+          <pointsize>12</pointsize>
+          <underline>false</underline>
+          <strikeout>false</strikeout>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
+</string>
+        </property>
+        <property name="text">
+         <string>Visualize Center</string>
+        </property>
+        <property name="shortcut">
+         <string>V</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QCheckBox" name="checkBox_visualize_class_name">
         <property name="font">
          <font>
@@ -613,7 +632,7 @@ QTableView {
      <x>0</x>
      <y>0</y>
      <width>1180</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
