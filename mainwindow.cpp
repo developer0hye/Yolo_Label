@@ -481,3 +481,10 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
     ui->label_image->m_bVisualizeClassName = checked;
     ui->label_image->showImage();
 }
+
+void MainWindow::on_checkBox_visualize_center_stateChanged(int checked)
+{
+    ui->label_image->m_bVisualizeClassCenter = checked;
+    ui->label_image->showImage();
+}
+
