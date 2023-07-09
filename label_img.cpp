@@ -315,7 +315,7 @@ void label_img::drawCenter(QPainter& painter, int minThickWidth)
         const int thickWidth = std::max((int)std::sqrt(std::min(relative_box.width(), relative_box.height())), minThickWidth);
 
         if(minThickWidth * 2 < thickWidth)
-        {// the square is big, draw a circle too
+        {// the rectangle is big, draw a circle too
             painter.drawEllipse(center, thickWidth, thickWidth);
         }
 
