@@ -456,6 +456,12 @@ void MainWindow::init_horizontal_slider()
     ui->horizontalSlider_contrast->setValue(ui->horizontalSlider_contrast->maximum()/2);
     ui->label_image->setContrastGamma(1.0);
     ui->label_contrast->setText(QString("Contrast(%) ") + QString::number(50));
+
+    ui->horizontalSlider_zoomInout->setEnabled(true);
+    ui->horizontalSlider_zoomInout->setRange(0, 100);
+    ui->label_image->setZoomFactor(0);
+    ui->horizontalSlider_zoomInout->setValue(0);
+    ui->label_zoom->setText(QString("Zoom(%) ") + QString::number(0));
 }
 
 void MainWindow::init_table_widget()
@@ -474,6 +480,16 @@ void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
 
     ui->label_image->setContrastGamma(percentageToGamma);
     ui->label_contrast->setText(QString("Contrast(%) ") + QString::number(int(valueToPercentage * 100.)));
+}
+
+void MainWindow::on_horizontalSlider_zoomInout_sliderMoved(int value)
+{
+    double zoomFactor = 1.0 + (static_cast<double>(value) / 100.0);
+
+    ui->label_image->setZoomFactor(zoomFactor);
+
+    int zoomPercentage = static_cast<int>((zoomFactor - 1.0) * 100.0);
+    ui->label_zoom->setText(QString("Zoom(%) ") + QString::number(zoomPercentage));
 }
 
 void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
