@@ -274,6 +274,21 @@ void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, i
     }
 }
 
+// void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
+// {
+//     QPen pen;
+//     pen.setWidth(thickWidth);
+
+//     for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
+//     {
+//         pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
+//         painter.setPen(pen);
+
+//         painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
+//     }
+// }
+
+// zoomed labels location-wise for visualize zoomed label location 
 void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
 {
     QPen pen;
@@ -284,9 +299,16 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
         pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
         painter.setPen(pen);
 
-        painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
+        QRectF relativeBox = boundingbox.box;
+        QRectF absoluteBox = cvtRelativeToAbsoluteRectInUi(relativeBox);
+
+        // Adjust box coordinates based on zoom factor
+        QRectF zoomedBox = zoomRect(absoluteBox);
+
+        painter.drawRect(zoomedBox);
     }
 }
+
 
 void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixelSize, int xMargin, int yMargin)
 {
@@ -448,3 +470,19 @@ void label_img::zoomImage(QImage &image)
     QPainter painter(&image);
     painter.drawImage(0, 0, scaledZoomedRegion);
 }
+
+QRectF label_img::zoomRect(const QRectF& rect)
+{
+    double zoomedX = rect.x() * m_zoomFactor;
+    double zoomedY = rect.y() * m_zoomFactor;
+
+    double zoomedWidth = rect.width() * m_zoomFactor;
+    double zoomedHeight = rect.height() * m_zoomFactor;
+
+    // Ensure the zoomed box stays within image boundaries
+    zoomedX = std::max(0.0, std::min(zoomedX, static_cast<double>(m_resized_inputImg.width() - zoomedWidth)));
+    zoomedY = std::max(0.0, std::min(zoomedY, static_cast<double>(m_resized_inputImg.height() - zoomedHeight)));
+
+    return QRectF(zoomedX, zoomedY, zoomedWidth, zoomedHeight);
+}
+
