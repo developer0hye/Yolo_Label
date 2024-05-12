@@ -39,10 +39,6 @@ https://user-images.githubusercontent.com/35001605/211560039-367f27d7-63ab-4342-
 
 ![cut (2)](https://user-images.githubusercontent.com/35001605/143729909-b2da3669-020a-4769-ab1d-2646dd7bbb6b.gif)
 
-![ezgif com-optimize](https://github.com/pahuldeep/Yolo_Label/assets/52893813/8fd978a4-ead5-43fb-b02f-7580432e843a)
-
-
-
  ## HMM... I SAW THIS DESIGN SOMEWHERE
   I refer to [the website of Joseph Redmon](https://pjreddie.com/darknet/
 ) who invented the [YOLO](https://www.youtube.com/watch?v=MPU2HistivI).
