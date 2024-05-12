@@ -418,3 +418,33 @@ void label_img::setContrastGamma(float gamma)
     }
     showImage();
 }
+
+void label_img::setZoomFactor(double factor)
+{
+    if (factor <= 0) return;
+    m_zoomFactor = factor;
+    showImage();
+}
+
+void label_img::zoomImage(QImage &image)
+{
+    int zoomWidth = static_cast<int>(image.width() / m_zoomFactor);
+    int zoomHeight = static_cast<int>(image.height() / m_zoomFactor);
+
+    int mouseX = m_relative_mouse_pos_in_ui.x() * image.width();
+    int mouseY = m_relative_mouse_pos_in_ui.y() * image.height();
+
+    int startX = std::max(0, mouseX - zoomWidth);
+    int startY = std::max(0, mouseY - zoomHeight);
+
+    int endX = std::min(image.width(), startX + zoomWidth);
+    int endY = std::min(image.height(), startY + zoomHeight);
+
+    QImage zoomedRegion = image.copy(startX, startY, endX - startX, endY - startY);
+
+    QImage scaledZoomedRegion = zoomedRegion.scaled(this->size(), Qt::KeepAspectRatio);
+
+    image.fill(Qt::white);
+    QPainter painter(&image);
+    painter.drawImage(0, 0, scaledZoomedRegion);
+}
