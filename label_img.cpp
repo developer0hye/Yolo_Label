@@ -147,15 +147,14 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 void label_img::showImage()
 {
     if(m_inputImg.isNull()) return;
-    if(m_resized_inputImg.width() != this->width() or m_resized_inputImg.height() != this->height())
-    {
-        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
-                .convertToFormat(QImage::Format_RGB888);
+    if(m_resized_inputImg.width() != this->width() || m_resized_inputImg.height() != this->height()){
+        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation).convertToFormat(QImage::Format_RGB888);
     }
 
     QImage img = m_resized_inputImg;
 
     gammaTransform(img);
+    zoomImage(img);
 
     QPainter painter(&img);
     QFont font = painter.font();
@@ -274,6 +273,21 @@ void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, i
     }
 }
 
+// void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
+// {
+//     QPen pen;
+//     pen.setWidth(thickWidth);
+
+//     for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
+//     {
+//         pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
+//         painter.setPen(pen);
+
+//         painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
+//     }
+// }
+
+// zoomed labels location-wise for visualize zoomed label location 
 void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
 {
     QPen pen;
@@ -284,9 +298,16 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
         pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
         painter.setPen(pen);
 
-        painter.drawRect(cvtRelativeToAbsoluteRectInUi(boundingbox.box));
+        QRectF relativeBox = boundingbox.box;
+        QRectF absoluteBox = cvtRelativeToAbsoluteRectInUi(relativeBox);
+
+        // Adjust box coordinates based on zoom factor
+        QRectF zoomedBox = zoomRect(absoluteBox);
+
+        painter.drawRect(zoomedBox);
     }
 }
+
 
 void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixelSize, int xMargin, int yMargin)
 {
@@ -418,3 +439,49 @@ void label_img::setContrastGamma(float gamma)
     }
     showImage();
 }
+
+void label_img::setZoomFactor(double factor)
+{
+    if (factor <= 0) return;
+    m_zoomFactor = factor;
+    showImage();
+}
+
+void label_img::zoomImage(QImage &image)
+{
+    int zoomWidth = static_cast<int>(image.width() / m_zoomFactor);
+    int zoomHeight = static_cast<int>(image.height() / m_zoomFactor);
+
+    int mouseX = m_relative_mouse_pos_in_ui.x() * image.width();
+    int mouseY = m_relative_mouse_pos_in_ui.y() * image.height();
+
+    int startX = std::max(0, mouseX - zoomWidth);
+    int startY = std::max(0, mouseY - zoomHeight);
+
+    int endX = std::min(image.width(), startX + zoomWidth);
+    int endY = std::min(image.height(), startY + zoomHeight);
+
+    QImage zoomedRegion = image.copy(startX, startY, endX - startX, endY - startY);
+
+    QImage scaledZoomedRegion = zoomedRegion.scaled(this->size(), Qt::KeepAspectRatio);
+
+    image.fill(Qt::white);
+    QPainter painter(&image);
+    painter.drawImage(0, 0, scaledZoomedRegion);
+}
+
+QRectF label_img::zoomRect(const QRectF& rect)
+{
+    double zoomedX = rect.x() * m_zoomFactor;
+    double zoomedY = rect.y() * m_zoomFactor;
+
+    double zoomedWidth = rect.width() * m_zoomFactor;
+    double zoomedHeight = rect.height() * m_zoomFactor;
+
+    // Ensure the zoomed box stays within image boundaries
+    zoomedX = std::max(0.0, std::min(zoomedX, static_cast<double>(m_resized_inputImg.width() - zoomedWidth)));
+    zoomedY = std::max(0.0, std::min(zoomedY, static_cast<double>(m_resized_inputImg.height() - zoomedHeight)));
+
+    return QRectF(zoomedX, zoomedY, zoomedWidth, zoomedHeight);
+}
+
