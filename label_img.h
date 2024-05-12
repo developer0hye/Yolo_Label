@@ -76,6 +76,8 @@ private:
 
     double m_aspectRatioWidth;
     double m_aspectRatioHeight;
+    
+    double m_zoomFactor = 1.0;
 
     QImage m_inputImg;
     QImage m_resized_inputImg;
