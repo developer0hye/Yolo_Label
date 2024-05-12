@@ -49,6 +49,8 @@ public:
     void setFocusObjectLabel(int);
     void setFocusObjectName(QString);
     void setContrastGamma(float);
+    
+    void setZoomFactor(double factor);
 
     bool isOpened();
     QImage crop(QRect);
@@ -90,6 +92,9 @@ private:
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
     void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
+
+    void zoomImage(QImage &image);
+
     void removeFocusedObjectBox(QPointF);
 };
 
