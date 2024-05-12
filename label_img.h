@@ -56,6 +56,7 @@ public:
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
+    QRectF  zoomRect(const QRectF& rect);
 
     QRect   cvtRelativeToAbsoluteRectInUi(QRectF);
     QRect   cvtRelativeToAbsoluteRectInImage(QRectF);
