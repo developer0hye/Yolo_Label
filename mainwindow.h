@@ -44,6 +44,8 @@ private slots:
 
     void on_horizontalSlider_contrast_sliderMoved(int value);
 
+    void on_horizontalSlider_zoomInout_sliderMoved(int zoomValue);
+
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
 private:
