@@ -156,6 +156,7 @@ void label_img::showImage()
     QImage img = m_resized_inputImg;
 
     gammaTransform(img);
+    zoomImage(img);
 
     QPainter painter(&img);
     QFont font = painter.font();
