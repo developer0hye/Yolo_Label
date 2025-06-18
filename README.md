@@ -148,7 +148,7 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `S` | Next Label <br> ![ezgif-5-f7ee77cd24c3](https://user-images.githubusercontent.com/35001605/47703190-d3049a00-dc62-11e8-846f-5bd91e98bdbc.gif)  |
 | `W` | Prev Label <br> ![ezgif-5-ee915c66dad8](https://user-images.githubusercontent.com/35001605/47703191-d39d3080-dc62-11e8-800b-986ec214b80c.gif)  |
 | `O` | Open Files |
-| `V` | Visualize Calss Name |
+| `V` | Visualize Class Name |
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete all existing bounding boxes in the image |
 | `Ctrl + D` | Delete current image |
