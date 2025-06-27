@@ -41,6 +41,20 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::set_args(int argc, char *argv[])
+{
+  if (argc > 1) {
+    QString dir = QString::fromLocal8Bit(argv[1]);
+    get_files(dir);
+    if (argc > 2) {
+      QString obj_file = QString::fromLocal8Bit(argv[2]);
+      load_label_list_data(obj_file);
+    }
+    init();
+  }
+}
+
+
 void MainWindow::on_pushButton_open_files_clicked()
 {
     bool bRetImgDir     = false;
@@ -295,6 +309,31 @@ void MainWindow::pjreddie_style_msgBox(QMessageBox::Icon icon, QString title, QS
     msgBox.exec();
 }
 
+bool MainWindow::get_files(QString imgDir)
+{
+    bool value = false;
+    QDir dir(imgDir);
+    QCollator collator;
+    collator.setNumericMode(true);
+
+    QStringList fileList = dir.entryList(
+                QStringList() << "*.jpg" << "*.JPG" << "*.png" << "*.bmp",
+                QDir::Files);
+
+    std::sort(fileList.begin(), fileList.end(), collator);
+
+    if(!fileList.empty())
+    {
+        value = true;
+        m_imgDir    = imgDir;
+        m_imgList  = fileList;
+
+        for(QString& str: m_imgList)
+            str = m_imgDir + "/" + str;
+    }
+    return value;
+}
+
 void MainWindow::open_img_dir(bool& ret)
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
@@ -309,30 +348,10 @@ void MainWindow::open_img_dir(bool& ret)
                 opened_dir,
                 QFileDialog::ShowDirsOnly);
 
-    QDir dir(imgDir);
-    QCollator collator;
-    collator.setNumericMode(true);
 
-    QStringList fileList = dir.entryList(
-                QStringList() << "*.jpg" << "*.JPG" << "*.png" << "*.bmp",
-                QDir::Files);
-
-    std::sort(fileList.begin(), fileList.end(), collator);
-
-    if(fileList.empty())
-    {
-        ret = false;
+    ret = get_files(imgDir);
+    if (!ret)
         pjreddie_style_msgBox(QMessageBox::Critical,"Error", "This folder is empty");
-    }
-    else
-    {
-        ret = true;
-        m_imgDir    = imgDir;
-        m_imgList  = fileList;
-
-        for(QString& str: m_imgList)
-            str = m_imgDir + "/" + str;
-    }
 }
 
 void MainWindow::open_obj_file(bool& ret)

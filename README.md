@@ -139,6 +139,15 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 
 ![endimage](https://user-images.githubusercontent.com/35001605/47704336-a6528180-dc66-11e8-8551-3ecb612b7353.PNG)
 
+## USAGE AND OPTIONS
+```
+./YoloLabel [dataset dir] [class file names]
+# Example
+./YoloLabel ../project/dataset/objects/frames ../project/dataset/objects/obj_names.txt
+
+```
+
+
 ## SHORTCUTS
 
 | Key | Action |
