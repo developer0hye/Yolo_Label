@@ -49,11 +49,14 @@ public:
     void setFocusObjectLabel(int);
     void setFocusObjectName(QString);
     void setContrastGamma(float);
+    
+    void setZoomFactor(double factor);
 
     bool isOpened();
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
+    QRectF  zoomRect(const QRectF& rect);
 
     QRect   cvtRelativeToAbsoluteRectInUi(QRectF);
     QRect   cvtRelativeToAbsoluteRectInImage(QRectF);
@@ -73,6 +76,8 @@ private:
 
     double m_aspectRatioWidth;
     double m_aspectRatioHeight;
+    
+    double m_zoomFactor = 1.0;
 
     QImage m_inputImg;
     QImage m_resized_inputImg;
@@ -90,6 +95,9 @@ private:
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
     void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
+
+    void zoomImage(QImage &image);
+
     void removeFocusedObjectBox(QPointF);
 };
 
