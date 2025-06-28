@@ -35,6 +35,7 @@ public:
 
     bool m_bLabelingStarted;
     bool m_bVisualizeClassName;
+    bool m_bVisualizeClassCenter = false;
 
     static  QColor BOX_COLORS[10];
 
@@ -88,6 +89,7 @@ private:
     void drawCrossLine(QPainter& , QColor , int thickWidth = 3);
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
+    void drawCenter(QPainter& , int thickWidth);
     void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
     void removeFocusedObjectBox(QPointF);
