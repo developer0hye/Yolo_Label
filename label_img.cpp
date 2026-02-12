@@ -369,6 +369,16 @@ void label_img::removeFocusedObjectBox(QPointF point)
     }
 }
 
+void label_img::saveState()
+{
+    m_undoHistory.append(m_objBoundingBoxes);
+}
+
+void label_img::clearUndoHistory()
+{
+    m_undoHistory.clear();
+}
+
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
 {
     double midX    = (p1.x() + p2.x()) / 2.;

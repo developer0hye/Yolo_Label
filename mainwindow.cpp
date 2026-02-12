@@ -488,6 +488,7 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 void MainWindow::copy_previous_annotations()
 {
     if(m_previousAnnotations.isEmpty() || !ui->label_image->isOpened()) return;
+    ui->label_image->saveState();
     ui->label_image->m_objBoundingBoxes = m_previousAnnotations;
     ui->label_image->showImage();
 }
