@@ -51,7 +51,12 @@ public:
     void setContrastGamma(float);
 
     bool isOpened();
+
+    void saveState();
+    void clearUndoHistory();
+
     void moveBoxUnderCursor(QPointF cursorPos, double dx, double dy);
+    int  findBoxUnderCursor(QPointF point) const;
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
@@ -83,6 +88,14 @@ private:
 
     unsigned char m_gammatransform_lut[256];
     QVector<QRgb> colorTable;
+
+    QVector< QVector<ObjectLabelingBox> > m_undoHistory;
+
+    bool    m_bDragging;
+    bool    m_bDragPending;
+    int     m_dragBoxIdx;
+    QPointF m_dragOffset;
+    QPointF m_dragStartPos;
 
     void setMousePosition(int , int);
 

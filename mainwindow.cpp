@@ -403,6 +403,9 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
     }
     else if(arrowKeyIsPressed && ui->label_image->isOpened())
     {
+        if(!event->isAutoRepeat())
+            ui->label_image->saveState();
+
         bool shiftHeld = (event->modifiers() & Qt::ShiftModifier);
         double step = shiftHeld ? 0.01 : 0.002;
 
