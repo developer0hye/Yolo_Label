@@ -168,6 +168,10 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
 
+## Usage Timer
+
+A timer in the status bar counts how many hours (and minutes/seconds) you have been using the program. It runs **only while the window is focused** (switches to another app to pause). Use the **Reset** button in the status bar to zero the timer at any time.
+
 ## Button Events
 
 ### Remove
