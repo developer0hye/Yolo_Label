@@ -36,6 +36,14 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 {
     setMousePosition(ev->x(), ev->y());
 
+    if(ev->button() == Qt::LeftButton && (ev->modifiers() & Qt::AltModifier) && !m_bLabelingStarted)
+    {
+        setFocusedObjectBoxLabel(m_relative_mouse_pos_in_ui, m_focusedObjectLabel);
+        showImage();
+        emit Mouse_Pressed();
+        return;
+    }
+
     if(ev->button() == Qt::RightButton)
     {
         removeFocusedObjectBox(m_relative_mouse_pos_in_ui);
@@ -74,20 +82,6 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
     emit Mouse_Release();
-}
-
-void label_img::mouseDoubleClickEvent(QMouseEvent *ev)
-{
-    setMousePosition(ev->x(), ev->y());
-
-    if(ev->button() == Qt::LeftButton && (ev->modifiers() & Qt::ControlModifier))
-    {
-        // Reset side-effects from the first click of the double-click sequence
-        m_bLabelingStarted = false;
-
-        setFocusedObjectBoxLabel(m_relative_mouse_pos_in_ui, m_focusedObjectLabel);
-        showImage();
-    }
 }
 
 void label_img::init()
