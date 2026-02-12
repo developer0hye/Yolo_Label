@@ -9,6 +9,7 @@
 #include <QCollator>
 #include <iomanip>
 #include <cmath>
+#include <algorithm>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -495,6 +496,7 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 void MainWindow::copy_previous_annotations()
 {
     if(m_previousAnnotations.isEmpty() || !ui->label_image->isOpened()) return;
+    ui->label_image->saveState();
     ui->label_image->m_objBoundingBoxes = m_previousAnnotations;
     ui->label_image->showImage();
 }
@@ -522,42 +524,93 @@ void MainWindow::track_from_previous()
     int imgW = m_previousImage.width();
     int imgH = m_previousImage.height();
 
-    // Build feature points from box centers (pixel coords)
-    std::vector<cv::Point2f> prevPts;
-    for(const auto &box : m_previousAnnotations)
-    {
-        float cx = static_cast<float>((box.box.x() + box.box.width() / 2.0) * imgW);
-        float cy = static_cast<float>((box.box.y() + box.box.height() / 2.0) * imgH);
-        prevPts.push_back(cv::Point2f(cx, cy));
-    }
-
-    std::vector<cv::Point2f> currPts;
-    std::vector<uchar> status;
-    std::vector<float> err;
-    cv::calcOpticalFlowPyrLK(prevGray, currGray, prevPts, currPts, status, err);
+    ui->label_image->saveState();
 
     QVector<ObjectLabelingBox> newBoxes;
-    for(int i = 0; i < m_previousAnnotations.size(); i++)
-    {
-        ObjectLabelingBox newBox = m_previousAnnotations[i];
 
-        if(i < static_cast<int>(status.size()) && status[i])
+    for(int b = 0; b < m_previousAnnotations.size(); b++)
+    {
+        const ObjectLabelingBox &prevBox = m_previousAnnotations[b];
+
+        // Convert relative box to pixel rect
+        int bx = static_cast<int>(prevBox.box.x() * imgW);
+        int by = static_cast<int>(prevBox.box.y() * imgH);
+        int bw = static_cast<int>(prevBox.box.width() * imgW);
+        int bh = static_cast<int>(prevBox.box.height() * imgH);
+
+        // Clamp to image bounds
+        bx = std::max(0, bx);
+        by = std::max(0, by);
+        bw = std::min(bw, imgW - bx);
+        bh = std::min(bh, imgH - by);
+
+        if(bw <= 0 || bh <= 0)
         {
-            // Compute displacement in relative coords
-            double dx = (currPts[i].x - prevPts[i].x) / static_cast<double>(imgW);
-            double dy = (currPts[i].y - prevPts[i].y) / static_cast<double>(imgH);
+            newBoxes.push_back(prevBox);
+            continue;
+        }
+
+        cv::Rect roi(bx, by, bw, bh);
+        cv::Mat roiGray = prevGray(roi);
+
+        // Find good features to track within this box
+        std::vector<cv::Point2f> roiPts;
+        cv::goodFeaturesToTrack(roiGray, roiPts, 50, 0.01, 5);
+
+        if(roiPts.empty())
+        {
+            // Fallback to box corners + center
+            roiPts.push_back(cv::Point2f(bw * 0.25f, bh * 0.25f));
+            roiPts.push_back(cv::Point2f(bw * 0.75f, bh * 0.25f));
+            roiPts.push_back(cv::Point2f(bw * 0.25f, bh * 0.75f));
+            roiPts.push_back(cv::Point2f(bw * 0.75f, bh * 0.75f));
+            roiPts.push_back(cv::Point2f(bw * 0.5f, bh * 0.5f));
+        }
+
+        // Convert ROI-local points to full image coordinates
+        std::vector<cv::Point2f> prevPts;
+        for(auto &p : roiPts)
+            prevPts.push_back(cv::Point2f(p.x + bx, p.y + by));
+
+        std::vector<cv::Point2f> currPts;
+        std::vector<uchar> status;
+        std::vector<float> err;
+        cv::calcOpticalFlowPyrLK(prevGray, currGray, prevPts, currPts, status, err,
+                                 cv::Size(21, 21), 3,
+                                 cv::TermCriteria(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, 30, 0.01));
+
+        // Collect valid displacements
+        std::vector<double> dxVals, dyVals;
+        for(size_t i = 0; i < status.size(); i++)
+        {
+            if(status[i] && err[i] < 12.0)
+            {
+                dxVals.push_back(currPts[i].x - prevPts[i].x);
+                dyVals.push_back(currPts[i].y - prevPts[i].y);
+            }
+        }
+
+        ObjectLabelingBox newBox = prevBox;
+        if(!dxVals.empty())
+        {
+            // Use median displacement for robustness against outliers
+            std::sort(dxVals.begin(), dxVals.end());
+            std::sort(dyVals.begin(), dyVals.end());
+            double medianDx = dxVals[dxVals.size() / 2];
+            double medianDy = dyVals[dyVals.size() / 2];
+
+            double dx = medianDx / static_cast<double>(imgW);
+            double dy = medianDy / static_cast<double>(imgH);
 
             double newX = newBox.box.x() + dx;
             double newY = newBox.box.y() + dy;
 
-            // Clamp to [0, 1]
             newX = std::max(0.0, std::min(newX, 1.0 - newBox.box.width()));
             newY = std::max(0.0, std::min(newY, 1.0 - newBox.box.height()));
 
             newBox.box.moveLeft(newX);
             newBox.box.moveTop(newY);
         }
-        // If tracking failed, keep original position (plain copy)
         newBoxes.push_back(newBox);
     }
 
