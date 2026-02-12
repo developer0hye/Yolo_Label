@@ -369,6 +369,40 @@ void label_img::removeFocusedObjectBox(QPointF point)
     }
 }
 
+void label_img::moveBoxUnderCursor(QPointF cursorPos, double dx, double dy)
+{
+    int     moveBoxIdx = -1;
+    double  nearestBoxDistance = 99999999999999.;
+
+    for(int i = 0; i < m_objBoundingBoxes.size(); i++)
+    {
+        QRectF objBox = m_objBoundingBoxes.at(i).box;
+        if(objBox.contains(cursorPos))
+        {
+            double distance = objBox.width() + objBox.height();
+            if(distance < nearestBoxDistance)
+            {
+                nearestBoxDistance = distance;
+                moveBoxIdx = i;
+            }
+        }
+    }
+
+    if(moveBoxIdx != -1)
+    {
+        QRectF &box = m_objBoundingBoxes[moveBoxIdx].box;
+        double newX = box.x() + dx;
+        double newY = box.y() + dy;
+
+        newX = std::max(0.0, std::min(newX, 1.0 - box.width()));
+        newY = std::max(0.0, std::min(newY, 1.0 - box.height()));
+
+        box.moveLeft(newX);
+        box.moveTop(newY);
+        showImage();
+    }
+}
+
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
 {
     double midX    = (p1.x() + p2.x()) / 2.;

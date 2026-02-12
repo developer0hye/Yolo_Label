@@ -51,6 +51,7 @@ public:
     void setContrastGamma(float);
 
     bool isOpened();
+    void moveBoxUnderCursor(QPointF cursorPos, double dx, double dy);
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
