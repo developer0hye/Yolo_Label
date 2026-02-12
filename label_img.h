@@ -51,6 +51,7 @@ public:
     void setContrastGamma(float);
 
     bool isOpened();
+    QImage getInputImage() const { return m_inputImg; }
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);

@@ -10,6 +10,10 @@
 #include <iomanip>
 #include <cmath>
 
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/video/tracking.hpp>
+
 using std::cout;
 using std::endl;
 using std::ofstream;
@@ -32,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), SIGNAL(activated()), this, SLOT(remove_img()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), SIGNAL(activated()), this, SLOT(copy_previous_annotations()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this), SIGNAL(activated()), this, SLOT(track_from_previous()));
 
     init_table_widget();
 }
@@ -130,12 +136,16 @@ void MainWindow::goto_img(const int fileIndex)
 
 void MainWindow::next_img(bool bSavePrev)
 {
+    m_previousAnnotations = ui->label_image->m_objBoundingBoxes;
+    m_previousImage = ui->label_image->getInputImage();
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex + 1);
 }
 
 void MainWindow::prev_img(bool bSavePrev)
 {
+    m_previousAnnotations = ui->label_image->m_objBoundingBoxes;
+    m_previousImage = ui->label_image->getInputImage();
     if(bSavePrev) save_label_data();
     goto_img(m_imgIndex - 1);
 }
@@ -479,5 +489,78 @@ void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
 void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
+    ui->label_image->showImage();
+}
+
+void MainWindow::copy_previous_annotations()
+{
+    if(m_previousAnnotations.isEmpty() || !ui->label_image->isOpened()) return;
+    ui->label_image->m_objBoundingBoxes = m_previousAnnotations;
+    ui->label_image->showImage();
+}
+
+static cv::Mat qImageToGray(const QImage &img)
+{
+    QImage rgb = img.convertToFormat(QImage::Format_RGB888);
+    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC3,
+                const_cast<uchar*>(rgb.bits()), rgb.bytesPerLine());
+    cv::Mat gray;
+    cv::cvtColor(mat, gray, cv::COLOR_RGB2GRAY);
+    return gray.clone();
+}
+
+void MainWindow::track_from_previous()
+{
+    if(m_previousAnnotations.isEmpty() || m_previousImage.isNull() || !ui->label_image->isOpened()) return;
+
+    QImage currentImage = ui->label_image->getInputImage();
+    if(currentImage.isNull()) return;
+
+    cv::Mat prevGray = qImageToGray(m_previousImage);
+    cv::Mat currGray = qImageToGray(currentImage);
+
+    int imgW = m_previousImage.width();
+    int imgH = m_previousImage.height();
+
+    // Build feature points from box centers (pixel coords)
+    std::vector<cv::Point2f> prevPts;
+    for(const auto &box : m_previousAnnotations)
+    {
+        float cx = static_cast<float>((box.box.x() + box.box.width() / 2.0) * imgW);
+        float cy = static_cast<float>((box.box.y() + box.box.height() / 2.0) * imgH);
+        prevPts.push_back(cv::Point2f(cx, cy));
+    }
+
+    std::vector<cv::Point2f> currPts;
+    std::vector<uchar> status;
+    std::vector<float> err;
+    cv::calcOpticalFlowPyrLK(prevGray, currGray, prevPts, currPts, status, err);
+
+    QVector<ObjectLabelingBox> newBoxes;
+    for(int i = 0; i < m_previousAnnotations.size(); i++)
+    {
+        ObjectLabelingBox newBox = m_previousAnnotations[i];
+
+        if(i < static_cast<int>(status.size()) && status[i])
+        {
+            // Compute displacement in relative coords
+            double dx = (currPts[i].x - prevPts[i].x) / static_cast<double>(imgW);
+            double dy = (currPts[i].y - prevPts[i].y) / static_cast<double>(imgH);
+
+            double newX = newBox.box.x() + dx;
+            double newY = newBox.box.y() + dy;
+
+            // Clamp to [0, 1]
+            newX = std::max(0.0, std::min(newX, 1.0 - newBox.box.width()));
+            newY = std::max(0.0, std::min(newY, 1.0 - newBox.box.height()));
+
+            newBox.box.moveLeft(newX);
+            newBox.box.moveTop(newY);
+        }
+        // If tracking failed, keep original position (plain copy)
+        newBoxes.push_back(newBox);
+    }
+
+    ui->label_image->m_objBoundingBoxes = newBoxes;
     ui->label_image->showImage();
 }
