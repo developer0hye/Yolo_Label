@@ -53,6 +53,12 @@ public:
     void setContrastGamma(float);
 
     bool isOpened();
+
+    void saveState();
+    bool undo();
+    bool redo();
+    void clearUndoHistory();
+
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
@@ -86,6 +92,7 @@ private:
     QVector<QRgb> colorTable;
 
     QVector< QVector<ObjectLabelingBox> > m_undoHistory;
+    QVector< QVector<ObjectLabelingBox> > m_redoHistory;
 
     void setMousePosition(int , int);
 

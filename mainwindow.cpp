@@ -38,6 +38,9 @@ MainWindow::MainWindow(QWidget *parent) :
     QShortcut *undoShortcut = new QShortcut(QKeySequence::Undo, this, SLOT(undo()));
     undoShortcut->setContext(Qt::ApplicationShortcut);
 
+    QShortcut *redoShortcut = new QShortcut(QKeySequence::Redo, this, SLOT(redo()));
+    redoShortcut->setContext(Qt::ApplicationShortcut);
+
     qApp->installEventFilter(this);
 
     init_table_widget();
@@ -387,6 +390,11 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             undo();
             return true;
         }
+        if(ke->key() == Qt::Key_Z && ke->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
+        {
+            redo();
+            return true;
+        }
     }
     return QMainWindow::eventFilter(watched, event);
 }
@@ -507,5 +515,11 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 void MainWindow::undo()
 {
     if(ui->label_image->undo())
+        ui->label_image->showImage();
+}
+
+void MainWindow::redo()
+{
+    if(ui->label_image->redo())
         ui->label_image->showImage();
 }

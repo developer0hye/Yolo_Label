@@ -377,19 +377,31 @@ void label_img::removeFocusedObjectBox(QPointF point)
 void label_img::saveState()
 {
     m_undoHistory.append(m_objBoundingBoxes);
+    m_redoHistory.clear();
 }
 
 bool label_img::undo()
 {
     if(m_undoHistory.isEmpty())
         return false;
+    m_redoHistory.append(m_objBoundingBoxes);
     m_objBoundingBoxes = m_undoHistory.takeLast();
+    return true;
+}
+
+bool label_img::redo()
+{
+    if(m_redoHistory.isEmpty())
+        return false;
+    m_undoHistory.append(m_objBoundingBoxes);
+    m_objBoundingBoxes = m_redoHistory.takeLast();
     return true;
 }
 
 void label_img::clearUndoHistory()
 {
     m_undoHistory.clear();
+    m_redoHistory.clear();
 }
 
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
