@@ -156,7 +156,7 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | Mouse | Action |
 |---|:---:|
 | `Right Click` | Delete Focused Bounding Box in the image <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
-| `Ctrl + Left Click` | Change class of focused bounding box to the currently selected label (no need to remove and redraw) |
+| `Ctrl + Double Left Click` | Change class of focused bounding box to the currently selected label (no need to remove and redraw) |
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
 

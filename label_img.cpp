@@ -43,12 +43,7 @@ void label_img::mousePressEvent(QMouseEvent *ev)
     }
     else if(ev->button() == Qt::LeftButton)
     {
-        if((ev->modifiers() & Qt::ControlModifier) && !m_bLabelingStarted)
-        {
-            setFocusedObjectBoxLabel(m_relative_mouse_pos_in_ui, m_focusedObjectLabel);
-            showImage();
-        }
-        else if(m_bLabelingStarted == false)
+        if(m_bLabelingStarted == false)
         {
             m_relatvie_mouse_pos_LBtnClicked_in_ui      = m_relative_mouse_pos_in_ui;
             m_bLabelingStarted                          = true;
@@ -79,6 +74,17 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
     emit Mouse_Release();
+}
+
+void label_img::mouseDoubleClickEvent(QMouseEvent *ev)
+{
+    setMousePosition(ev->x(), ev->y());
+
+    if(ev->button() == Qt::LeftButton && (ev->modifiers() & Qt::ControlModifier) && !m_bLabelingStarted)
+    {
+        setFocusedObjectBoxLabel(m_relative_mouse_pos_in_ui, m_focusedObjectLabel);
+        showImage();
+    }
 }
 
 void label_img::init()
