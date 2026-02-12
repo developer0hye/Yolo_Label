@@ -24,6 +24,8 @@ public:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
 
+    void setFocusedObjectBoxLabel(QPointF point, int newLabel);
+
     QVector<QColor> m_drawObjectBoxColor;
     QStringList     m_objList;
 
@@ -82,6 +84,8 @@ private:
 
     unsigned char m_gammatransform_lut[256];
     QVector<QRgb> colorTable;
+
+    QVector< QVector<ObjectLabelingBox> > m_undoHistory;
 
     void setMousePosition(int , int);
 

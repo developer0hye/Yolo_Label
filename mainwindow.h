@@ -46,6 +46,8 @@ private slots:
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
+    void undo();
+
 private:
     void            init();
     void            init_table_widget();
@@ -82,6 +84,7 @@ private:
 
 protected:
     void    wheelEvent(QWheelEvent *);
+    bool    eventFilter(QObject *watched, QEvent *event) override;
 };
 
 #endif // MAINWINDOW_H

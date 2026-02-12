@@ -6,6 +6,8 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QShortcut>
+#include <QApplication>
+#include <QEvent>
 #include <QCollator>
 #include <iomanip>
 #include <cmath>
@@ -32,6 +34,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), SIGNAL(activated()), this, SLOT(remove_img()));
+
+    QShortcut *undoShortcut = new QShortcut(QKeySequence::Undo, this, SLOT(undo()));
+    undoShortcut->setContext(Qt::ApplicationShortcut);
+
+    qApp->installEventFilter(this);
 
     init_table_widget();
 }
@@ -175,6 +182,7 @@ void MainWindow::save_label_data()
 
 void MainWindow::clear_label_data()
 {
+    ui->label_image->saveState();
     ui->label_image->m_objBoundingBoxes.clear();
     ui->label_image->showImage();
 }
@@ -369,6 +377,20 @@ void MainWindow::wheelEvent(QWheelEvent *ev)
         next_img();
 }
 
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if(event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent *ke = static_cast<QKeyEvent *>(event);
+        if(ke->key() == Qt::Key_Z && ke->modifiers() == Qt::ControlModifier)
+        {
+            undo();
+            return true;
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
 void MainWindow::on_pushButton_prev_clicked()
 {
     prev_img();
@@ -480,4 +502,10 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
     ui->label_image->showImage();
+}
+
+void MainWindow::undo()
+{
+    if(ui->label_image->undo())
+        ui->label_image->showImage();
 }

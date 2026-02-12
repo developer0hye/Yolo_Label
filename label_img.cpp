@@ -38,6 +38,7 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 
     if(ev->button() == Qt::RightButton)
     {
+        saveState();
         removeFocusedObjectBox(m_relative_mouse_pos_in_ui);
         showImage();
     }
@@ -60,7 +61,10 @@ void label_img::mousePressEvent(QMouseEvent *ev)
             bool height_is_too_small    = objBoundingbox.box.height() * m_inputImg.height() < 4;
 
             if(!width_is_too_small && !height_is_too_small)
+            {
+                saveState();
                 m_objBoundingBoxes.push_back(objBoundingbox);
+            }
 
             m_bLabelingStarted              = false;
 
@@ -179,6 +183,7 @@ void label_img::showImage()
 
 void label_img::loadLabelData(const QString& labelFilePath)
 {
+    clearUndoHistory();
     ifstream inputFile(qPrintable(labelFilePath));
 
     if(inputFile.is_open())
@@ -367,6 +372,24 @@ void label_img::removeFocusedObjectBox(QPointF point)
     {
         m_objBoundingBoxes.remove(removeBoxIdx);
     }
+}
+
+void label_img::saveState()
+{
+    m_undoHistory.append(m_objBoundingBoxes);
+}
+
+bool label_img::undo()
+{
+    if(m_undoHistory.isEmpty())
+        return false;
+    m_objBoundingBoxes = m_undoHistory.takeLast();
+    return true;
+}
+
+void label_img::clearUndoHistory()
+{
+    m_undoHistory.clear();
 }
 
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
