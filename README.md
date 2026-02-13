@@ -139,6 +139,15 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 
 ![endimage](https://user-images.githubusercontent.com/35001605/47704336-a6528180-dc66-11e8-8551-3ecb612b7353.PNG)
 
+## USAGE AND OPTIONS
+```
+./YoloLabel [dataset dir] [class file names]
+# Example
+./YoloLabel ../project/dataset/objects/frames ../project/dataset/objects/obj_names.txt
+
+```
+
+
 ## SHORTCUTS
 
 | Key | Action |
@@ -152,6 +161,9 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete all existing bounding boxes in the image |
 | `Ctrl + D` | Delete current image |
+| `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Copy annotations from the previous image to the current image |
+| `Ctrl + Z` (Windows/Linux) / `Cmd + Z` (macOS) | Undo last action (add, remove, or clear all) |
+| `Ctrl + Shift + Z` (Windows/Linux) / `Cmd + Shift + Z` (macOS) | Redo last undone action |
 
 | Mouse | Action |
 |---|:---:|
@@ -159,6 +171,10 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Option + Left Click` (macOS) / `Alt + Left Click` (Win/Linux) | Change class of focused bounding box to the currently selected label (no need to remove and redraw) |
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
+
+## Usage Timer
+
+A timer in the status bar counts how many hours (and minutes/seconds) you have been using the program. It runs **only while the window is focused** (switches to another app to pause). Use the **Reset** button in the status bar to zero the timer at any time.
 
 ## Button Events
 

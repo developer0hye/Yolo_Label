@@ -26,7 +26,7 @@ label_img::label_img(QWidget *parent)
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+    setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
     showImage();
     emit Mouse_Moved();
@@ -34,7 +34,7 @@ void label_img::mouseMoveEvent(QMouseEvent *ev)
 
 void label_img::mousePressEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+    setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
     if(ev->button() == Qt::LeftButton && (ev->modifiers() & Qt::AltModifier) && !m_bLabelingStarted)
     {
@@ -68,7 +68,10 @@ void label_img::mousePressEvent(QMouseEvent *ev)
             bool height_is_too_small    = objBoundingbox.box.height() * m_inputImg.height() < 4;
 
             if(!width_is_too_small && !height_is_too_small)
+            {
+                saveState();
                 m_objBoundingBoxes.push_back(objBoundingbox);
+            }
 
             m_bLabelingStarted              = false;
 
@@ -155,7 +158,7 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 void label_img::showImage()
 {
     if(m_inputImg.isNull()) return;
-    if(m_resized_inputImg.width() != this->width() or m_resized_inputImg.height() != this->height())
+    if(m_resized_inputImg.width() != this->width() || m_resized_inputImg.height() != this->height())
     {
         m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
                 .convertToFormat(QImage::Format_RGB888);
@@ -351,7 +354,7 @@ void label_img::gammaTransform(QImage &image)
     }
 }
 
-void label_img::removeFocusedObjectBox(QPointF point)
+bool label_img::removeFocusedObjectBox(QPointF point)
 {
     int     removeBoxIdx = -1;
     double  nearestBoxDistance   = 99999999999999.;
@@ -373,8 +376,49 @@ void label_img::removeFocusedObjectBox(QPointF point)
 
     if(removeBoxIdx != -1)
     {
-        m_objBoundingBoxes.remove(removeBoxIdx);
+        saveState();
+        m_objBoundingBoxes.removeAt(removeBoxIdx);
+        return true;
     }
+    return false;
+}
+
+void label_img::clearAllBoxes()
+{
+    saveState();
+    m_objBoundingBoxes.clear();
+}
+
+void label_img::saveState()
+{
+    if(m_undoHistory.size() >= MAX_UNDO_HISTORY)
+        m_undoHistory.removeFirst();
+    m_undoHistory.append(m_objBoundingBoxes);
+    m_redoHistory.clear();
+}
+
+bool label_img::undo()
+{
+    if(m_undoHistory.isEmpty())
+        return false;
+    m_redoHistory.append(m_objBoundingBoxes);
+    m_objBoundingBoxes = m_undoHistory.takeLast();
+    return true;
+}
+
+bool label_img::redo()
+{
+    if(m_redoHistory.isEmpty())
+        return false;
+    m_undoHistory.append(m_objBoundingBoxes);
+    m_objBoundingBoxes = m_redoHistory.takeLast();
+    return true;
+}
+
+void label_img::clearUndoHistory()
+{
+    m_undoHistory.clear();
+    m_redoHistory.clear();
 }
 
 void label_img::setFocusedObjectBoxLabel(QPointF point, int newLabel)
