@@ -23,6 +23,8 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 - Once the task is complete, push the branch and create a Pull Request to `master`
 - Each branch should contain a single, focused unit of work
 - Do not start a new task on the same branch — create a new branch for each task
+- **When working on an existing PR** (e.g., fixing issues, adding changes), push commits directly to that PR's branch instead of creating a new PR. Only create a separate PR if explicitly requested.
+- **Before merging a PR**, check if `master` has advanced since the PR was created. If so, check for conflicts (e.g., `git merge-tree`) and rebase or merge `master` into the PR branch to resolve them before merging.
 - **Never use `git checkout` or `git switch` to change branches.** Use `git worktree` to work on multiple branches simultaneously in separate directories
   - Create a worktree: `git worktree add ../Yolo_Label-<branch-name> -b <type>/<short-description>`
   - Work inside the worktree directory, not the main repo
