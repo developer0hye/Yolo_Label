@@ -26,7 +26,7 @@ label_img::label_img(QWidget *parent)
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+    setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
     showImage();
     emit Mouse_Moved();
@@ -34,7 +34,7 @@ void label_img::mouseMoveEvent(QMouseEvent *ev)
 
 void label_img::mousePressEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+    setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
     if(ev->button() == Qt::RightButton)
     {
@@ -365,7 +365,7 @@ void label_img::removeFocusedObjectBox(QPointF point)
 
     if(removeBoxIdx != -1)
     {
-        m_objBoundingBoxes.remove(removeBoxIdx);
+        m_objBoundingBoxes.removeAt(removeBoxIdx);
     }
 }
 
