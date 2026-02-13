@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QPushButton>
 
+#include "label_img.h"
 #include <iostream>
 #include <fstream>
 
@@ -50,6 +51,8 @@ private slots:
     void on_horizontalSlider_contrast_sliderMoved(int value);
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
+
+    void copy_previous_annotations();
 
     void undo();
     void redo();
@@ -93,6 +96,8 @@ private:
     int             m_objIndex;
     int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
+
+    QVector<ObjectLabelingBox> m_previousAnnotations;
 
     QTimer         *m_usageTimer;
     qint64          m_usageTimerElapsedSeconds;
