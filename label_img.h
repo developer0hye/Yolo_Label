@@ -24,8 +24,6 @@ public:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
 
-    void setFocusedObjectBoxLabel(QPointF point, int newLabel);
-
     QVector<QColor> m_drawObjectBoxColor;
     QStringList     m_objList;
 
@@ -54,6 +52,7 @@ public:
 
     bool isOpened();
 
+    void clearAllBoxes();
     void saveState();
     bool undo();
     bool redo();
@@ -91,6 +90,7 @@ private:
     unsigned char m_gammatransform_lut[256];
     QVector<QRgb> colorTable;
 
+    static const int MAX_UNDO_HISTORY = 50;
     QVector< QVector<ObjectLabelingBox> > m_undoHistory;
     QVector< QVector<ObjectLabelingBox> > m_redoHistory;
 

@@ -85,7 +85,6 @@ private:
 
 protected:
     void    wheelEvent(QWheelEvent *);
-    bool    eventFilter(QObject *watched, QEvent *event) override;
 };
 
 #endif // MAINWINDOW_H

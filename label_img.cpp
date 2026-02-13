@@ -183,7 +183,6 @@ void label_img::showImage()
 
 void label_img::loadLabelData(const QString& labelFilePath)
 {
-    clearUndoHistory();
     ifstream inputFile(qPrintable(labelFilePath));
 
     if(inputFile.is_open())
@@ -374,8 +373,16 @@ void label_img::removeFocusedObjectBox(QPointF point)
     }
 }
 
+void label_img::clearAllBoxes()
+{
+    saveState();
+    m_objBoundingBoxes.clear();
+}
+
 void label_img::saveState()
 {
+    if(m_undoHistory.size() >= MAX_UNDO_HISTORY)
+        m_undoHistory.removeFirst();
     m_undoHistory.append(m_objBoundingBoxes);
     m_redoHistory.clear();
 }
