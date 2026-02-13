@@ -5,7 +5,11 @@
 #include <QWheelEvent>
 #include <QTableWidgetItem>
 #include <QMessageBox>
+#include <QTimer>
+#include <QLabel>
+#include <QPushButton>
 
+#include "label_img.h"
 #include <iostream>
 #include <fstream>
 
@@ -20,6 +24,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void set_args(int argc, char *argv[]);
+
 
 private slots:
     void on_pushButton_open_files_clicked();
@@ -46,13 +52,22 @@ private slots:
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
+    void copy_previous_annotations();
+
+    void undo();
+    void redo();
+
+    void on_usageTimer_timeout();
+    void on_usageTimerReset_clicked();
+
 private:
+    void updateUsageTimerLabel();
+
     void            init();
     void            init_table_widget();
     void            init_button_event();
     void            init_horizontal_slider();
 
-    void            img_open(const int);
     void            set_label_progress(const int);
     void            set_focused_file(const int);
 
@@ -68,6 +83,7 @@ private:
 
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
+    bool            get_files(QString imgDir);
 
     Ui::MainWindow *ui;
 
@@ -77,11 +93,18 @@ private:
 
     QStringList     m_objList;
     int             m_objIndex;
-    int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
+
+    QVector<ObjectLabelingBox> m_previousAnnotations;
+
+    QTimer         *m_usageTimer;
+    qint64          m_usageTimerElapsedSeconds;
+    QLabel         *m_usageTimerLabel;
+    QPushButton    *m_usageTimerResetButton;
 
 protected:
     void    wheelEvent(QWheelEvent *);
+
 };
 
 #endif // MAINWINDOW_H

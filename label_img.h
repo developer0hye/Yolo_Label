@@ -52,7 +52,10 @@ public:
 
     bool isOpened();
 
+    void clearAllBoxes();
     void saveState();
+    bool undo();
+    bool redo();
     void clearUndoHistory();
 
     void moveBoxUnderCursor(QPointF cursorPos, double dx, double dy);
@@ -89,7 +92,9 @@ private:
     unsigned char m_gammatransform_lut[256];
     QVector<QRgb> colorTable;
 
+    static const int MAX_UNDO_HISTORY = 50;
     QVector< QVector<ObjectLabelingBox> > m_undoHistory;
+    QVector< QVector<ObjectLabelingBox> > m_redoHistory;
 
     bool    m_bDragging;
     bool    m_bDragPending;
@@ -104,7 +109,7 @@ private:
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
     void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
-    void removeFocusedObjectBox(QPointF);
+    bool removeFocusedObjectBox(QPointF);
 };
 
 #endif // LABEL_IMG_H
