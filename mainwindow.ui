@@ -597,10 +597,11 @@ QCheckBox::indicator {
     width: 16px;
     height: 16px;
     border: 2px solid rgb(0, 255, 255);
-    background-color: rgb(0, 0, 17);
+    background-color: white;
 }
 QCheckBox::indicator:checked {
     background-color: rgb(0, 255, 255);
+    image: url(none);
 }
 </string>
         </property>
