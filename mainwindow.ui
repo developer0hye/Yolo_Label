@@ -115,9 +115,6 @@ border-color: rgb(0, 255, 255);}
           <property name="alignment">
            <set>Qt::AlignCenter</set>
           </property>
-          <property name="margin">
-           <number>-1</number>
-          </property>
           <property name="buddy">
            <cstring>label_image</cstring>
           </property>
@@ -512,13 +509,16 @@ gridline-width:2px;
 gridline-color: rgb(0, 255, 255);
 }
 
-QTableView {
-    selection-background-color: qlineargradient(x1: 0, y1: 0, x2: 1.0, y2: 1.0, stop: 0 rgb(34, 0, 85), stop: 1 white);
-	selection-color: rgb(0, 255, 0);
+QTableWidget::item {
+    background-color: rgb(0, 0, 17);
+}
+QTableWidget::item:selected {
+    background-color: rgb(34, 0, 85);
+    color: rgb(0, 255, 0);
 }</string>
         </property>
         <property name="frameShape">
-         <enum>QFrame::WinPanel</enum>
+         <enum>QFrame::StyledPanel</enum>
         </property>
         <property name="frameShadow">
          <enum>QFrame::Plain</enum>
