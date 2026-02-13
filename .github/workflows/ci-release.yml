@@ -1,0 +1,238 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  QT_VERSION: '5.15.2'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            qt_arch: win64_msvc2019_64
+            artifact_name: YoloLabel-Windows-x64
+          - os: ubuntu-22.04
+            artifact_name: YoloLabel-Linux-x64
+          - os: macos-latest
+            artifact_name: YoloLabel-macOS
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: ${{ matrix.qt_arch || '' }}
+          cache: true
+
+      # ── Windows: setup MSVC toolchain ─────────────────────────
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # ── Linux: install system dependencies ────────────────────
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcb-xinerama0 \
+            libxcb-cursor0 \
+            libfuse2 \
+            libxkbcommon-x11-0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0
+
+      # ── Build ─────────────────────────────────────────────────
+      - name: Build (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          qmake YoloLabel.pro CONFIG+=release
+          make -j$(nproc 2>/dev/null || sysctl -n hw.logicalcpu 2>/dev/null || echo 2)
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          qmake YoloLabel.pro CONFIG+=release
+          nmake
+
+      # ── Package: Windows ──────────────────────────────────────
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          mkdir deploy
+          copy release\YoloLabel.exe deploy\
+          windeployqt deploy\YoloLabel.exe --release --no-translations --no-opengl-sw
+
+      # ── Package: macOS ────────────────────────────────────────
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          macdeployqt YoloLabel.app -dmg
+          mv YoloLabel.dmg "${{ matrix.artifact_name }}.dmg"
+
+      # ── Package: Linux ────────────────────────────────────────
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # Prepare AppDir
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp YoloLabel AppDir/usr/bin/
+
+          # Create desktop entry
+          cat > AppDir/usr/share/applications/yololabel.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=YoloLabel
+          Exec=YoloLabel
+          Icon=yololabel
+          Categories=Graphics;
+          Comment=YOLO format image labeling tool
+          EOF
+
+          # Create minimal placeholder icon
+          python3 -c "
+          import struct, zlib
+          def png(w,h):
+            def chunk(t,d):
+              c=t+d; return struct.pack('>I',len(d))+c+struct.pack('>I',zlib.crc32(c)&0xffffffff)
+            raw=b''
+            for y in range(h):
+              raw+=b'\x00'+b'\x00\x80\x00'*w
+            return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b'')
+          open('AppDir/usr/share/icons/hicolor/256x256/apps/yololabel.png','wb').write(png(256,256))
+          "
+
+          # Download linuxdeployqt
+          wget -q -O linuxdeployqt https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt
+
+          # Try AppImage creation
+          ./linuxdeployqt \
+            AppDir/usr/share/applications/yololabel.desktop \
+            -appimage \
+            -bundle-non-qt-libs \
+            -qmake="$(which qmake)" \
+            -unsupported-allow-new-glibc \
+            || true
+
+          if ls YoloLabel*.AppImage 1>/dev/null 2>&1; then
+            mv YoloLabel*.AppImage "${{ matrix.artifact_name }}.AppImage"
+          else
+            echo "AppImage creation failed, creating tar.gz fallback"
+            mkdir -p package/YoloLabel
+            cp YoloLabel package/YoloLabel/
+
+            QT_LIB_DIR="$(qmake -query QT_INSTALL_LIBS)"
+            QT_PLUGIN_DIR="$(qmake -query QT_INSTALL_PLUGINS)"
+
+            mkdir -p package/YoloLabel/lib
+            mkdir -p package/YoloLabel/plugins/platforms
+            mkdir -p package/YoloLabel/plugins/xcbglintegrations
+
+            for lib in libQt5Core libQt5Gui libQt5Widgets libQt5XcbQpa libQt5DBus libicui18n libicuuc libicudata; do
+              cp -L "${QT_LIB_DIR}/${lib}.so"* package/YoloLabel/lib/ 2>/dev/null || true
+            done
+
+            cp -L "${QT_PLUGIN_DIR}/platforms/libqxcb.so" package/YoloLabel/plugins/platforms/ 2>/dev/null || true
+            cp -L "${QT_PLUGIN_DIR}/xcbglintegrations/"*.so package/YoloLabel/plugins/xcbglintegrations/ 2>/dev/null || true
+
+            cat > package/YoloLabel/YoloLabel.sh << 'LAUNCHER'
+          #!/bin/bash
+          SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+          export LD_LIBRARY_PATH="${SELF_DIR}/lib:${LD_LIBRARY_PATH}"
+          export QT_PLUGIN_PATH="${SELF_DIR}/plugins"
+          exec "${SELF_DIR}/YoloLabel" "$@"
+          LAUNCHER
+            chmod +x package/YoloLabel/YoloLabel.sh
+
+            cd package
+            tar -czf "../${{ matrix.artifact_name }}.tar.gz" YoloLabel
+          fi
+
+      # ── Upload artifacts ──────────────────────────────────────
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: deploy/
+
+      - name: Upload artifact (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: '*.dmg'
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            *.AppImage
+            *.tar.gz
+
+  # ═══════════════════════════════════════════════════════════════
+  # Release (only on tag push)
+  # ═══════════════════════════════════════════════════════════════
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display artifacts
+        run: ls -R artifacts
+
+      - name: Create release archives
+        run: |
+          cd artifacts/YoloLabel-Windows-x64
+          zip -r ../YoloLabel-Windows-x64.zip .
+          cd ../..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/*.zip
+            artifacts/**/*.dmg
+            artifacts/**/*.AppImage
+            artifacts/**/*.tar.gz
