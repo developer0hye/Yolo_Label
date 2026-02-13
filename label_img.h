@@ -24,6 +24,8 @@ public:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
 
+    void setFocusedObjectBoxLabel(QPointF point, int newLabel);
+
     QVector<QColor> m_drawObjectBoxColor;
     QStringList     m_objList;
 

@@ -76,6 +76,14 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 {
     setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
+    if(ev->button() == Qt::LeftButton && (ev->modifiers() & Qt::AltModifier) && !m_bLabelingStarted)
+    {
+        setFocusedObjectBoxLabel(m_relative_mouse_pos_in_ui, m_focusedObjectLabel);
+        showImage();
+        emit Mouse_Pressed();
+        return;
+    }
+
     if(ev->button() == Qt::RightButton)
     {
         removeFocusedObjectBox(m_relative_mouse_pos_in_ui);
@@ -519,6 +527,17 @@ void label_img::moveBox(int boxIdx, double dx, double dy)
     box.moveLeft(newX);
     box.moveTop(newY);
     showImage();
+}
+
+void label_img::setFocusedObjectBoxLabel(QPointF point, int newLabel)
+{
+    int boxIdx = findBoxUnderCursor(point);
+
+    if(boxIdx != -1 && newLabel >= 0 && newLabel < m_objList.size())
+    {
+        saveState();
+        m_objBoundingBoxes[boxIdx].label = newLabel;
+    }
 }
 
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
