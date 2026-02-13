@@ -20,6 +20,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void set_args(int argc, char *argv[]);
+
 
 private slots:
     void on_pushButton_open_files_clicked();
@@ -68,6 +70,7 @@ private:
 
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
+    bool            get_files(QString imgDir);
 
     Ui::MainWindow *ui;
 
@@ -82,6 +85,7 @@ private:
 
 protected:
     void    wheelEvent(QWheelEvent *);
+
 };
 
 #endif // MAINWINDOW_H
