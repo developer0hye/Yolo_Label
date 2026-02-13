@@ -264,6 +264,7 @@ void MainWindow::remove_img()
             m_imgIndex--;
         }
 
+        ui->horizontalSlider_images->setRange(0, m_imgList.size() - 1);
         goto_img(m_imgIndex);
     }
 }
