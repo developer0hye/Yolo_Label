@@ -6,8 +6,6 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QShortcut>
-#include <QApplication>
-#include <QEvent>
 #include <QCollator>
 #include <iomanip>
 #include <cmath>
@@ -40,8 +38,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QShortcut *redoShortcut = new QShortcut(QKeySequence::Redo, this, SLOT(redo()));
     redoShortcut->setContext(Qt::ApplicationShortcut);
-
-    qApp->installEventFilter(this);
 
     init_table_widget();
 }
@@ -126,6 +122,7 @@ void MainWindow::goto_img(const int fileIndex)
     bool bImgOpened;
     ui->label_image->openImage(m_imgList.at(m_imgIndex), bImgOpened);
 
+    ui->label_image->clearUndoHistory();
     ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
     ui->label_image->showImage();
 
@@ -185,8 +182,7 @@ void MainWindow::save_label_data()
 
 void MainWindow::clear_label_data()
 {
-    ui->label_image->saveState();
-    ui->label_image->m_objBoundingBoxes.clear();
+    ui->label_image->clearAllBoxes();
     ui->label_image->showImage();
 }
 
@@ -378,25 +374,6 @@ void MainWindow::wheelEvent(QWheelEvent *ev)
         prev_img();
     else if(ev->angleDelta().y() < 0) //down Wheel
         next_img();
-}
-
-bool MainWindow::eventFilter(QObject *watched, QEvent *event)
-{
-    if(event->type() == QEvent::KeyPress)
-    {
-        QKeyEvent *ke = static_cast<QKeyEvent *>(event);
-        if(ke->key() == Qt::Key_Z && ke->modifiers() == Qt::ControlModifier)
-        {
-            undo();
-            return true;
-        }
-        if(ke->key() == Qt::Key_Z && ke->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
-        {
-            redo();
-            return true;
-        }
-    }
-    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::on_pushButton_prev_clicked()
