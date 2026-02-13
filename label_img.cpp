@@ -38,7 +38,6 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 
     if(ev->button() == Qt::RightButton)
     {
-        saveState();
         removeFocusedObjectBox(m_relative_mouse_pos_in_ui);
         showImage();
     }
@@ -347,7 +346,7 @@ void label_img::gammaTransform(QImage &image)
     }
 }
 
-void label_img::removeFocusedObjectBox(QPointF point)
+bool label_img::removeFocusedObjectBox(QPointF point)
 {
     int     removeBoxIdx = -1;
     double  nearestBoxDistance   = 99999999999999.;
@@ -369,8 +368,11 @@ void label_img::removeFocusedObjectBox(QPointF point)
 
     if(removeBoxIdx != -1)
     {
+        saveState();
         m_objBoundingBoxes.remove(removeBoxIdx);
+        return true;
     }
+    return false;
 }
 
 void label_img::clearAllBoxes()

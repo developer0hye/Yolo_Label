@@ -101,7 +101,7 @@ private:
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
     void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
-    void removeFocusedObjectBox(QPointF);
+    bool removeFocusedObjectBox(QPointF);
 };
 
 #endif // LABEL_IMG_H
