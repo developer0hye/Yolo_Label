@@ -103,8 +103,8 @@ void label_img::setMousePosition(int x, int y)
     if(x < 0) x = 0;
     if(y < 0) y = 0;
 
-    if(x > this->width())   x = this->width() - 1;
-    if(y > this->height())  y = this->height() - 1;
+    if(x >= this->width())   x = this->width() - 1;
+    if(y >= this->height())  y = this->height() - 1;
 
     m_relative_mouse_pos_in_ui = cvtAbsoluteToRelativePoint(QPoint(x, y));
 }
@@ -198,6 +198,8 @@ void label_img::loadLabelData(const QString& labelFilePath)
                 ObjectLabelingBox objBox;
 
                 objBox.label = static_cast<int>(inputFileValues.at(i));
+                if(objBox.label < 0 || objBox.label >= m_objList.size())
+                    continue;
 
                 double midX     = inputFileValues.at(i + 1);
                 double midY     = inputFileValues.at(i + 2);
@@ -323,25 +325,19 @@ void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixe
 
 void label_img::gammaTransform(QImage &image)
 {
-    uchar* bits = image.bits();
-
     int h = image.height();
     int w = image.width();
+    int stride = image.bytesPerLine();
 
-    //#pragma omp parallel for collapse(2)
     for(int y = 0 ; y < h; ++y)
     {
+        uchar* row = image.bits() + y * stride;
         for(int x = 0; x < w; ++x)
         {
-            int index_pixel = (y*w+x)*3;
-
-            unsigned char r = bits[index_pixel + 0];
-            unsigned char g = bits[index_pixel + 1];
-            unsigned char b = bits[index_pixel + 2];
-
-            bits[index_pixel + 0] = m_gammatransform_lut[r];
-            bits[index_pixel + 1] = m_gammatransform_lut[g];
-            bits[index_pixel + 2] = m_gammatransform_lut[b];
+            int offset = x * 3;
+            row[offset + 0] = m_gammatransform_lut[row[offset + 0]];
+            row[offset + 1] = m_gammatransform_lut[row[offset + 1]];
+            row[offset + 2] = m_gammatransform_lut[row[offset + 2]];
         }
     }
 }
@@ -449,6 +445,8 @@ QPoint label_img::cvtRelativeToAbsolutePoint(QPointF p)
 
 QPointF label_img::cvtAbsoluteToRelativePoint(QPoint p)
 {
+    if(this->width() <= 0 || this->height() <= 0)
+        return QPointF(0., 0.);
     return QPointF(static_cast<double>(p.x()) / this->width(), static_cast<double>(p.y()) / this->height());
 }
 

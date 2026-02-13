@@ -68,11 +68,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addPermanentWidget(m_usageTimerLabel);
     ui->statusBar->addPermanentWidget(m_usageTimerResetButton);
 
-    QShortcut *undoShortcut = new QShortcut(QKeySequence::Undo, this, SLOT(undo()));
+    QShortcut *undoShortcut = new QShortcut(QKeySequence::Undo, this);
     undoShortcut->setContext(Qt::ApplicationShortcut);
+    connect(undoShortcut, &QShortcut::activated, this, &MainWindow::undo);
 
-    QShortcut *redoShortcut = new QShortcut(QKeySequence::Redo, this, SLOT(redo()));
+    QShortcut *redoShortcut = new QShortcut(QKeySequence::Redo, this);
     redoShortcut->setContext(Qt::ApplicationShortcut);
+    connect(redoShortcut, &QShortcut::activated, this, &MainWindow::redo);
 
     init_table_widget();
 }
@@ -167,8 +169,7 @@ void MainWindow::set_focused_file(const int fileIndex)
 
 void MainWindow::goto_img(const int fileIndex)
 {
-    bool bIndexIsOutOfRange = (fileIndex < 0 || fileIndex > m_imgList.size() - 1);
-    if (bIndexIsOutOfRange) return;
+    if (m_imgList.isEmpty() || fileIndex < 0 || fileIndex >= m_imgList.size()) return;
 
     m_imgIndex = fileIndex;
 
@@ -198,7 +199,7 @@ void MainWindow::next_img(bool bSavePrev)
 void MainWindow::prev_img(bool bSavePrev)
 {
     m_previousAnnotations = ui->label_image->m_objBoundingBoxes;
-    if(bSavePrev) save_label_data();
+    if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex - 1);
 }
 
@@ -263,6 +264,7 @@ void MainWindow::remove_img()
             m_imgIndex--;
         }
 
+        ui->horizontalSlider_images->setRange(0, m_imgList.size() - 1);
         goto_img(m_imgIndex);
     }
 }
@@ -396,6 +398,12 @@ void MainWindow::open_img_dir(bool& ret)
                 opened_dir,
                 QFileDialog::ShowDirsOnly);
 
+
+    if(imgDir.isEmpty())
+    {
+        ret = false;
+        return;
+    }
 
     ret = get_files(imgDir);
     if (!ret)
