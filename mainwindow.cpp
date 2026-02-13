@@ -478,21 +478,30 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
     }
     else if(arrowKeyIsPressed && ui->label_image->isOpened())
     {
+        static int nudgeBoxIdx = -1;
+
         if(!event->isAutoRepeat())
-            ui->label_image->saveState();
+        {
+            QPointF cursorPos = ui->label_image->cvtAbsoluteToRelativePoint(
+                ui->label_image->mapFromGlobal(QCursor::pos()));
+            nudgeBoxIdx = ui->label_image->findBoxUnderCursor(cursorPos);
+            if(nudgeBoxIdx != -1)
+                ui->label_image->saveState();
+        }
 
-        bool shiftHeld = (event->modifiers() & Qt::ShiftModifier);
-        double step = shiftHeld ? 0.01 : 0.002;
+        if(nudgeBoxIdx != -1)
+        {
+            bool shiftHeld = (event->modifiers() & Qt::ShiftModifier);
+            double step = shiftHeld ? 0.01 : 0.002;
 
-        double dx = 0.0, dy = 0.0;
-        if(nKey == Qt::Key_Left)  dx = -step;
-        if(nKey == Qt::Key_Right) dx =  step;
-        if(nKey == Qt::Key_Up)    dy = -step;
-        if(nKey == Qt::Key_Down)  dy =  step;
+            double dx = 0.0, dy = 0.0;
+            if(nKey == Qt::Key_Left)  dx = -step;
+            if(nKey == Qt::Key_Right) dx =  step;
+            if(nKey == Qt::Key_Up)    dy = -step;
+            if(nKey == Qt::Key_Down)  dy =  step;
 
-        QPointF cursorPos = ui->label_image->cvtAbsoluteToRelativePoint(
-            ui->label_image->mapFromGlobal(QCursor::pos()));
-        ui->label_image->moveBoxUnderCursor(cursorPos, dx, dy);
+            ui->label_image->moveBox(nudgeBoxIdx, dx, dy);
+        }
     }
 }
 

@@ -141,7 +141,11 @@ void label_img::mouseReleaseEvent(QMouseEvent *ev)
         m_bDragging    = false;
         m_bDragPending = false;
         m_dragBoxIdx   = -1;
-        setCursor(Qt::CrossCursor);
+
+        if(findBoxUnderCursor(m_relative_mouse_pos_in_ui) != -1)
+            setCursor(Qt::OpenHandCursor);
+        else
+            setCursor(Qt::CrossCursor);
     }
     emit Mouse_Release();
 }
@@ -500,23 +504,21 @@ int label_img::findBoxUnderCursor(QPointF point) const
     return foundIdx;
 }
 
-void label_img::moveBoxUnderCursor(QPointF cursorPos, double dx, double dy)
+void label_img::moveBox(int boxIdx, double dx, double dy)
 {
-    int moveBoxIdx = findBoxUnderCursor(cursorPos);
+    if(boxIdx < 0 || boxIdx >= m_objBoundingBoxes.size())
+        return;
 
-    if(moveBoxIdx != -1)
-    {
-        QRectF &box = m_objBoundingBoxes[moveBoxIdx].box;
-        double newX = box.x() + dx;
-        double newY = box.y() + dy;
+    QRectF &box = m_objBoundingBoxes[boxIdx].box;
+    double newX = box.x() + dx;
+    double newY = box.y() + dy;
 
-        newX = std::max(0.0, std::min(newX, 1.0 - box.width()));
-        newY = std::max(0.0, std::min(newY, 1.0 - box.height()));
+    newX = std::max(0.0, std::min(newX, 1.0 - box.width()));
+    newY = std::max(0.0, std::min(newY, 1.0 - box.height()));
 
-        box.moveLeft(newX);
-        box.moveTop(newY);
-        showImage();
-    }
+    box.moveLeft(newX);
+    box.moveTop(newY);
+    showImage();
 }
 
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
