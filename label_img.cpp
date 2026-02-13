@@ -443,6 +443,7 @@ void label_img::setFocusedObjectBoxLabel(QPointF point, int newLabel)
 
     if(boxIdx != -1 && newLabel >= 0 && newLabel < m_objList.size())
     {
+        saveState();
         m_objBoundingBoxes[boxIdx].label = newLabel;
     }
 }
