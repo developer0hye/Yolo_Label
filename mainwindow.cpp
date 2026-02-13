@@ -27,9 +27,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(new QShortcut(QKeySequence(Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::next_label);
     connect(new QShortcut(QKeySequence(Qt::Key_W), this), &QShortcut::activated, this, &MainWindow::prev_label);
-    connect(new QShortcut(QKeySequence(Qt::Key_A), this), &QShortcut::activated, this, &MainWindow::prev_img);
-    connect(new QShortcut(QKeySequence(Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::next_img);
-    connect(new QShortcut(QKeySequence(Qt::Key_Space), this), &QShortcut::activated, this, &MainWindow::next_img);
+    connect(new QShortcut(QKeySequence(Qt::Key_A), this), &QShortcut::activated, this, [this]() { prev_img(); });
+    connect(new QShortcut(QKeySequence(Qt::Key_D), this), &QShortcut::activated, this, [this]() { next_img(); });
+    connect(new QShortcut(QKeySequence(Qt::Key_Space), this), &QShortcut::activated, this, [this]() { next_img(); });
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
 
