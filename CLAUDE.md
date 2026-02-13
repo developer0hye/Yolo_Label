@@ -14,8 +14,9 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 # Project Guidelines
 
 ## Git Configuration
-- All commits must be authored by `developer0hye <developer.0hye@gmail.com>`
-- All commits must include `Signed-off-by` line to pass DCO check (always use `git commit -s`)
+- All commits must use the local git config `user.name` and `user.email` for both author and committer. Verify with `git config user.name` and `git config user.email` before committing.
+- All commits must include `Signed-off-by` line to pass DCO check (always use `git commit -s`). The `Signed-off-by` name must match the commit author.
+- If the local git config `user.name` is **not** `developer0hye`, you **MUST** ask the user to confirm their identity before the first commit or push in the session. Once confirmed, do not ask again for the rest of the session.
 
 ## Branching & PR Workflow
 - Always create a new branch before starting any task (never work directly on `master`)
