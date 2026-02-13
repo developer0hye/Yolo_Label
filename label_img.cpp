@@ -28,6 +28,46 @@ void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
     setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
+    // Check if a pending press should become a drag
+    if(m_bDragPending && !m_bDragging)
+    {
+        QPoint absCurrent = cvtRelativeToAbsolutePoint(m_relative_mouse_pos_in_ui);
+        QPoint absStart   = cvtRelativeToAbsolutePoint(m_dragStartPos);
+        int pixDist = (absCurrent - absStart).manhattanLength();
+        if(pixDist > 5)
+        {
+            m_bDragging = true;
+            saveState();
+        }
+    }
+
+    // Move box while dragging
+    if(m_bDragging && m_dragBoxIdx >= 0 && m_dragBoxIdx < m_objBoundingBoxes.size())
+    {
+        QRectF &box = m_objBoundingBoxes[m_dragBoxIdx].box;
+        double newX = m_relative_mouse_pos_in_ui.x() - m_dragOffset.x();
+        double newY = m_relative_mouse_pos_in_ui.y() - m_dragOffset.y();
+
+        newX = std::max(0.0, std::min(newX, 1.0 - box.width()));
+        newY = std::max(0.0, std::min(newY, 1.0 - box.height()));
+
+        box.moveLeft(newX);
+        box.moveTop(newY);
+    }
+
+    // Update cursor based on hover state
+    if(!m_bLabelingStarted && !m_bDragging)
+    {
+        if(findBoxUnderCursor(m_relative_mouse_pos_in_ui) != -1)
+            setCursor(Qt::OpenHandCursor);
+        else
+            setCursor(Qt::CrossCursor);
+    }
+    else if(m_bDragging)
+    {
+        setCursor(Qt::ClosedHandCursor);
+    }
+
     showImage();
     emit Mouse_Moved();
 }
@@ -53,8 +93,22 @@ void label_img::mousePressEvent(QMouseEvent *ev)
     {
         if(m_bLabelingStarted == false)
         {
-            m_relatvie_mouse_pos_LBtnClicked_in_ui      = m_relative_mouse_pos_in_ui;
-            m_bLabelingStarted                          = true;
+            int boxIdx = findBoxUnderCursor(m_relative_mouse_pos_in_ui);
+            if(boxIdx != -1)
+            {
+                // Prepare for potential drag
+                m_bDragPending = true;
+                m_dragBoxIdx   = boxIdx;
+                QRectF &box    = m_objBoundingBoxes[boxIdx].box;
+                m_dragOffset   = QPointF(m_relative_mouse_pos_in_ui.x() - box.x(),
+                                         m_relative_mouse_pos_in_ui.y() - box.y());
+                m_dragStartPos = m_relative_mouse_pos_in_ui;
+            }
+            else
+            {
+                m_relatvie_mouse_pos_LBtnClicked_in_ui  = m_relative_mouse_pos_in_ui;
+                m_bLabelingStarted                      = true;
+            }
         }
         else
         {
@@ -84,6 +138,23 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
+    if(ev->button() == Qt::LeftButton)
+    {
+        if(m_bDragPending && !m_bDragging)
+        {
+            // Click on box without dragging → start labeling from that point
+            m_relatvie_mouse_pos_LBtnClicked_in_ui = m_relative_mouse_pos_in_ui;
+            m_bLabelingStarted = true;
+        }
+        m_bDragging    = false;
+        m_bDragPending = false;
+        m_dragBoxIdx   = -1;
+
+        if(findBoxUnderCursor(m_relative_mouse_pos_in_ui) != -1)
+            setCursor(Qt::OpenHandCursor);
+        else
+            setCursor(Qt::CrossCursor);
+    }
     emit Mouse_Release();
 }
 
@@ -91,6 +162,9 @@ void label_img::init()
 {
     m_objBoundingBoxes.clear();
     m_bLabelingStarted              = false;
+    m_bDragging                     = false;
+    m_bDragPending                  = false;
+    m_dragBoxIdx                    = -1;
     m_focusedObjectLabel            = 0;
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
@@ -111,8 +185,8 @@ void label_img::setMousePosition(int x, int y)
     if(x < 0) x = 0;
     if(y < 0) y = 0;
 
-    if(x > this->width())   x = this->width() - 1;
-    if(y > this->height())  y = this->height() - 1;
+    if(x >= this->width())   x = this->width() - 1;
+    if(y >= this->height())  y = this->height() - 1;
 
     m_relative_mouse_pos_in_ui = cvtAbsoluteToRelativePoint(QPoint(x, y));
 }
@@ -206,6 +280,8 @@ void label_img::loadLabelData(const QString& labelFilePath)
                 ObjectLabelingBox objBox;
 
                 objBox.label = static_cast<int>(inputFileValues.at(i));
+                if(objBox.label < 0 || objBox.label >= m_objList.size())
+                    continue;
 
                 double midX     = inputFileValues.at(i + 1);
                 double midY     = inputFileValues.at(i + 2);
@@ -331,25 +407,19 @@ void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixe
 
 void label_img::gammaTransform(QImage &image)
 {
-    uchar* bits = image.bits();
-
     int h = image.height();
     int w = image.width();
+    int stride = image.bytesPerLine();
 
-    //#pragma omp parallel for collapse(2)
     for(int y = 0 ; y < h; ++y)
     {
+        uchar* row = image.bits() + y * stride;
         for(int x = 0; x < w; ++x)
         {
-            int index_pixel = (y*w+x)*3;
-
-            unsigned char r = bits[index_pixel + 0];
-            unsigned char g = bits[index_pixel + 1];
-            unsigned char b = bits[index_pixel + 2];
-
-            bits[index_pixel + 0] = m_gammatransform_lut[r];
-            bits[index_pixel + 1] = m_gammatransform_lut[g];
-            bits[index_pixel + 2] = m_gammatransform_lut[b];
+            int offset = x * 3;
+            row[offset + 0] = m_gammatransform_lut[row[offset + 0]];
+            row[offset + 1] = m_gammatransform_lut[row[offset + 1]];
+            row[offset + 2] = m_gammatransform_lut[row[offset + 2]];
         }
     }
 }
@@ -421,25 +491,47 @@ void label_img::clearUndoHistory()
     m_redoHistory.clear();
 }
 
-void label_img::setFocusedObjectBoxLabel(QPointF point, int newLabel)
+int label_img::findBoxUnderCursor(QPointF point) const
 {
-    int boxIdx = -1;
-    double nearestBoxDistance = 99999999999999.;
+    int     foundIdx = -1;
+    double  nearestBoxDistance = 99999999999999.;
 
     for(int i = 0; i < m_objBoundingBoxes.size(); i++)
     {
         QRectF objBox = m_objBoundingBoxes.at(i).box;
-
         if(objBox.contains(point))
         {
             double distance = objBox.width() + objBox.height();
             if(distance < nearestBoxDistance)
             {
                 nearestBoxDistance = distance;
-                boxIdx = i;
+                foundIdx = i;
             }
         }
     }
+    return foundIdx;
+}
+
+void label_img::moveBox(int boxIdx, double dx, double dy)
+{
+    if(boxIdx < 0 || boxIdx >= m_objBoundingBoxes.size())
+        return;
+
+    QRectF &box = m_objBoundingBoxes[boxIdx].box;
+    double newX = box.x() + dx;
+    double newY = box.y() + dy;
+
+    newX = std::max(0.0, std::min(newX, 1.0 - box.width()));
+    newY = std::max(0.0, std::min(newY, 1.0 - box.height()));
+
+    box.moveLeft(newX);
+    box.moveTop(newY);
+    showImage();
+}
+
+void label_img::setFocusedObjectBoxLabel(QPointF point, int newLabel)
+{
+    int boxIdx = findBoxUnderCursor(point);
 
     if(boxIdx != -1 && newLabel >= 0 && newLabel < m_objList.size())
     {
@@ -484,6 +576,8 @@ QPoint label_img::cvtRelativeToAbsolutePoint(QPointF p)
 
 QPointF label_img::cvtAbsoluteToRelativePoint(QPoint p)
 {
+    if(this->width() <= 0 || this->height() <= 0)
+        return QPointF(0., 0.);
     return QPointF(static_cast<double>(p.x()) / this->width(), static_cast<double>(p.y()) / this->height());
 }
 

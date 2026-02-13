@@ -161,6 +161,8 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete all existing bounding boxes in the image |
 | `Ctrl + D` | Delete current image |
+| `Arrow Keys` | Nudge the bounding box under the cursor (~1-2px step) |
+| `Shift + Arrow Keys` | Nudge the bounding box under the cursor (~5px step) |
 | `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Copy annotations from the previous image to the current image |
 | `Ctrl + Z` (Windows/Linux) / `Cmd + Z` (macOS) | Undo last action (add, remove, or clear all) |
 | `Ctrl + Shift + Z` (Windows/Linux) / `Cmd + Shift + Z` (macOS) | Redo last undone action |

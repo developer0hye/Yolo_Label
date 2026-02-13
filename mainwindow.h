@@ -68,7 +68,6 @@ private:
     void            init_button_event();
     void            init_horizontal_slider();
 
-    void            img_open(const int);
     void            set_label_progress(const int);
     void            set_focused_file(const int);
 
@@ -94,7 +93,6 @@ private:
 
     QStringList     m_objList;
     int             m_objIndex;
-    int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
 
     QVector<ObjectLabelingBox> m_previousAnnotations;

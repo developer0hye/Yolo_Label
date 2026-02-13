@@ -4,8 +4,20 @@ on:
   push:
     branches: [master]
     tags: ['v*']
+    paths-ignore:
+      - '**.md'
+      - '.claude/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'Samples/**'
   pull_request:
     branches: [master]
+    paths-ignore:
+      - '**.md'
+      - '.claude/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'Samples/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
