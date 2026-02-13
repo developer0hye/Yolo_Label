@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "label_img.h"
+
 namespace Ui {
 class MainWindow;
 }
@@ -46,6 +48,8 @@ private slots:
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
+    void paste_previous_annotations();
+
 private:
     void            init();
     void            init_table_widget();
@@ -79,6 +83,8 @@ private:
     int             m_objIndex;
     int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
+
+    QVector<ObjectLabelingBox> m_previousAnnotations;
 
 protected:
     void    wheelEvent(QWheelEvent *);

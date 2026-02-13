@@ -151,6 +151,7 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `V` | Visualize Class Name |
 | `Ctrl + S` | Save |
 | `Ctrl + C` | Delete all existing bounding boxes in the image |
+| `Ctrl + V` | Paste annotations from the previous image to the current image |
 | `Ctrl + D` | Delete current image |
 
 | Mouse | Action |

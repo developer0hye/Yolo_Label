@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), SIGNAL(activated()), this, SLOT(remove_img()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), SIGNAL(activated()), this, SLOT(paste_previous_annotations()));
 
     init_table_widget();
 }
@@ -110,6 +111,9 @@ void MainWindow::goto_img(const int fileIndex)
 {
     bool bIndexIsOutOfRange = (fileIndex < 0 || fileIndex > m_imgList.size() - 1);
     if (bIndexIsOutOfRange) return;
+
+    if (ui->label_image->isOpened())
+        m_previousAnnotations = ui->label_image->m_objBoundingBoxes;
 
     m_imgIndex = fileIndex;
 
@@ -479,5 +483,12 @@ void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
 void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
+    ui->label_image->showImage();
+}
+
+void MainWindow::paste_previous_annotations()
+{
+    if (m_previousAnnotations.isEmpty() || !ui->label_image->isOpened()) return;
+    ui->label_image->m_objBoundingBoxes = m_previousAnnotations;
     ui->label_image->showImage();
 }
