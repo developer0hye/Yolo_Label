@@ -70,6 +70,7 @@ private:
 
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
+    bool            get_files(QString imgDir);
 
     Ui::MainWindow *ui;
 
@@ -81,7 +82,6 @@ private:
     int             m_objIndex;
     int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
-    bool            get_files(QString imgDir);
 
 protected:
     void    wheelEvent(QWheelEvent *);

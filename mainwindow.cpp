@@ -45,11 +45,15 @@ void MainWindow::set_args(int argc, char *argv[])
 {
   if (argc > 1) {
     QString dir = QString::fromLocal8Bit(argv[1]);
-    get_files(dir);
+    if (!get_files(dir)) return;
+
     if (argc > 2) {
       QString obj_file = QString::fromLocal8Bit(argv[2]);
       load_label_list_data(obj_file);
     }
+
+    if (m_objList.empty()) return;
+
     init();
   }
 }
