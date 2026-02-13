@@ -5,6 +5,9 @@
 #include <QWheelEvent>
 #include <QTableWidgetItem>
 #include <QMessageBox>
+#include <QTimer>
+#include <QLabel>
+#include <QPushButton>
 
 #include <iostream>
 #include <fstream>
@@ -48,7 +51,12 @@ private slots:
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
+    void on_usageTimer_timeout();
+    void on_usageTimerReset_clicked();
+
 private:
+    void updateUsageTimerLabel();
+
     void            init();
     void            init_table_widget();
     void            init_button_event();
@@ -82,6 +90,11 @@ private:
     int             m_objIndex;
     int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
+
+    QTimer         *m_usageTimer;
+    qint64          m_usageTimerElapsedSeconds;
+    QLabel         *m_usageTimerLabel;
+    QPushButton    *m_usageTimerResetButton;
 
 protected:
     void    wheelEvent(QWheelEvent *);

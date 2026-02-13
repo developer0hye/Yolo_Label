@@ -39,6 +39,34 @@ MainWindow::MainWindow(QWidget *parent) :
         "QCheckBox::indicator:checked { background-color: rgb(0, 255, 255); }"
     );
 
+    m_usageTimerElapsedSeconds = 0;
+    m_usageTimer = new QTimer(this);
+    m_usageTimer->setInterval(1000);
+    connect(m_usageTimer, &QTimer::timeout, this, &MainWindow::on_usageTimer_timeout);
+    m_usageTimer->start();
+
+    m_usageTimerLabel = new QLabel(this);
+    m_usageTimerLabel->setStyleSheet(
+        "color: rgb(0, 255, 255); font-weight: bold; font-family: 'Consolas', 'Courier New', monospace; font-size: 15px; padding: 2px 8px;"
+    );
+    m_usageTimerLabel->setMinimumWidth(150);
+    m_usageTimerResetButton = new QPushButton(QStringLiteral("\u21BA"), this);
+    m_usageTimerResetButton->setFixedSize(30, 30);
+    m_usageTimerResetButton->setToolTip(tr("Reset Timer"));
+    m_usageTimerResetButton->setStyleSheet(
+        "QPushButton { background-color: rgb(0, 0, 17); color: rgb(0, 255, 255); border: 1px solid rgb(0, 255, 255); border-radius: 15px; font-size: 18px; font-weight: bold; }"
+        "QPushButton:hover { background-color: rgb(0, 40, 60); }"
+        "QPushButton:pressed { background-color: rgb(0, 80, 100); }"
+    );
+    connect(m_usageTimerResetButton, &QPushButton::clicked, this, &MainWindow::on_usageTimerReset_clicked);
+    updateUsageTimerLabel();
+    ui->statusBar->setStyleSheet(
+        "QStatusBar { background-color: rgb(0, 0, 17); border: none; }"
+        "QStatusBar::item { border: none; }"
+    );
+    ui->statusBar->addPermanentWidget(m_usageTimerLabel);
+    ui->statusBar->addPermanentWidget(m_usageTimerResetButton);
+
     init_table_widget();
 }
 
@@ -509,4 +537,32 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
     ui->label_image->showImage();
+}
+
+void MainWindow::on_usageTimer_timeout()
+{
+    if (isActiveWindow())
+    {
+        m_usageTimerElapsedSeconds++;
+        updateUsageTimerLabel();
+    }
+}
+
+void MainWindow::on_usageTimerReset_clicked()
+{
+    m_usageTimerElapsedSeconds = 0;
+    updateUsageTimerLabel();
+}
+
+void MainWindow::updateUsageTimerLabel()
+{
+    qint64 secs = m_usageTimerElapsedSeconds;
+    int hours = static_cast<int>(secs / 3600);
+    int mins  = static_cast<int>((secs % 3600) / 60);
+    int s     = static_cast<int>(secs % 60);
+    QString text = QStringLiteral("\u23F1 %1:%2:%3")
+        .arg(hours, 2, 10, QChar('0'))
+        .arg(mins, 2, 10, QChar('0'))
+        .arg(s, 2, 10, QChar('0'));
+    m_usageTimerLabel->setText(text);
 }
