@@ -5,6 +5,9 @@
 #include <QWheelEvent>
 #include <QTableWidgetItem>
 #include <QMessageBox>
+#include <QTimer>
+#include <QLabel>
+#include <QPushButton>
 
 #include <iostream>
 #include <fstream>
@@ -20,6 +23,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void set_args(int argc, char *argv[]);
+
 
 private slots:
     void on_pushButton_open_files_clicked();
@@ -49,7 +54,12 @@ private slots:
     void undo();
     void redo();
 
+    void on_usageTimer_timeout();
+    void on_usageTimerReset_clicked();
+
 private:
+    void updateUsageTimerLabel();
+
     void            init();
     void            init_table_widget();
     void            init_button_event();
@@ -71,6 +81,7 @@ private:
 
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
+    bool            get_files(QString imgDir);
 
     Ui::MainWindow *ui;
 
@@ -83,8 +94,14 @@ private:
     int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
 
+    QTimer         *m_usageTimer;
+    qint64          m_usageTimerElapsedSeconds;
+    QLabel         *m_usageTimerLabel;
+    QPushButton    *m_usageTimerResetButton;
+
 protected:
     void    wheelEvent(QWheelEvent *);
+
 };
 
 #endif // MAINWINDOW_H

@@ -139,6 +139,15 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 
 ![endimage](https://user-images.githubusercontent.com/35001605/47704336-a6528180-dc66-11e8-8551-3ecb612b7353.PNG)
 
+## USAGE AND OPTIONS
+```
+./YoloLabel [dataset dir] [class file names]
+# Example
+./YoloLabel ../project/dataset/objects/frames ../project/dataset/objects/obj_names.txt
+
+```
+
+
 ## SHORTCUTS
 
 | Key | Action |
@@ -160,6 +169,10 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Right Click` | Delete Focused Bounding Box in the image <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
+
+## Usage Timer
+
+A timer in the status bar counts how many hours (and minutes/seconds) you have been using the program. It runs **only while the window is focused** (switches to another app to pause). Use the **Reset** button in the status bar to zero the timer at any time.
 
 ## Button Events
 
