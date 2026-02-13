@@ -60,7 +60,10 @@ void label_img::mousePressEvent(QMouseEvent *ev)
             bool height_is_too_small    = objBoundingbox.box.height() * m_inputImg.height() < 4;
 
             if(!width_is_too_small && !height_is_too_small)
+            {
+                saveState();
                 m_objBoundingBoxes.push_back(objBoundingbox);
+            }
 
             m_bLabelingStarted              = false;
 
@@ -343,7 +346,7 @@ void label_img::gammaTransform(QImage &image)
     }
 }
 
-void label_img::removeFocusedObjectBox(QPointF point)
+bool label_img::removeFocusedObjectBox(QPointF point)
 {
     int     removeBoxIdx = -1;
     double  nearestBoxDistance   = 99999999999999.;
@@ -365,8 +368,49 @@ void label_img::removeFocusedObjectBox(QPointF point)
 
     if(removeBoxIdx != -1)
     {
+        saveState();
         m_objBoundingBoxes.removeAt(removeBoxIdx);
+        return true;
     }
+    return false;
+}
+
+void label_img::clearAllBoxes()
+{
+    saveState();
+    m_objBoundingBoxes.clear();
+}
+
+void label_img::saveState()
+{
+    if(m_undoHistory.size() >= MAX_UNDO_HISTORY)
+        m_undoHistory.removeFirst();
+    m_undoHistory.append(m_objBoundingBoxes);
+    m_redoHistory.clear();
+}
+
+bool label_img::undo()
+{
+    if(m_undoHistory.isEmpty())
+        return false;
+    m_redoHistory.append(m_objBoundingBoxes);
+    m_objBoundingBoxes = m_undoHistory.takeLast();
+    return true;
+}
+
+bool label_img::redo()
+{
+    if(m_redoHistory.isEmpty())
+        return false;
+    m_undoHistory.append(m_objBoundingBoxes);
+    m_objBoundingBoxes = m_redoHistory.takeLast();
+    return true;
+}
+
+void label_img::clearUndoHistory()
+{
+    m_undoHistory.clear();
+    m_redoHistory.clear();
 }
 
 QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)

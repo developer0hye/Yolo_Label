@@ -51,6 +51,13 @@ public:
     void setContrastGamma(float);
 
     bool isOpened();
+
+    void clearAllBoxes();
+    void saveState();
+    bool undo();
+    bool redo();
+    void clearUndoHistory();
+
     QImage crop(QRect);
 
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
@@ -83,6 +90,10 @@ private:
     unsigned char m_gammatransform_lut[256];
     QVector<QRgb> colorTable;
 
+    static const int MAX_UNDO_HISTORY = 50;
+    QVector< QVector<ObjectLabelingBox> > m_undoHistory;
+    QVector< QVector<ObjectLabelingBox> > m_redoHistory;
+
     void setMousePosition(int , int);
 
     void drawCrossLine(QPainter& , QColor , int thickWidth = 3);
@@ -90,7 +101,7 @@ private:
     void drawObjectBoxes(QPainter& , int thickWidth = 3);
     void drawObjectLabels(QPainter& , int thickWidth = 3, int fontPixelSize = 14, int xMargin = 5, int yMargin = 2);
     void gammaTransform(QImage& image);
-    void removeFocusedObjectBox(QPointF);
+    bool removeFocusedObjectBox(QPointF);
 };
 
 #endif // LABEL_IMG_H

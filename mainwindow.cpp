@@ -67,6 +67,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addPermanentWidget(m_usageTimerLabel);
     ui->statusBar->addPermanentWidget(m_usageTimerResetButton);
 
+    QShortcut *undoShortcut = new QShortcut(QKeySequence::Undo, this, SLOT(undo()));
+    undoShortcut->setContext(Qt::ApplicationShortcut);
+
+    QShortcut *redoShortcut = new QShortcut(QKeySequence::Redo, this, SLOT(redo()));
+    redoShortcut->setContext(Qt::ApplicationShortcut);
+
     init_table_widget();
 }
 
@@ -168,6 +174,7 @@ void MainWindow::goto_img(const int fileIndex)
     bool bImgOpened;
     ui->label_image->openImage(m_imgList.at(m_imgIndex), bImgOpened);
 
+    ui->label_image->clearUndoHistory();
     ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
     ui->label_image->showImage();
 
@@ -227,7 +234,7 @@ void MainWindow::save_label_data()
 
 void MainWindow::clear_label_data()
 {
-    ui->label_image->m_objBoundingBoxes.clear();
+    ui->label_image->clearAllBoxes();
     ui->label_image->showImage();
 }
 
@@ -537,6 +544,18 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
     ui->label_image->showImage();
+}
+
+void MainWindow::undo()
+{
+    if(ui->label_image->undo())
+        ui->label_image->showImage();
+}
+
+void MainWindow::redo()
+{
+    if(ui->label_image->redo())
+        ui->label_image->showImage();
 }
 
 void MainWindow::on_usageTimer_timeout()

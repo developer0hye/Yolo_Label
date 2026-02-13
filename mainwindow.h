@@ -51,6 +51,9 @@ private slots:
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
+    void undo();
+    void redo();
+
     void on_usageTimer_timeout();
     void on_usageTimerReset_clicked();
 
