@@ -33,6 +33,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
 
+    ui->checkBox_visualize_class_name->setStyleSheet(
+        "QCheckBox { color: rgb(0, 255, 255); }"
+        "QCheckBox::indicator { width: 18px; height: 18px; border: 2px solid rgb(0, 255, 255); background-color: white; border-radius: 3px; }"
+        "QCheckBox::indicator:checked { background-color: rgb(0, 255, 255); }"
+    );
+
     init_table_widget();
 }
 

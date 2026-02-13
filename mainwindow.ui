@@ -509,9 +509,6 @@ gridline-width:2px;
 gridline-color: rgb(0, 255, 255);
 }
 
-QTableWidget::item {
-    background-color: rgb(0, 0, 17);
-}
 QTableWidget::item:selected {
     background-color: rgb(34, 0, 85);
     color: rgb(0, 255, 0);
@@ -592,17 +589,7 @@ QTableWidget::item:selected {
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color : rgb(0, 0, 17);color : rgb(0, 255, 255);
-QCheckBox::indicator {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgb(0, 255, 255);
-    background-color: white;
-}
-QCheckBox::indicator:checked {
-    background-color: rgb(0, 255, 255);
-    image: url(none);
-}
+         <string notr="true">color : rgb(0, 255, 255);
 </string>
         </property>
         <property name="text">
