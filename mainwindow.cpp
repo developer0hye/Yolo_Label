@@ -22,17 +22,57 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), SIGNAL(activated()), this, SLOT(save_label_data()));
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), SIGNAL(activated()), this, SLOT(clear_label_data()));
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::save_label_data);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
 
-    connect(new QShortcut(QKeySequence(Qt::Key_S), this), SIGNAL(activated()), this, SLOT(next_label()));
-    connect(new QShortcut(QKeySequence(Qt::Key_W), this), SIGNAL(activated()), this, SLOT(prev_label()));
-    connect(new QShortcut(QKeySequence(Qt::Key_A), this), SIGNAL(activated()), this, SLOT(prev_img()));
-    connect(new QShortcut(QKeySequence(Qt::Key_D), this), SIGNAL(activated()), this, SLOT(next_img()));
-    connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
-    connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), SIGNAL(activated()), this, SLOT(remove_img()));
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), SIGNAL(activated()), this, SLOT(copy_previous_annotations()));
+    connect(new QShortcut(QKeySequence(Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::next_label);
+    connect(new QShortcut(QKeySequence(Qt::Key_W), this), &QShortcut::activated, this, &MainWindow::prev_label);
+    connect(new QShortcut(QKeySequence(Qt::Key_A), this), &QShortcut::activated, this, [this]() { prev_img(); });
+    connect(new QShortcut(QKeySequence(Qt::Key_D), this), &QShortcut::activated, this, [this]() { next_img(); });
+    connect(new QShortcut(QKeySequence(Qt::Key_Space), this), &QShortcut::activated, this, [this]() { next_img(); });
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
+    connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), &QShortcut::activated, this, &MainWindow::copy_previous_annotations);
+
+    ui->checkBox_visualize_class_name->setStyleSheet(
+        "QCheckBox { color: rgb(0, 255, 255); }"
+        "QCheckBox::indicator { width: 18px; height: 18px; border: 2px solid rgb(0, 255, 255); background-color: white; border-radius: 3px; }"
+        "QCheckBox::indicator:checked { background-color: rgb(0, 255, 255); }"
+    );
+
+    m_usageTimerElapsedSeconds = 0;
+    m_usageTimer = new QTimer(this);
+    m_usageTimer->setInterval(1000);
+    connect(m_usageTimer, &QTimer::timeout, this, &MainWindow::on_usageTimer_timeout);
+    m_usageTimer->start();
+
+    m_usageTimerLabel = new QLabel(this);
+    m_usageTimerLabel->setStyleSheet(
+        "color: rgb(0, 255, 255); font-weight: bold; font-family: 'Consolas', 'Courier New', monospace; font-size: 15px; padding: 2px 8px;"
+    );
+    m_usageTimerLabel->setMinimumWidth(150);
+    m_usageTimerResetButton = new QPushButton(QStringLiteral("\u21BA"), this);
+    m_usageTimerResetButton->setFixedSize(30, 30);
+    m_usageTimerResetButton->setToolTip(tr("Reset Timer"));
+    m_usageTimerResetButton->setStyleSheet(
+        "QPushButton { background-color: rgb(0, 0, 17); color: rgb(0, 255, 255); border: 1px solid rgb(0, 255, 255); border-radius: 15px; font-size: 18px; font-weight: bold; }"
+        "QPushButton:hover { background-color: rgb(0, 40, 60); }"
+        "QPushButton:pressed { background-color: rgb(0, 80, 100); }"
+    );
+    connect(m_usageTimerResetButton, &QPushButton::clicked, this, &MainWindow::on_usageTimerReset_clicked);
+    updateUsageTimerLabel();
+    ui->statusBar->setStyleSheet(
+        "QStatusBar { background-color: rgb(0, 0, 17); border: none; }"
+        "QStatusBar::item { border: none; }"
+    );
+    ui->statusBar->addPermanentWidget(m_usageTimerLabel);
+    ui->statusBar->addPermanentWidget(m_usageTimerResetButton);
+
+    QShortcut *undoShortcut = new QShortcut(QKeySequence::Undo, this, SLOT(undo()));
+    undoShortcut->setContext(Qt::ApplicationShortcut);
+
+    QShortcut *redoShortcut = new QShortcut(QKeySequence::Redo, this, SLOT(redo()));
+    redoShortcut->setContext(Qt::ApplicationShortcut);
 
     init_table_widget();
 }
@@ -41,6 +81,24 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+void MainWindow::set_args(int argc, char *argv[])
+{
+  if (argc > 1) {
+    QString dir = QString::fromLocal8Bit(argv[1]);
+    if (!get_files(dir)) return;
+
+    if (argc > 2) {
+      QString obj_file = QString::fromLocal8Bit(argv[2]);
+      load_label_list_data(obj_file);
+    }
+
+    if (m_objList.empty()) return;
+
+    init();
+  }
+}
+
 
 void MainWindow::on_pushButton_open_files_clicked()
 {
@@ -117,6 +175,7 @@ void MainWindow::goto_img(const int fileIndex)
     bool bImgOpened;
     ui->label_image->openImage(m_imgList.at(m_imgIndex), bImgOpened);
 
+    ui->label_image->clearUndoHistory();
     ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
     ui->label_image->showImage();
 
@@ -178,7 +237,7 @@ void MainWindow::save_label_data()
 
 void MainWindow::clear_label_data()
 {
-    ui->label_image->m_objBoundingBoxes.clear();
+    ui->label_image->clearAllBoxes();
     ui->label_image->showImage();
 }
 
@@ -298,6 +357,31 @@ void MainWindow::pjreddie_style_msgBox(QMessageBox::Icon icon, QString title, QS
     msgBox.exec();
 }
 
+bool MainWindow::get_files(QString imgDir)
+{
+    bool value = false;
+    QDir dir(imgDir);
+    QCollator collator;
+    collator.setNumericMode(true);
+
+    QStringList fileList = dir.entryList(
+                QStringList() << "*.jpg" << "*.JPG" << "*.png" << "*.bmp",
+                QDir::Files);
+
+    std::sort(fileList.begin(), fileList.end(), collator);
+
+    if(!fileList.empty())
+    {
+        value = true;
+        m_imgDir    = imgDir;
+        m_imgList  = fileList;
+
+        for(QString& str: m_imgList)
+            str = m_imgDir + "/" + str;
+    }
+    return value;
+}
+
 void MainWindow::open_img_dir(bool& ret)
 {
     pjreddie_style_msgBox(QMessageBox::Information,"Help", "Step 1. Open Your Data Set Directory");
@@ -312,30 +396,10 @@ void MainWindow::open_img_dir(bool& ret)
                 opened_dir,
                 QFileDialog::ShowDirsOnly);
 
-    QDir dir(imgDir);
-    QCollator collator;
-    collator.setNumericMode(true);
 
-    QStringList fileList = dir.entryList(
-                QStringList() << "*.jpg" << "*.JPG" << "*.png" << "*.bmp",
-                QDir::Files);
-
-    std::sort(fileList.begin(), fileList.end(), collator);
-
-    if(fileList.empty())
-    {
-        ret = false;
+    ret = get_files(imgDir);
+    if (!ret)
         pjreddie_style_msgBox(QMessageBox::Critical,"Error", "This folder is empty");
-    }
-    else
-    {
-        ret = true;
-        m_imgDir    = imgDir;
-        m_imgList  = fileList;
-
-        for(QString& str: m_imgList)
-            str = m_imgDir + "/" + str;
-    }
 }
 
 void MainWindow::open_obj_file(bool& ret)
@@ -467,7 +531,7 @@ void MainWindow::init_table_widget()
     ui->tableWidget_label->horizontalHeader()->setStyleSheet("");
     ui->tableWidget_label->horizontalHeader()->setStretchLastSection(true);
 
-    disconnect(ui->tableWidget_label->horizontalHeader(), SIGNAL(sectionPressed(int)),ui->tableWidget_label, SLOT(selectColumn(int)));
+    disconnect(ui->tableWidget_label->horizontalHeader(), &QHeaderView::sectionPressed, ui->tableWidget_label, &QTableWidget::selectColumn);
 }
 
 void MainWindow::on_horizontalSlider_contrast_sliderMoved(int value)
@@ -491,4 +555,44 @@ void MainWindow::copy_previous_annotations()
     ui->label_image->saveState();
     ui->label_image->m_objBoundingBoxes = m_previousAnnotations;
     ui->label_image->showImage();
+}
+
+void MainWindow::undo()
+{
+    if(ui->label_image->undo())
+        ui->label_image->showImage();
+}
+
+void MainWindow::redo()
+{
+    if(ui->label_image->redo())
+        ui->label_image->showImage();
+}
+
+void MainWindow::on_usageTimer_timeout()
+{
+    if (isActiveWindow())
+    {
+        m_usageTimerElapsedSeconds++;
+        updateUsageTimerLabel();
+    }
+}
+
+void MainWindow::on_usageTimerReset_clicked()
+{
+    m_usageTimerElapsedSeconds = 0;
+    updateUsageTimerLabel();
+}
+
+void MainWindow::updateUsageTimerLabel()
+{
+    qint64 secs = m_usageTimerElapsedSeconds;
+    int hours = static_cast<int>(secs / 3600);
+    int mins  = static_cast<int>((secs % 3600) / 60);
+    int s     = static_cast<int>(secs % 60);
+    QString text = QStringLiteral("\u23F1 %1:%2:%3")
+        .arg(hours, 2, 10, QChar('0'))
+        .arg(mins, 2, 10, QChar('0'))
+        .arg(s, 2, 10, QChar('0'));
+    m_usageTimerLabel->setText(text);
 }
