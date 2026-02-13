@@ -35,7 +35,18 @@
    <string>YoloLabel</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color : rgb(0, 0, 17);</string>
+   <string notr="true">background-color : rgb(0, 0, 17);
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgb(0, 255, 255);
+    background-color: white;
+    border-radius: 3px;
+}
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 255, 255);
+}
+</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
@@ -590,16 +601,6 @@ QTableWidget::item:selected {
         </property>
         <property name="styleSheet">
          <string notr="true">color : rgb(0, 255, 255);
-QCheckBox::indicator {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgb(0, 255, 255);
-    background-color: white;
-    border-radius: 3px;
-}
-QCheckBox::indicator:checked {
-    background-color: rgb(0, 255, 255);
-}
 </string>
         </property>
         <property name="text">
