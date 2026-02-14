@@ -33,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), &QShortcut::activated, this, &MainWindow::copy_previous_annotations);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this), &QShortcut::activated, this, &MainWindow::reset_zoom);
 
     ui->checkBox_visualize_class_name->setStyleSheet(
         "QCheckBox { color: rgb(0, 255, 255); }"
@@ -175,6 +176,7 @@ void MainWindow::goto_img(const int fileIndex)
 
     bool bImgOpened;
     ui->label_image->openImage(m_imgList.at(m_imgIndex), bImgOpened);
+    ui->label_image->resetZoom();
 
     ui->label_image->clearUndoHistory();
     ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
@@ -438,10 +440,21 @@ void MainWindow::open_obj_file(bool& ret)
 
 void MainWindow::wheelEvent(QWheelEvent *ev)
 {
-    if(ev->angleDelta().y() > 0) // up Wheel
-        prev_img();
-    else if(ev->angleDelta().y() < 0) //down Wheel
-        next_img();
+    if(ev->modifiers() & Qt::ControlModifier)
+    {
+        QPoint labelPos = ui->label_image->mapFromGlobal(ev->globalPosition().toPoint());
+        if(ev->angleDelta().y() > 0)
+            ui->label_image->zoomIn(labelPos);
+        else if(ev->angleDelta().y() < 0)
+            ui->label_image->zoomOut(labelPos);
+    }
+    else
+    {
+        if(ev->angleDelta().y() > 0)
+            prev_img();
+        else if(ev->angleDelta().y() < 0)
+            next_img();
+    }
 }
 
 void MainWindow::on_pushButton_prev_clicked()
@@ -632,4 +645,9 @@ void MainWindow::updateUsageTimerLabel()
         .arg(mins, 2, 10, QChar('0'))
         .arg(s, 2, 10, QChar('0'));
     m_usageTimerLabel->setText(text);
+}
+
+void MainWindow::reset_zoom()
+{
+    ui->label_image->resetZoom();
 }

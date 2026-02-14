@@ -106,8 +106,9 @@ jobs:
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: |
-          macdeployqt YoloLabel.app -dmg
-          mv YoloLabel.dmg "${{ matrix.artifact_name }}.dmg"
+          macdeployqt YoloLabel.app
+          codesign --force --deep --sign - YoloLabel.app
+          hdiutil create -volname YoloLabel -srcfolder YoloLabel.app -ov -format UDZO "${{ matrix.artifact_name }}.dmg"
 
       # ── Package: Linux ────────────────────────────────────────
       - name: Package (Linux)
