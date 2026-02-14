@@ -132,6 +132,7 @@ void label_img::mousePressEvent(QMouseEvent *ev)
             {
                 m_relatvie_mouse_pos_LBtnClicked_in_ui  = m_relative_mouse_pos_in_ui;
                 m_bLabelingStarted                      = true;
+                grabMouse();
             }
         }
         else
@@ -151,6 +152,7 @@ void label_img::mousePressEvent(QMouseEvent *ev)
                 m_objBoundingBoxes.push_back(objBoundingbox);
             }
 
+            releaseMouse();
             m_bLabelingStarted              = false;
 
             showImage();
@@ -177,6 +179,7 @@ void label_img::mouseReleaseEvent(QMouseEvent *ev)
             // Click on box without dragging -> start labeling from that point
             m_relatvie_mouse_pos_LBtnClicked_in_ui = m_relative_mouse_pos_in_ui;
             m_bLabelingStarted = true;
+            grabMouse();
         }
         m_bDragging    = false;
         m_bDragPending = false;
@@ -193,6 +196,7 @@ void label_img::mouseReleaseEvent(QMouseEvent *ev)
 void label_img::init()
 {
     m_objBoundingBoxes.clear();
+    if (m_bLabelingStarted) releaseMouse();
     m_bLabelingStarted              = false;
     m_bDragging                     = false;
     m_bDragPending                  = false;
@@ -248,6 +252,7 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
         m_resized_inputImg  = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
                 .convertToFormat(QImage::Format_RGB888);
 
+        if (m_bLabelingStarted) releaseMouse();
         m_bLabelingStarted  = false;
 
         QPoint mousePosInUi     = this->mapFromGlobal(QCursor::pos());
