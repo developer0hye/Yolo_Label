@@ -206,5 +206,3 @@ I've reinvented the wheel.
 Upload binary file for easy usage for windows and ubuntu
 
 deployment for ubuntu
-
-Image zoom
