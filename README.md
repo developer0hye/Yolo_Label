@@ -159,7 +159,7 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `O` | Open Files |
 | `V` | Visualize Class Name |
 | `Ctrl + S` | Save |
-| `Ctrl + C` | Delete all existing bounding boxes in the image |
+| `Ctrl + Delete` (Windows/Linux) / `Cmd + Delete` (macOS) | Delete all existing bounding boxes in the image |
 | `Ctrl + D`, `Delete` | Delete current image |
 | `` ` `` (Backtick) | Select first class (class 0) |
 | `0-9` | Quick select class by number |
