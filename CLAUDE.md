@@ -38,6 +38,10 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 ## CI/CD
 - CI builds and tests target stable, widely-used OS versions (e.g., `windows-latest`, `ubuntu-22.04`, `macos-latest` — these are examples only; if unsure about current runner availability, search the web for the latest GitHub Actions runner images before updating)
 
+## Releases
+- When creating a GitHub Release, include a **Contributors** section in the release notes that credits all external contributors (anyone other than `developer0hye`) since the previous release.
+- Use `git log <prev-tag>..HEAD --format='%an' | sort -u` to find contributors, then list each with their GitHub profile link (`[@username](https://github.com/username)`) and a brief summary of what they contributed.
+
 ## Library & Framework Updates
 - When upgrading libraries or frameworks (e.g., Qt 5 → Qt 6), **existing functionality must remain identical**. Only replace deprecated APIs with their direct equivalents — do not add, remove, or alter any user-facing behavior.
 - **Visual rendering must also remain identical.** Framework upgrades can change how widgets are styled or drawn (e.g., checkbox indicators, selection highlights, frame styles, gradient support). After any upgrade, review all UI elements — especially those with custom stylesheets — and verify they render the same as before. Fix any visual regressions with explicit styles.
