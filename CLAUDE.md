@@ -31,7 +31,8 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 - **Never use `git checkout` or `git switch` to change branches.** Use `git worktree` to work on multiple branches simultaneously in separate directories
   - Create a worktree: `git worktree add ../Yolo_Label-<branch-name> -b <type>/<short-description>`
   - Work inside the worktree directory, not the main repo
-  - Remove after merge: **You MUST return to the main repo directory (`/Users/yhkwon/Documents/Projects/Yolo_Label`) before removing a worktree.** You cannot remove a worktree while your working directory is inside it. Always run: `cd /Users/yhkwon/Documents/Projects/Yolo_Label && git worktree remove ../Yolo_Label-<branch-name>`
+  - **Do NOT remove a worktree immediately after completing a task.** If you delete the worktree while your working directory is still inside it, all subsequent commands will fail because the path no longer exists. Only remove a worktree after you have confirmed the user wants it removed, or when starting a new task (at which point you will create a new worktree and move into that directory).
+  - **When removing a worktree, you MUST return to the main repo directory first.** You cannot remove a worktree while your working directory is inside it. Always run: `cd /Users/yhkwon/Documents/Projects/Yolo_Label && git worktree remove ../Yolo_Label-<branch-name>`
 
 ## CI/CD
 - CI builds and tests target stable, widely-used OS versions (e.g., `windows-latest`, `ubuntu-22.04`, `macos-latest` — these are examples only; if unsure about current runner availability, search the web for the latest GitHub Actions runner images before updating)

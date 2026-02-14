@@ -159,13 +159,14 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `O` | Open Files |
 | `V` | Visualize Class Name |
 | `Ctrl + S` | Save |
-| `Ctrl + C` | Delete all existing bounding boxes in the image |
+| `Ctrl + Delete` (Windows/Linux) / `Cmd + Delete` (macOS) | Delete all existing bounding boxes in the image |
 | `Ctrl + D`, `Delete` | Delete current image |
 | `` ` `` (Backtick) | Select first class (class 0) |
 | `0-9` | Quick select class by number |
 | `Arrow Keys` | Nudge the bounding box under the cursor (~1-2px step) |
 | `Shift + Arrow Keys` | Nudge the bounding box under the cursor (~5px step) |
-| `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Copy annotations from the previous image to the current image |
+| `Ctrl + C` (Windows/Linux) / `Cmd + C` (macOS) | Copy bounding boxes to clipboard |
+| `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Paste bounding boxes from clipboard |
 | `Ctrl + Z` (Windows/Linux) / `Cmd + Z` (macOS) | Undo last action (add, remove, or clear all) |
 | `Ctrl + Y` (Windows) / `Ctrl + Shift + Z` (Linux) / `Cmd + Shift + Z` (macOS) | Redo last undone action |
 | `Ctrl + 0` (Windows/Linux) / `Cmd + 0` (macOS) | Reset zoom to 100% |
