@@ -229,6 +229,7 @@ void label_img::setMousePosition(int x, int y)
 void label_img::openImage(const QString &qstrImg, bool &ret)
 {
     QImageReader imgReader(qstrImg);
+    imgReader.setAllocationLimit(0);
     imgReader.setAutoTransform(true);
     QImage img = imgReader.read();
 
@@ -243,8 +244,7 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 
         m_objBoundingBoxes.clear();
 
-        m_inputImg          = img.copy();
-        m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
+        m_inputImg          = std::move(img);
         m_resized_inputImg  = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
                 .convertToFormat(QImage::Format_RGB888);
 
