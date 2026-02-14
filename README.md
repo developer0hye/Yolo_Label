@@ -46,54 +46,55 @@ https://user-images.githubusercontent.com/35001605/211560039-367f27d7-63ab-4342-
   ![redmon2](https://user-images.githubusercontent.com/35001605/47635529-a1270100-db98-11e8-8c03-1dcea7c77d1d.PNG)
 # TUTORIAL / USAGE
 
-## Install and Run
+## Download
 
-1. Download this project
+Pre-built binaries are available on the [Releases](https://github.com/developer0hye/Yolo_Label/releases) page.
+
+| OS | Download | Note |
+|---|---|---|
+| **Windows (x64)** | [YoloLabel-Windows-x64.zip](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-Windows-x64.zip) | Unzip and run `YoloLabel.exe` |
+| **Linux (x64)** | [YoloLabel-Linux-x64.AppImage](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-Linux-x64.AppImage) | `chmod +x` and run |
+| **macOS** | [YoloLabel-macOS.dmg](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-macOS.dmg) | See note below |
+
+> **macOS note:** The macOS binary is not signed with an Apple Developer certificate. macOS Gatekeeper will block it from running. To use YoloLabel on macOS, build from source (see below).
+
+## Install and Run
 
 ### For Windows
 
-2. Download [YOLOLabel_v1.2.1.zip](https://github.com/developer0hye/Yolo_Label/releases/download/v1.2.1/YoloLabel_v1.2.1.zip)
+1. Download [YoloLabel-Windows-x64.zip](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-Windows-x64.zip)
 
-3. Unzip
+2. Unzip
 
-4. Run YoloLabel.exe
+3. Run YoloLabel.exe
 
 ![image](https://user-images.githubusercontent.com/35001605/111152300-e74b5680-85d3-11eb-8df7-178148548c12.png)
 
-### For Ubuntu 22.04
+### For Linux
 
-2. Download [YOLOLabel_v1.2.1.tar](https://github.com/developer0hye/Yolo_Label/releases/download/v1.2.1/YoloLabel_v1.2.1.tar)
+1. Download [YoloLabel-Linux-x64.AppImage](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-Linux-x64.AppImage)
 
-3. Unzip and download libraries
+2. Make executable and run
 ```
-tar -xvf YoloLabel_v1.2.1.tar
-sudo apt update
-sudo apt-get install -y libgl1-mesa-dev
-sudo apt-get install libxcb-*
-sudo apt-get install libxkb*
+chmod +x YoloLabel-Linux-x64.AppImage
+./YoloLabel-Linux-x64.AppImage
 ```
 
-4. Run YoloLabel.sh
-```
-./YoloLabel.sh
-```
+### For macOS (build from source)
 
-![image](https://user-images.githubusercontent.com/35001605/212230332-7e62bc50-7440-45c8-afc3-faebc0b31318.png)
-
-
-### For macOS
+1. Install Qt 6 (e.g. via Homebrew: `brew install qt@6`)
 
 2. Clone or download the source code of this repository
 
 3. Open terminal and type command in the downloaded directory.
 ```console
-yourMacOS:Yolo_Label you$ qmake
-yourMacOS:Yolo_Label you$ make
+qmake
+make
 ```
 
 4. Run YoloLabel.app/Contents/MacOS/YoloLabel in terminal or double click YoloLabel.app to run
 ```console
-yourMacOS:Yolo_Label you$ ./YoloLabel.app/MacOS/YoloLabel
+./YoloLabel.app/Contents/MacOS/YoloLabel
 ```
 
 ## Prepare Custom Dataset and Load
@@ -212,6 +213,6 @@ I've reinvented the wheel.
 
 # TO DO LISTS
 
-Upload binary file for easy usage for windows and ubuntu
-
-deployment for ubuntu
+- [x] ~~Upload binary file for easy usage for windows and ubuntu~~
+- [x] ~~deployment for ubuntu~~
+- [ ] macOS Developer signing for Gatekeeper
