@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::save_label_data);
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
 
     connect(new QShortcut(QKeySequence(Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::next_label);
     connect(new QShortcut(QKeySequence(Qt::Key_W), this), &QShortcut::activated, this, &MainWindow::prev_label);
@@ -32,7 +32,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), &QShortcut::activated, this, [this]() { next_img(); });
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), &QShortcut::activated, this, &MainWindow::copy_previous_annotations);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), &QShortcut::activated, this, &MainWindow::copy_annotations);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), &QShortcut::activated, this, &MainWindow::paste_annotations);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this), &QShortcut::activated, this, &MainWindow::reset_zoom);
 
     ui->checkBox_visualize_class_name->setStyleSheet(
@@ -193,14 +194,12 @@ void MainWindow::goto_img(const int fileIndex)
 
 void MainWindow::next_img(bool bSavePrev)
 {
-    m_previousAnnotations = ui->label_image->m_objBoundingBoxes;
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex + 1);
 }
 
 void MainWindow::prev_img(bool bSavePrev)
 {
-    m_previousAnnotations = ui->label_image->m_objBoundingBoxes;
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex - 1);
 }
@@ -599,11 +598,17 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
     ui->label_image->showImage();
 }
 
-void MainWindow::copy_previous_annotations()
+void MainWindow::copy_annotations()
 {
-    if(m_previousAnnotations.isEmpty() || !ui->label_image->isOpened()) return;
+    if(!ui->label_image->isOpened()) return;
+    m_copiedAnnotations = ui->label_image->m_objBoundingBoxes;
+}
+
+void MainWindow::paste_annotations()
+{
+    if(m_copiedAnnotations.isEmpty() || !ui->label_image->isOpened()) return;
     ui->label_image->saveState();
-    ui->label_image->m_objBoundingBoxes = m_previousAnnotations;
+    ui->label_image->m_objBoundingBoxes = m_copiedAnnotations;
     ui->label_image->showImage();
 }
 
