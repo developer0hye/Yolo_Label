@@ -52,7 +52,8 @@ private slots:
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
 
-    void copy_previous_annotations();
+    void copy_annotations();
+    void paste_annotations();
 
     void undo();
     void redo();
@@ -97,7 +98,7 @@ private:
     int             m_objIndex;
     int             m_lastLabeledImgIndex;
 
-    QVector<ObjectLabelingBox> m_previousAnnotations;
+    QVector<ObjectLabelingBox> m_copiedAnnotations;
 
     QTimer         *m_usageTimer;
     qint64          m_usageTimerElapsedSeconds;
