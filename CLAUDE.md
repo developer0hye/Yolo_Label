@@ -20,6 +20,7 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 
 ## Branching & PR Workflow
 - Always create a new branch before starting any task (never work directly on `master`)
+- **NEVER edit files while on the `master` branch.** Always create the worktree/branch first, then make all edits inside the worktree directory. Editing files on `master` and then copying them to a worktree causes merge conflicts when `master` advances.
 - Branch naming convention: `<type>/<short-description>` (e.g., `feat/add-dark-mode`, `fix/label-offset-bug`, `ci/add-linting`)
 - Once the task is complete, push the branch and create a Pull Request to `master`
 - Each branch should contain a single, focused unit of work
