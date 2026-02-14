@@ -60,6 +60,8 @@ private slots:
     void on_usageTimer_timeout();
     void on_usageTimerReset_clicked();
 
+    void reset_zoom();
+
 private:
     void updateUsageTimerLabel();
 

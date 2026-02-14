@@ -26,6 +26,18 @@ label_img::label_img(QWidget *parent)
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
+    if(m_bPanning)
+    {
+        QPoint currentPos = ev->position().toPoint();
+        int dx = currentPos.x() - m_panStartWidgetPos.x();
+        int dy = currentPos.y() - m_panStartWidgetPos.y();
+        m_panOffset.setX(m_panStartOffset.x() - static_cast<double>(dx) / (m_zoomFactor * this->width()));
+        m_panOffset.setY(m_panStartOffset.y() - static_cast<double>(dy) / (m_zoomFactor * this->height()));
+        clampPanOffset();
+        showImage();
+        return;
+    }
+
     setMousePosition(ev->position().toPoint().x(), ev->position().toPoint().y());
 
     // Check if a pending press should become a drag
@@ -84,6 +96,18 @@ void label_img::mousePressEvent(QMouseEvent *ev)
         return;
     }
 
+    bool panStart = (m_zoomFactor > 1.0) &&
+                    ((ev->button() == Qt::MiddleButton) ||
+                     (ev->button() == Qt::LeftButton && (ev->modifiers() & Qt::ControlModifier)));
+    if(panStart)
+    {
+        m_bPanning = true;
+        m_panStartWidgetPos = ev->position().toPoint();
+        m_panStartOffset = m_panOffset;
+        setCursor(Qt::ClosedHandCursor);
+        return;
+    }
+
     if(ev->button() == Qt::RightButton)
     {
         removeFocusedObjectBox(m_relative_mouse_pos_in_ui);
@@ -138,11 +162,19 @@ void label_img::mousePressEvent(QMouseEvent *ev)
 
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
-    if(ev->button() == Qt::LeftButton)
+    if(m_bPanning && (ev->button() == Qt::MiddleButton || ev->button() == Qt::LeftButton))
+    {
+        m_bPanning = false;
+        if(findBoxUnderCursor(m_relative_mouse_pos_in_ui) != -1)
+            setCursor(Qt::OpenHandCursor);
+        else
+            setCursor(Qt::CrossCursor);
+    }
+    else if(ev->button() == Qt::LeftButton)
     {
         if(m_bDragPending && !m_bDragging)
         {
-            // Click on box without dragging → start labeling from that point
+            // Click on box without dragging -> start labeling from that point
             m_relatvie_mouse_pos_LBtnClicked_in_ui = m_relative_mouse_pos_in_ui;
             m_bLabelingStarted = true;
         }
@@ -166,6 +198,9 @@ void label_img::init()
     m_bDragPending                  = false;
     m_dragBoxIdx                    = -1;
     m_focusedObjectLabel            = 0;
+    m_zoomFactor                    = 1.0;
+    m_panOffset                     = QPointF(0.0, 0.0);
+    m_bPanning                      = false;
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
     bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
@@ -232,13 +267,37 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 void label_img::showImage()
 {
     if(m_inputImg.isNull()) return;
-    if(m_resized_inputImg.width() != this->width() || m_resized_inputImg.height() != this->height())
+
+    QImage img;
+
+    if(m_zoomFactor <= 1.0)
     {
-        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
+        if(m_resized_inputImg.width() != this->width() || m_resized_inputImg.height() != this->height())
+        {
+            m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
+                    .convertToFormat(QImage::Format_RGB888);
+        }
+        img = m_resized_inputImg;
+    }
+    else
+    {
+        int imgW = m_inputImg.width();
+        int imgH = m_inputImg.height();
+
+        int visX = static_cast<int>(m_panOffset.x() * imgW);
+        int visY = static_cast<int>(m_panOffset.y() * imgH);
+        int visW = static_cast<int>(imgW / m_zoomFactor);
+        int visH = static_cast<int>(imgH / m_zoomFactor);
+
+        visX = std::max(0, std::min(visX, imgW - 1));
+        visY = std::max(0, std::min(visY, imgH - 1));
+        visW = std::max(1, std::min(visW, imgW - visX));
+        visH = std::max(1, std::min(visH, imgH - visY));
+
+        QImage cropped = m_inputImg.copy(visX, visY, visW, visH);
+        img = cropped.scaled(this->width(), this->height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
                 .convertToFormat(QImage::Format_RGB888);
     }
-
-    QImage img = m_resized_inputImg;
 
     gammaTransform(img);
 
@@ -555,10 +614,10 @@ QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
 
 QRect label_img::cvtRelativeToAbsoluteRectInUi(QRectF rectF)
 {
-    return QRect(static_cast<int>(rectF.x() * this->width() + 0.5),
-                 static_cast<int>(rectF.y() * this->height()+ 0.5),
-                 static_cast<int>(rectF.width() * this->width()+ 0.5),
-                 static_cast<int>(rectF.height()* this->height()+ 0.5));
+    QPoint topLeft = cvtRelativeToAbsolutePoint(rectF.topLeft());
+    int w = static_cast<int>(rectF.width()  * m_zoomFactor * this->width()  + 0.5);
+    int h = static_cast<int>(rectF.height() * m_zoomFactor * this->height() + 0.5);
+    return QRect(topLeft.x(), topLeft.y(), w, h);
 }
 
 QRect label_img::cvtRelativeToAbsoluteRectInImage(QRectF rectF)
@@ -571,14 +630,19 @@ QRect label_img::cvtRelativeToAbsoluteRectInImage(QRectF rectF)
 
 QPoint label_img::cvtRelativeToAbsolutePoint(QPointF p)
 {
-    return QPoint(static_cast<int>(p.x() * this->width() + 0.5), static_cast<int>(p.y() * this->height() + 0.5));
+    double x = (p.x() - m_panOffset.x()) * m_zoomFactor * this->width();
+    double y = (p.y() - m_panOffset.y()) * m_zoomFactor * this->height();
+    return QPoint(static_cast<int>(x + 0.5), static_cast<int>(y + 0.5));
 }
 
 QPointF label_img::cvtAbsoluteToRelativePoint(QPoint p)
 {
-    if(this->width() <= 0 || this->height() <= 0)
+    double denom = m_zoomFactor * this->width();
+    if(denom <= 0.0 || this->height() <= 0)
         return QPointF(0., 0.);
-    return QPointF(static_cast<double>(p.x()) / this->width(), static_cast<double>(p.y()) / this->height());
+    double x = m_panOffset.x() + static_cast<double>(p.x()) / denom;
+    double y = m_panOffset.y() + static_cast<double>(p.y()) / (m_zoomFactor * this->height());
+    return QPointF(x, y);
 }
 
 void label_img::setContrastGamma(float gamma)
@@ -590,4 +654,73 @@ void label_img::setContrastGamma(float gamma)
         m_gammatransform_lut[i] = (unsigned char)s;
     }
     showImage();
+}
+
+void label_img::wheelEvent(QWheelEvent *ev)
+{
+    if(ev->modifiers() & Qt::ControlModifier)
+    {
+        if(ev->angleDelta().y() > 0)
+            zoomIn(ev->position().toPoint());
+        else if(ev->angleDelta().y() < 0)
+            zoomOut(ev->position().toPoint());
+        ev->accept();
+    }
+    else
+    {
+        ev->ignore();
+    }
+}
+
+void label_img::zoomIn(QPoint widgetPos)
+{
+    if(m_inputImg.isNull()) return;
+
+    QPointF relPos = cvtAbsoluteToRelativePoint(widgetPos);
+
+    m_zoomFactor = std::min(m_zoomFactor * 1.05, 10.0);
+
+    m_panOffset.setX(relPos.x() - static_cast<double>(widgetPos.x()) / (m_zoomFactor * this->width()));
+    m_panOffset.setY(relPos.y() - static_cast<double>(widgetPos.y()) / (m_zoomFactor * this->height()));
+
+    clampPanOffset();
+    showImage();
+}
+
+void label_img::zoomOut(QPoint widgetPos)
+{
+    if(m_inputImg.isNull()) return;
+
+    QPointF relPos = cvtAbsoluteToRelativePoint(widgetPos);
+
+    m_zoomFactor = std::max(m_zoomFactor / 1.05, 1.0);
+
+    if(m_zoomFactor <= 1.0)
+    {
+        m_zoomFactor = 1.0;
+        m_panOffset = QPointF(0.0, 0.0);
+    }
+    else
+    {
+        m_panOffset.setX(relPos.x() - static_cast<double>(widgetPos.x()) / (m_zoomFactor * this->width()));
+        m_panOffset.setY(relPos.y() - static_cast<double>(widgetPos.y()) / (m_zoomFactor * this->height()));
+        clampPanOffset();
+    }
+
+    showImage();
+}
+
+void label_img::resetZoom()
+{
+    m_zoomFactor = 1.0;
+    m_panOffset = QPointF(0.0, 0.0);
+    showImage();
+}
+
+void label_img::clampPanOffset()
+{
+    double maxPanX = std::max(0.0, 1.0 - 1.0 / m_zoomFactor);
+    double maxPanY = std::max(0.0, 1.0 - 1.0 / m_zoomFactor);
+    m_panOffset.setX(std::max(0.0, std::min(m_panOffset.x(), maxPanX)));
+    m_panOffset.setY(std::max(0.0, std::min(m_panOffset.y(), maxPanY)));
 }

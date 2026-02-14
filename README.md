@@ -166,11 +166,14 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Copy annotations from the previous image to the current image |
 | `Ctrl + Z` (Windows/Linux) / `Cmd + Z` (macOS) | Undo last action (add, remove, or clear all) |
 | `Ctrl + Shift + Z` (Windows/Linux) / `Cmd + Shift + Z` (macOS) | Redo last undone action |
+| `Ctrl + 0` (Windows/Linux) / `Cmd + 0` (macOS) | Reset zoom to 100% |
 
 | Mouse | Action |
 |---|:---:|
 | `Right Click` | Delete Focused Bounding Box in the image <br> ![ezgif-5-8d0fb51bec75](https://user-images.githubusercontent.com/35001605/47706913-c20d5600-dc6d-11e8-8a5c-47065f6a6416.gif) |
 | `Option + Left Click` (macOS) / `Alt + Left Click` (Win/Linux) | Change class of focused bounding box to the currently selected label (no need to remove and redraw) |
+| `Ctrl + Scroll` (Windows/Linux) / `Cmd + Scroll` (macOS) | Zoom in/out (centered on cursor, up to 10x) |
+| `Ctrl + Left Drag` (Windows/Linux) / `Cmd + Left Drag` (macOS) or `Middle Mouse Drag` | Pan while zoomed in |
 | `Wheel Down` | Save and Next Image  |
 | `Wheel Up` | Save and Prev Image |
 
@@ -203,5 +206,3 @@ I've reinvented the wheel.
 Upload binary file for easy usage for windows and ubuntu
 
 deployment for ubuntu
-
-Image zoom
