@@ -122,3 +122,9 @@ compile_commands.json
 
 # Local workflow doc, do not commit
 CONTRIBUTING.md
+
+# macOS
+.DS_Store
+
+# Qt MOC predefines
+moc_predefs.h
