@@ -517,16 +517,6 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
     }
 }
 
-//void MainWindow::on_pushButton_save_clicked()
-//{
-//    save_label_data();
-//}
-
-//void MainWindow::on_pushButton_remove_clicked()
-//{
-//    remove_img();
-//}
-
 void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
 {
     bool bColorAttributeClicked = (column == 1);
