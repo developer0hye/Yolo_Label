@@ -439,15 +439,17 @@ void MainWindow::open_obj_file(bool& ret)
 
 void MainWindow::wheelEvent(QWheelEvent *ev)
 {
-    if(ev->modifiers() & Qt::ControlModifier)
+    QPoint labelPos = ui->label_image->mapFromGlobal(ev->globalPosition().toPoint());
+    bool overImage = ui->label_image->rect().contains(labelPos);
+
+    if(ev->modifiers() & Qt::ControlModifier && overImage)
     {
-        QPoint labelPos = ui->label_image->mapFromGlobal(ev->globalPosition().toPoint());
         if(ev->angleDelta().y() > 0)
             ui->label_image->zoomIn(labelPos);
         else if(ev->angleDelta().y() < 0)
             ui->label_image->zoomOut(labelPos);
     }
-    else
+    else if(overImage)
     {
         if(ev->angleDelta().y() > 0)
             prev_img();
