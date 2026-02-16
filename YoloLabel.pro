@@ -25,6 +25,17 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 
+# --- ONNX Runtime integration (optional) ---
+isEmpty(ONNXRUNTIME_DIR): ONNXRUNTIME_DIR = $$PWD/onnxruntime
+exists($$ONNXRUNTIME_DIR/include) {
+    DEFINES += ONNXRUNTIME_AVAILABLE
+    INCLUDEPATH += $$ONNXRUNTIME_DIR/include
+    LIBS += -L$$ONNXRUNTIME_DIR/lib -lonnxruntime
+    unix: QMAKE_RPATHDIR += $$ONNXRUNTIME_DIR/lib
+    SOURCES += yolo_detector.cpp
+    HEADERS += yolo_detector.h
+}
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

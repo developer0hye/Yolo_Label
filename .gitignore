@@ -128,3 +128,6 @@ CONTRIBUTING.md
 
 # Qt MOC predefines
 moc_predefs.h
+
+# ONNX Runtime (downloaded pre-built binaries)
+onnxruntime/

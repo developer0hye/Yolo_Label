@@ -7,6 +7,10 @@
 #include <QDebug>
 #include <QShortcut>
 #include <QCollator>
+#include <QHBoxLayout>
+#ifdef ONNXRUNTIME_AVAILABLE
+#include <QProgressDialog>
+#endif
 #include <iomanip>
 #include <cmath>
 
@@ -78,6 +82,63 @@ MainWindow::MainWindow(QWidget *parent) :
     redoShortcut->setContext(Qt::ApplicationShortcut);
     connect(redoShortcut, &QShortcut::activated, this, &MainWindow::redo);
 
+#ifdef ONNXRUNTIME_AVAILABLE
+    // --- Auto-Label Controls ---
+    QString btnStyle =
+        "QPushButton { background-color: rgb(0, 0, 17); color: rgb(0, 255, 255); border: 2px solid rgb(0, 255, 255); border-radius: 4px; padding: 4px 8px; font-weight: bold; font-size: 12px; }"
+        "QPushButton:hover { background-color: rgb(0, 40, 60); }"
+        "QPushButton:pressed { background-color: rgb(0, 80, 100); }"
+        "QPushButton:disabled { color: rgb(80, 80, 80); border-color: rgb(80, 80, 80); }";
+
+    QString sliderStyle =
+        "QSlider::groove:horizontal { border: 1px solid rgb(0, 255, 255); height: 6px; background: rgb(0, 0, 17); border-radius: 3px; }"
+        "QSlider::handle:horizontal { background: rgb(255, 187, 0); border: 1px solid rgb(255, 187, 0); width: 14px; margin: -5px 0; border-radius: 7px; }";
+
+    QString labelStyle = "color: rgb(0, 255, 255); font-weight: bold; font-size: 12px;";
+
+    m_btnLoadModel = new QPushButton("Load Model", this);
+    m_btnLoadModel->setStyleSheet(btnStyle);
+
+    m_sliderConfidence = new QSlider(Qt::Horizontal, this);
+    m_sliderConfidence->setRange(1, 99);
+    m_sliderConfidence->setValue(25);
+    m_sliderConfidence->setFixedWidth(120);
+    m_sliderConfidence->setStyleSheet(sliderStyle);
+
+    m_labelConfidence = new QLabel("Conf: 25%", this);
+    m_labelConfidence->setStyleSheet(labelStyle);
+    m_labelConfidence->setFixedWidth(70);
+
+    m_btnAutoLabel = new QPushButton("Auto Label", this);
+    m_btnAutoLabel->setStyleSheet(btnStyle);
+    m_btnAutoLabel->setEnabled(false);
+    m_btnAutoLabel->setToolTip(tr("Auto-label current image (R)"));
+
+    m_btnAutoLabelAll = new QPushButton("Auto Label All", this);
+    m_btnAutoLabelAll->setStyleSheet(btnStyle);
+    m_btnAutoLabelAll->setEnabled(false);
+
+    m_labelModelStatus = new QLabel("No model loaded", this);
+    m_labelModelStatus->setStyleSheet(labelStyle);
+
+    QHBoxLayout *autoLabelLayout = new QHBoxLayout();
+    autoLabelLayout->setContentsMargins(0, 2, 0, 2);
+    autoLabelLayout->addWidget(m_btnLoadModel);
+    autoLabelLayout->addWidget(m_sliderConfidence);
+    autoLabelLayout->addWidget(m_labelConfidence);
+    autoLabelLayout->addWidget(m_btnAutoLabel);
+    autoLabelLayout->addWidget(m_btnAutoLabelAll);
+    autoLabelLayout->addWidget(m_labelModelStatus, 1);
+
+    ui->gridLayout->addLayout(autoLabelLayout, 1, 0);
+
+    connect(m_btnLoadModel, &QPushButton::clicked, this, &MainWindow::on_loadModel_clicked);
+    connect(m_btnAutoLabel, &QPushButton::clicked, this, &MainWindow::on_autoLabel_clicked);
+    connect(m_btnAutoLabelAll, &QPushButton::clicked, this, &MainWindow::on_autoLabelAll_clicked);
+    connect(m_sliderConfidence, &QSlider::valueChanged, this, &MainWindow::on_confidenceSlider_changed);
+    connect(new QShortcut(QKeySequence(Qt::Key_R), this), &QShortcut::activated, this, &MainWindow::on_autoLabel_clicked);
+#endif
+
     init_table_widget();
 }
 
@@ -141,6 +202,13 @@ void MainWindow::init()
 
     init_button_event();
     init_horizontal_slider();
+
+#ifdef ONNXRUNTIME_AVAILABLE
+    if (m_detector.isLoaded()) {
+        m_btnAutoLabel->setEnabled(true);
+        m_btnAutoLabelAll->setEnabled(true);
+    }
+#endif
 
     set_label(0);
     goto_img(0);
@@ -646,3 +714,142 @@ void MainWindow::reset_zoom()
 {
     ui->label_image->resetZoom();
 }
+
+#ifdef ONNXRUNTIME_AVAILABLE
+void MainWindow::on_loadModel_clicked()
+{
+    QString dir = m_imgDir.isEmpty() ? QDir::currentPath() : m_imgDir;
+    QString modelPath = QFileDialog::getOpenFileName(
+        this, tr("Open YOLO ONNX Model"), dir,
+        tr("ONNX Models (*.onnx)"));
+
+    if (modelPath.isEmpty()) return;
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    std::string errorMsg;
+    bool ok = m_detector.loadModel(modelPath.toStdString(), errorMsg);
+    QApplication::restoreOverrideCursor();
+
+    if (ok) {
+        QString versionStr = (m_detector.getVersion() == YoloVersion::V5) ? "v5" : "v8+";
+        m_labelModelStatus->setText(
+            QString("%1 | %2 classes | %3x%4 | %5")
+                .arg(QFileInfo(modelPath).fileName())
+                .arg(m_detector.getNumClasses())
+                .arg(m_detector.getInputWidth())
+                .arg(m_detector.getInputHeight())
+                .arg(versionStr));
+
+        bool hasImages = !m_imgList.isEmpty();
+        m_btnAutoLabel->setEnabled(hasImages);
+        m_btnAutoLabelAll->setEnabled(hasImages);
+    } else {
+        pjreddie_style_msgBox(QMessageBox::Critical, "Error",
+            QString("Failed to load model:\n%1").arg(QString::fromStdString(errorMsg)));
+        m_labelModelStatus->setText("Load failed");
+    }
+}
+
+void MainWindow::on_autoLabel_clicked()
+{
+    if (!m_detector.isLoaded() || !ui->label_image->isOpened()) return;
+
+    QImage img = ui->label_image->getInputImage();
+    if (img.isNull()) return;
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    auto detections = m_detector.detect(img, getConfidenceThreshold());
+    QApplication::restoreOverrideCursor();
+
+    if (detections.empty()) {
+        pjreddie_style_msgBox(QMessageBox::Information, "Auto Label",
+            "No objects detected at current confidence threshold.");
+        return;
+    }
+
+    applyDetections(detections);
+}
+
+void MainWindow::on_autoLabelAll_clicked()
+{
+    if (!m_detector.isLoaded() || m_imgList.isEmpty()) return;
+
+    QMessageBox msgBox(QMessageBox::Question, "Auto Label All",
+        QString("Auto-label all %1 images?\nExisting labels will be overwritten.")
+            .arg(m_imgList.size()),
+        QMessageBox::Yes | QMessageBox::No);
+    msgBox.setStyleSheet("background-color: rgb(34, 0, 85); color: rgb(0, 255, 0);");
+    if (msgBox.exec() != QMessageBox::Yes) return;
+
+    save_label_data();
+
+    QProgressDialog progress("Auto-labeling images...", "Cancel", 0, m_imgList.size(), this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setStyleSheet("QProgressDialog { background-color: rgb(34, 0, 85); color: rgb(0, 255, 0); }");
+
+    int labeled = 0;
+    int maxClassIdx = m_objList.size() - 1;
+
+    for (int i = 0; i < m_imgList.size(); ++i) {
+        progress.setValue(i);
+        if (progress.wasCanceled()) break;
+
+        QImage img(m_imgList.at(i));
+        if (img.isNull()) continue;
+
+        auto detections = m_detector.detect(img, getConfidenceThreshold());
+
+        QString labelPath = get_labeling_data(m_imgList.at(i));
+        ofstream out(qPrintable(labelPath));
+        if (!out.is_open()) continue;
+
+        for (const auto& det : detections) {
+            if (det.classId < 0 || det.classId > maxClassIdx) continue;
+            double cx = det.x + det.width / 2.0;
+            double cy = det.y + det.height / 2.0;
+            out << det.classId << " "
+                << std::fixed << std::setprecision(6) << cx << " "
+                << std::fixed << std::setprecision(6) << cy << " "
+                << std::fixed << std::setprecision(6) << static_cast<double>(det.width) << " "
+                << std::fixed << std::setprecision(6) << static_cast<double>(det.height) << "\n";
+        }
+        out.close();
+        labeled++;
+    }
+    progress.setValue(m_imgList.size());
+
+    goto_img(m_imgIndex);
+
+    pjreddie_style_msgBox(QMessageBox::Information, "Auto Label All",
+        QString("Auto-labeled %1 of %2 images.").arg(labeled).arg(m_imgList.size()));
+}
+
+void MainWindow::on_confidenceSlider_changed(int value)
+{
+    m_labelConfidence->setText(QString("Conf: %1%").arg(value));
+}
+
+void MainWindow::applyDetections(const std::vector<DetectionResult>& detections)
+{
+    ui->label_image->saveState();
+    ui->label_image->m_objBoundingBoxes.clear();
+
+    int maxClassIdx = m_objList.size() - 1;
+
+    for (const auto& det : detections) {
+        if (det.classId < 0 || det.classId > maxClassIdx) continue;
+
+        ObjectLabelingBox box;
+        box.label = det.classId;
+        box.box = QRectF(det.x, det.y, det.width, det.height);
+        ui->label_image->m_objBoundingBoxes.push_back(box);
+    }
+
+    ui->label_image->showImage();
+}
+
+float MainWindow::getConfidenceThreshold() const
+{
+    return static_cast<float>(m_sliderConfidence->value()) / 100.0f;
+}
+#endif
