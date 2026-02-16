@@ -142,11 +142,14 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 
 ## USAGE AND OPTIONS
 ```
-./YoloLabel [dataset dir] [class file names]
-# Example
+./YoloLabel [dataset dir] [class file] [model.onnx]
+# Examples
 ./YoloLabel ../project/dataset/objects/frames ../project/dataset/objects/obj_names.txt
-
+./YoloLabel ../project/dataset/objects/frames ../project/dataset/objects/obj_names.txt yolov8n.onnx
+./YoloLabel ../project/dataset/objects/frames yolov8n.onnx
 ```
+
+Arguments are detected by file extension — `.onnx` files are loaded as YOLO models, all other files are loaded as class name lists. When a model with embedded class names is loaded without a class file, class names are populated from the model automatically.
 
 
 ## SHORTCUTS

@@ -120,6 +120,7 @@ private:
     QLabel         *m_labelModelStatus;
 
     void on_loadModel_clicked();
+    void loadOnnxModel(const QString& modelPath);
     void on_autoLabel_clicked();
     void on_autoLabelAll_clicked();
     void on_confidenceSlider_changed(int value);

@@ -153,10 +153,22 @@ void MainWindow::set_args(int argc, char *argv[])
     QString dir = QString::fromLocal8Bit(argv[1]);
     if (!get_files(dir)) return;
 
-    if (argc > 2) {
-      QString obj_file = QString::fromLocal8Bit(argv[2]);
-      load_label_list_data(obj_file);
+    QString onnxModelPath;
+
+    for (int i = 2; i < argc; ++i) {
+      QString arg = QString::fromLocal8Bit(argv[i]);
+      if (arg.endsWith(".onnx", Qt::CaseInsensitive)) {
+        onnxModelPath = arg;
+      } else {
+        load_label_list_data(arg);
+      }
     }
+
+#ifdef ONNXRUNTIME_AVAILABLE
+    if (!onnxModelPath.isEmpty()) {
+      loadOnnxModel(onnxModelPath);
+    }
+#endif
 
     if (m_objList.empty()) return;
 
@@ -727,6 +739,11 @@ void MainWindow::on_loadModel_clicked()
 
     if (modelPath.isEmpty()) return;
 
+    loadOnnxModel(modelPath);
+}
+
+void MainWindow::loadOnnxModel(const QString& modelPath)
+{
     QApplication::setOverrideCursor(Qt::WaitCursor);
     std::string errorMsg;
     bool ok = m_detector.loadModel(modelPath.toStdString(), errorMsg);
