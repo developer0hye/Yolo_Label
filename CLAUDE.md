@@ -96,5 +96,11 @@ ONNX Runtime is optional. When `ONNXRUNTIME_DIR` points to a valid installation,
 - When upgrading libraries or frameworks (e.g., Qt 5 → Qt 6), **existing functionality must remain identical**. Only replace deprecated APIs with their direct equivalents — do not add, remove, or alter any user-facing behavior.
 - **Visual rendering must also remain identical.** Framework upgrades can change how widgets are styled or drawn (e.g., checkbox indicators, selection highlights, frame styles, gradient support). After any upgrade, review all UI elements — especially those with custom stylesheets — and verify they render the same as before. Fix any visual regressions with explicit styles.
 
+## Testing the App on macOS
+- When launching the app via `open YoloLabel.app --args ...`, macOS sets the working directory to `/`, **not** the current shell directory. This means **relative paths will not work**. Always use absolute paths for all arguments (dataset dir, class file, ONNX model).
+  - Wrong: `open YoloLabel.app --args Samples/images Samples/coco_names.txt yolov8n.onnx`
+  - Correct: `open YoloLabel.app --args /full/path/to/Samples/images /full/path/to/coco_names.txt /full/path/to/yolov8n.onnx`
+- Alternatively, run the binary directly to use relative paths: `./YoloLabel.app/Contents/MacOS/YoloLabel Samples/images ...`
+
 ## Language
 - All commit messages, PR descriptions, code comments, and documentation must be written in **English only**

@@ -168,6 +168,8 @@ void MainWindow::set_args(int argc, char *argv[])
     if (!onnxModelPath.isEmpty()) {
       loadOnnxModel(onnxModelPath);
     }
+#else
+    Q_UNUSED(onnxModelPath);
 #endif
 
     if (m_objList.empty()) return;
