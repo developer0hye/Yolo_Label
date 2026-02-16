@@ -44,18 +44,6 @@ bool YoloDetector::loadModel(const std::string& modelPath, std::string& errorMsg
             return false;
         }
 
-        m_inputHeight = static_cast<int>(m_inputShape[2]);
-        m_inputWidth = static_cast<int>(m_inputShape[3]);
-
-        // Handle dynamic shapes (-1) — will be updated from metadata if available
-        if (m_inputHeight <= 0) m_inputHeight = 640;
-        if (m_inputWidth <= 0) m_inputWidth = 640;
-
-        // Read output info
-        auto outputInfo = m_session->GetOutputTypeInfo(0);
-        auto outputTensorInfo = outputInfo.GetTensorTypeAndShapeInfo();
-        m_outputShape = outputTensorInfo.GetShape();
-
         // Read input/output names
         m_inputNameStrings.clear();
         m_outputNameStrings.clear();
@@ -81,11 +69,20 @@ bool YoloDetector::loadModel(const std::string& modelPath, std::string& errorMsg
             return false;
         }
 
-        // Use metadata imgsz for dynamic input shapes
-        if (m_inputShape[2] <= 0) m_inputHeight = m_metadata.imgszH;
-        if (m_inputShape[3] <= 0) m_inputWidth = m_metadata.imgszW;
+        // Resolve input dimensions: fixed shape from tensor > metadata imgsz > default 640
+        m_inputHeight = static_cast<int>(m_inputShape[2]);
+        m_inputWidth = static_cast<int>(m_inputShape[3]);
+        if (m_inputHeight <= 0)
+            m_inputHeight = (m_metadata.imgszH > 0) ? m_metadata.imgszH : 640;
+        if (m_inputWidth <= 0)
+            m_inputWidth = (m_metadata.imgszW > 0) ? m_metadata.imgszW : 640;
 
-        // Detect YOLO version
+        // Read output info (used for version heuristic on fixed-shape models)
+        auto outputInfo = m_session->GetOutputTypeInfo(0);
+        auto outputTensorInfo = outputInfo.GetTensorTypeAndShapeInfo();
+        m_outputShape = outputTensorInfo.GetShape();
+
+        // Detect YOLO version from metadata + output shape heuristic
         m_version = detectVersion();
         if (m_version == YoloVersion::Unknown) {
             errorMsg = "Cannot detect YOLO version from output shape [";
@@ -355,6 +352,8 @@ std::vector<DetectionResult> YoloDetector::detect(
     const float* outputData = outputs[0].GetTensorData<float>();
     auto outputShape = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
 
+    if (outputShape.size() != 3) return {};
+
     int64_t dim1 = outputShape[1];
     int64_t dim2 = outputShape[2];
 
@@ -366,12 +365,18 @@ std::vector<DetectionResult> YoloDetector::detect(
             static_cast<int>(dim1),
             confThreshold, scaleX, scaleY, padX, padY, imgW, imgH);
         return results;
-    } else if (m_version == YoloVersion::V5) {
+    }
+
+    // Use actual runtime output shape to determine postprocess path.
+    // This handles dynamic-shape models correctly — m_version (set at load time)
+    // may be wrong when output shape was dynamic (-1), but here dim1/dim2 are concrete.
+    if (dim1 > dim2) {
+        // V5-style: [B, N, C+5] — N (large) > C+5 (small)
         results = postprocessV5(outputData,
             static_cast<int>(dim1), static_cast<int>(dim2 - 5),
             confThreshold, scaleX, scaleY, padX, padY, imgW, imgH);
     } else {
-        // V8, V11, V12 all share the same output format [B, C+4, N]
+        // V8-style: [B, C+4, N] — C+4 (small) < N (large)
         results = postprocessV8(outputData,
             static_cast<int>(dim1 - 4), static_cast<int>(dim2),
             confThreshold, scaleX, scaleY, padX, padY, imgW, imgH);
