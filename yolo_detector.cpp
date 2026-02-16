@@ -3,6 +3,7 @@
 #include <numeric>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <thread>
 
 YoloDetector::YoloDetector()
@@ -26,7 +27,7 @@ bool YoloDetector::loadModel(const std::string& modelPath, std::string& errorMsg
         sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 
 #ifdef _WIN32
-        std::wstring wpath(modelPath.begin(), modelPath.end());
+        std::wstring wpath = std::filesystem::path(modelPath).wstring();
         m_session = std::make_unique<Ort::Session>(m_env, wpath.c_str(), sessionOptions);
 #else
         m_session = std::make_unique<Ort::Session>(m_env, modelPath.c_str(), sessionOptions);
