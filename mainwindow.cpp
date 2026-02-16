@@ -750,10 +750,40 @@ void MainWindow::on_loadModel_clicked()
                 .arg(m_detector.getInputHeight())
                 .arg(versionStr));
 
-        // Auto-populate class names from model metadata if no classes loaded yet
-        const auto& classNames = m_detector.getClassNames();
-        if (!classNames.empty() && m_objList.isEmpty()) {
+        // Class list handling
+        const auto& modelClasses = m_detector.getClassNames();
+        if (!modelClasses.empty() && m_objList.isEmpty()) {
+            // No user classes loaded — auto-populate from model
             loadClassesFromModel();
+        } else if (!modelClasses.empty() && !m_objList.isEmpty()) {
+            // Both exist — check if they match
+            bool mismatch = false;
+            if (static_cast<int>(modelClasses.size()) != m_objList.size()) {
+                mismatch = true;
+            } else {
+                int idx = 0;
+                for (const auto& pair : modelClasses) {
+                    if (QString::fromStdString(pair.second) != m_objList.at(idx)) {
+                        mismatch = true;
+                        break;
+                    }
+                    idx++;
+                }
+            }
+            if (mismatch) {
+                pjreddie_style_msgBox(QMessageBox::Warning, "Class Mismatch",
+                    QString("The loaded class list (%1 classes) does not match "
+                            "the model's class list (%2 classes).\n\n"
+                            "Auto-labeling is disabled to prevent incorrect labels.\n"
+                            "Either load a matching class file or re-load the model "
+                            "without a class file to use the model's built-in classes.")
+                        .arg(m_objList.size())
+                        .arg(modelClasses.size()));
+                m_btnAutoLabel->setEnabled(false);
+                m_btnAutoLabelAll->setEnabled(false);
+                m_labelModelStatus->setText(m_labelModelStatus->text() + " | CLASS MISMATCH");
+                return;
+            }
         }
 
         bool hasImages = !m_imgList.isEmpty();
