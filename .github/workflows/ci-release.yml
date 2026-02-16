@@ -28,6 +28,7 @@ permissions:
 
 env:
   QT_VERSION: '6.8.2'
+  ORT_VERSION: '1.24.1'
 
 jobs:
   build:
@@ -38,10 +39,16 @@ jobs:
           - os: windows-latest
             qt_arch: win64_msvc2022_64
             artifact_name: YoloLabel-Windows-x64
+            ort_package: onnxruntime-win-x64
+            ort_ext: zip
           - os: ubuntu-22.04
             artifact_name: YoloLabel-Linux-x64
+            ort_package: onnxruntime-linux-x64
+            ort_ext: tgz
           - os: macos-latest
             artifact_name: YoloLabel-macOS
+            ort_package: onnxruntime-osx-arm64
+            ort_ext: tgz
 
     runs-on: ${{ matrix.os }}
 
@@ -79,19 +86,63 @@ jobs:
             libxcb-render-util0 \
             libxcb-shape0
 
+      # ── Download ONNX Runtime ─────────────────────────────────
+      - name: Download ONNX Runtime (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          curl -L -o ort.${{ matrix.ort_ext }} \
+            "https://github.com/microsoft/onnxruntime/releases/download/v${{ env.ORT_VERSION }}/${{ matrix.ort_package }}-${{ env.ORT_VERSION }}.${{ matrix.ort_ext }}"
+          tar xzf ort.${{ matrix.ort_ext }}
+          mv ${{ matrix.ort_package }}-${{ env.ORT_VERSION }} onnxruntime
+
+      - name: Download ONNX Runtime (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $pkg = "${{ matrix.ort_package }}-${{ env.ORT_VERSION }}"
+          Invoke-WebRequest -Uri "https://github.com/microsoft/onnxruntime/releases/download/v${{ env.ORT_VERSION }}/${pkg}.zip" -OutFile ort.zip
+          Expand-Archive -Path ort.zip -DestinationPath .
+          Rename-Item -Path $pkg -NewName onnxruntime
+
       # ── Build ─────────────────────────────────────────────────
       - name: Build (Unix)
         if: runner.os != 'Windows'
         run: |
-          qmake YoloLabel.pro CONFIG+=release
+          qmake YoloLabel.pro CONFIG+=release "ONNXRUNTIME_DIR=$PWD/onnxruntime"
           make -j$(nproc 2>/dev/null || sysctl -n hw.logicalcpu 2>/dev/null || echo 2)
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          qmake YoloLabel.pro CONFIG+=release
+          qmake YoloLabel.pro CONFIG+=release "ONNXRUNTIME_DIR=%CD%\onnxruntime"
           nmake
+
+      # ── Accuracy Test (Linux only) ────────────────────────────
+      - name: Setup Python for accuracy test
+        if: runner.os == 'Linux'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ultralytics
+        if: runner.os == 'Linux'
+        run: pip install ultralytics
+
+      - name: Build test binary
+        if: runner.os == 'Linux'
+        run: |
+          cd tests
+          qmake test_inference.pro "ONNXRUNTIME_DIR=$PWD/../onnxruntime"
+          make -j$(nproc)
+
+      - name: Run accuracy test
+        if: runner.os == 'Linux'
+        run: |
+          python tests/run_accuracy_test.py \
+            --test-binary tests/test_inference \
+            --image Samples/images/raccoon_1.jpg \
+            --conf 0.25
 
       # ── Package: Windows ──────────────────────────────────────
       - name: Package (Windows)
@@ -100,12 +151,16 @@ jobs:
         run: |
           mkdir deploy
           copy release\YoloLabel.exe deploy\
+          copy onnxruntime\lib\onnxruntime.dll deploy\
           windeployqt deploy\YoloLabel.exe --release --no-translations
 
       # ── Package: macOS ────────────────────────────────────────
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: |
+          mkdir -p YoloLabel.app/Contents/Frameworks
+          cp onnxruntime/lib/libonnxruntime.*.dylib YoloLabel.app/Contents/Frameworks/
+          install_name_tool -add_rpath @executable_path/../Frameworks YoloLabel.app/Contents/MacOS/YoloLabel || true
           macdeployqt YoloLabel.app
           codesign --force --deep --sign - YoloLabel.app
           hdiutil create -volname YoloLabel -srcfolder YoloLabel.app -ov -format UDZO "${{ matrix.artifact_name }}.dmg"
@@ -116,9 +171,11 @@ jobs:
         run: |
           # Prepare AppDir
           mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/lib
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
           cp YoloLabel AppDir/usr/bin/
+          cp onnxruntime/lib/libonnxruntime.so* AppDir/usr/lib/
 
           # Create desktop entry
           cat > AppDir/usr/share/applications/yololabel.desktop << 'EOF'
@@ -174,6 +231,8 @@ jobs:
             for lib in libQt6Core libQt6Gui libQt6Widgets libQt6XcbQpa libQt6DBus libQt6OpenGL libicui18n libicuuc libicudata; do
               cp -L "${QT_LIB_DIR}/${lib}.so"* package/YoloLabel/lib/ 2>/dev/null || true
             done
+
+            cp onnxruntime/lib/libonnxruntime.so* package/YoloLabel/lib/
 
             cp -L "${QT_PLUGIN_DIR}/platforms/libqxcb.so" package/YoloLabel/plugins/platforms/ 2>/dev/null || true
 

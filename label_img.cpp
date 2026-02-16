@@ -389,6 +389,11 @@ QImage label_img::crop(QRect rect)
     return m_inputImg.copy(rect);
 }
 
+QImage label_img::getInputImage() const
+{
+    return m_inputImg;
+}
+
 void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
 {
     if(m_relative_mouse_pos_in_ui == QPointF(0., 0.)) return;

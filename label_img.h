@@ -64,6 +64,7 @@ public:
     void moveBox(int boxIdx, double dx, double dy);
     int  findBoxUnderCursor(QPointF point) const;
     QImage crop(QRect);
+    QImage getInputImage() const;
 
     void zoomIn(QPoint widgetPos);
     void zoomOut(QPoint widgetPos);

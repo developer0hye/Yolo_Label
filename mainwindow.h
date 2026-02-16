@@ -8,8 +8,12 @@
 #include <QTimer>
 #include <QLabel>
 #include <QPushButton>
+#include <QSlider>
 
 #include "label_img.h"
+#ifdef ONNXRUNTIME_AVAILABLE
+#include "yolo_detector.h"
+#endif
 #include <iostream>
 #include <fstream>
 
@@ -104,6 +108,26 @@ private:
     qint64          m_usageTimerElapsedSeconds;
     QLabel         *m_usageTimerLabel;
     QPushButton    *m_usageTimerResetButton;
+
+#ifdef ONNXRUNTIME_AVAILABLE
+    YoloDetector    m_detector;
+
+    QPushButton    *m_btnLoadModel;
+    QPushButton    *m_btnAutoLabel;
+    QPushButton    *m_btnAutoLabelAll;
+    QSlider        *m_sliderConfidence;
+    QLabel         *m_labelConfidence;
+    QLabel         *m_labelModelStatus;
+
+    void on_loadModel_clicked();
+    void loadOnnxModel(const QString& modelPath);
+    void on_autoLabel_clicked();
+    void on_autoLabelAll_clicked();
+    void on_confidenceSlider_changed(int value);
+    void applyDetections(const std::vector<DetectionResult>& detections);
+    void loadClassesFromModel();
+    float getConfidenceThreshold() const;
+#endif
 
 protected:
     void    wheelEvent(QWheelEvent *);
