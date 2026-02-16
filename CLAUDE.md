@@ -16,17 +16,25 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 
 Local YOLO object detection that auto-generates bounding boxes from an Ultralytics `.onnx` model. Loading a single `.onnx` file is sufficient — class names, input size, and model configuration are all read from the ONNX metadata embedded by Ultralytics.
 
-### Supported Models
+### Design Principle
 
-Covers all [Ultralytics](https://github.com/ultralytics/ultralytics) **object detection** models: YOLOv5, YOLOv8, YOLO11, YOLO12, YOLOv26. Both standard and end-to-end (NMS baked in) exports are supported.
+This feature targets full compatibility with the [Ultralytics](https://github.com/ultralytics/ultralytics) project's ONNX export. When modifying or extending the pseudo labeling feature:
+
+1. **Always check the upstream Ultralytics source** for the latest supported models, ONNX export format, and metadata schema. Key references:
+   - Model export: `ultralytics/engine/exporter.py` — how metadata is embedded in ONNX
+   - ONNX predict: `ultralytics/nn/autobackend.py` — how metadata is read back and used for inference
+   - Postprocessing: `ultralytics/utils/ops.py` (`non_max_suppression`) and `ultralytics/models/yolo/detect/predict.py`
+   - Supported models list: https://docs.ultralytics.com/models/
+2. **Ultralytics may add new model versions, change ONNX metadata keys, or alter output tensor layouts.** Before making changes, search the Ultralytics repo and docs for the current state rather than relying solely on what is documented here.
+3. **The goal is: a user exports any Ultralytics object detection model to `.onnx` and loads it in YOLO-Label — it just works.** No separate class names file, no manual configuration.
 
 ### ONNX Metadata
 
-Ultralytics embeds metadata as string key-value pairs in `metadata_props` when exporting to ONNX. The detector reads these to configure itself automatically:
+Ultralytics embeds metadata as string key-value pairs in ONNX `metadata_props` during export. The detector reads these via `Ort::Session::GetModelMetadata()` to configure itself automatically. Key fields (check `ultralytics/engine/exporter.py` for the latest schema):
 
 | Key | Example | Usage |
 |---|---|---|
-| `names` | `"{0: 'person', 1: 'car', ...}"` | Auto-populate class list (no `.names` file needed) |
+| `names` | `"{0: 'person', 1: 'car', ...}"` | Auto-populate class list (Python dict format, parsed in C++) |
 | `task` | `"detect"` | Validate model type; reject non-detection models |
 | `stride` | `"32"` | Model stride |
 | `imgsz` | `"[640, 640]"` | Input resolution for dynamic-shape models |
@@ -38,12 +46,13 @@ Ultralytics embeds metadata as string key-value pairs in `metadata_props` when e
 The C++ inference code references the Ultralytics Python implementation but maximizes use of ONNX metadata to make a single `.onnx` file self-sufficient for detection:
 
 1. **Load**: `Ort::Session` loads the model. Metadata is read via `GetModelMetadata()` → `GetCustomMetadataMapKeysAllocated()` / `LookupCustomMetadataMapAllocated()`.
-2. **Version detection**: First checks metadata `description` for specific version (V5/V8/V11/V12/V26), then falls back to output shape heuristic (`dim1 > dim2` → V5, else V8+). End-to-end is a boolean flag (`endToEnd`), not a version.
+2. **Version detection**: First checks metadata `description` for specific version, then falls back to output shape heuristic (`dim1 > dim2` → V5-style, else V8-style). End-to-end is a boolean flag (`endToEnd`), not a version. The `YoloVersion` enum and `detectVersionFromMetadata()` may need new entries when Ultralytics releases new model architectures.
 3. **Preprocess**: Letterbox resize via `QImage::scaled()`, gray padding (114/255), HWC→CHW, normalize to [0,1].
-4. **Postprocess**: Three paths depending on model:
-   - **V5**: `[B, N, C+5]` — has objectness score, row-major layout
-   - **V8/V11/V12/V26**: `[B, C+4, N]` — no objectness, transposed (column-major per detection)
+4. **Postprocess**: Three paths depending on model output tensor layout:
+   - **V5-style**: `[B, N, C+5]` — has objectness score, row-major layout
+   - **V8-style**: `[B, C+4, N]` — no objectness, transposed (column-major per detection). Used by V8, V11, V12, V26 and likely future versions that share this layout.
    - **End-to-end**: `[1, maxDet, 6]` — `[x1, y1, x2, y2, score, class_id]`, NMS already applied
+   - **When adding support for a new model**, check whether its ONNX output layout matches an existing path or requires a new `postprocess*()` function.
 5. **NMS**: Pure C++ greedy NMS (class-aware, sorted by confidence). Skipped for end-to-end models.
 6. **Output**: `DetectionResult` with normalized [0,1] coordinates matching `ObjectLabelingBox.box` format.
 
