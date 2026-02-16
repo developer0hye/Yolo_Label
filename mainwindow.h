@@ -124,6 +124,7 @@ private:
     void on_autoLabelAll_clicked();
     void on_confidenceSlider_changed(int value);
     void applyDetections(const std::vector<DetectionResult>& detections);
+    void loadClassesFromModel();
     float getConfidenceThreshold() const;
 #endif
 

@@ -731,7 +731,17 @@ void MainWindow::on_loadModel_clicked()
     QApplication::restoreOverrideCursor();
 
     if (ok) {
-        QString versionStr = (m_detector.getVersion() == YoloVersion::V5) ? "v5" : "v8+";
+        QString versionStr;
+        switch (m_detector.getVersion()) {
+            case YoloVersion::V5:  versionStr = "YOLOv5"; break;
+            case YoloVersion::V8:  versionStr = "YOLOv8"; break;
+            case YoloVersion::V11: versionStr = "YOLO11"; break;
+            case YoloVersion::V12: versionStr = "YOLO12"; break;
+            case YoloVersion::V26: versionStr = "YOLOv26"; break;
+            default:               versionStr = "YOLO"; break;
+        }
+        if (m_detector.isEndToEnd()) versionStr += " (end2end)";
+
         m_labelModelStatus->setText(
             QString("%1 | %2 classes | %3x%4 | %5")
                 .arg(QFileInfo(modelPath).fileName())
@@ -740,6 +750,12 @@ void MainWindow::on_loadModel_clicked()
                 .arg(m_detector.getInputHeight())
                 .arg(versionStr));
 
+        // Auto-populate class names from model metadata if no classes loaded yet
+        const auto& classNames = m_detector.getClassNames();
+        if (!classNames.empty() && m_objList.isEmpty()) {
+            loadClassesFromModel();
+        }
+
         bool hasImages = !m_imgList.isEmpty();
         m_btnAutoLabel->setEnabled(hasImages);
         m_btnAutoLabelAll->setEnabled(hasImages);
@@ -747,6 +763,45 @@ void MainWindow::on_loadModel_clicked()
         pjreddie_style_msgBox(QMessageBox::Critical, "Error",
             QString("Failed to load model:\n%1").arg(QString::fromStdString(errorMsg)));
         m_labelModelStatus->setText("Load failed");
+    }
+}
+
+void MainWindow::loadClassesFromModel()
+{
+    const auto& classNames = m_detector.getClassNames();
+    if (classNames.empty()) return;
+
+    // Clear existing table
+    while (ui->tableWidget_label->rowCount() > 0)
+        ui->tableWidget_label->removeRow(0);
+
+    m_objList.clear();
+    ui->label_image->m_drawObjectBoxColor.clear();
+
+    // Populate from model metadata (same pattern as load_label_list_data)
+    int fileIndex = 0;
+    for (const auto& pair : classNames) {
+        int nRow = ui->tableWidget_label->rowCount();
+        QString qstrLabel = QString::fromStdString(pair.second);
+        QColor labelColor = label_img::BOX_COLORS[(fileIndex++) % 10];
+        m_objList << qstrLabel;
+
+        ui->tableWidget_label->insertRow(nRow);
+        ui->tableWidget_label->setItem(nRow, 0, new QTableWidgetItem(qstrLabel));
+        ui->tableWidget_label->item(nRow, 0)->setFlags(
+            ui->tableWidget_label->item(nRow, 0)->flags() ^ Qt::ItemIsEditable);
+
+        ui->tableWidget_label->setItem(nRow, 1, new QTableWidgetItem(QString()));
+        ui->tableWidget_label->item(nRow, 1)->setBackground(labelColor);
+        ui->tableWidget_label->item(nRow, 1)->setFlags(
+            ui->tableWidget_label->item(nRow, 1)->flags() ^ Qt::ItemIsEditable ^ Qt::ItemIsSelectable);
+
+        ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
+    }
+    ui->label_image->m_objList = m_objList;
+
+    if (!m_objList.isEmpty()) {
+        set_label(0);
     }
 }
 

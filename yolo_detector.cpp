@@ -47,7 +47,7 @@ bool YoloDetector::loadModel(const std::string& modelPath, std::string& errorMsg
         m_inputHeight = static_cast<int>(m_inputShape[2]);
         m_inputWidth = static_cast<int>(m_inputShape[3]);
 
-        // Handle dynamic shapes (-1)
+        // Handle dynamic shapes (-1) — will be updated from metadata if available
         if (m_inputHeight <= 0) m_inputHeight = 640;
         if (m_inputWidth <= 0) m_inputWidth = 640;
 
@@ -69,6 +69,21 @@ bool YoloDetector::loadModel(const std::string& modelPath, std::string& errorMsg
             auto name = m_session->GetOutputNameAllocated(i, m_allocator);
             m_outputNameStrings.push_back(name.get());
         }
+
+        // Read ONNX model metadata (Ultralytics stores class names, task, etc.)
+        readMetadata();
+
+        // Validate task type if present
+        if (!m_metadata.task.empty() && m_metadata.task != "detect") {
+            errorMsg = "Model task is '" + m_metadata.task +
+                       "', expected 'detect'. Only object detection models are supported.";
+            m_session.reset();
+            return false;
+        }
+
+        // Use metadata imgsz for dynamic input shapes
+        if (m_inputShape[2] <= 0) m_inputHeight = m_metadata.imgszH;
+        if (m_inputShape[3] <= 0) m_inputWidth = m_metadata.imgszW;
 
         // Detect YOLO version
         m_version = detectVersion();
@@ -101,23 +116,155 @@ YoloVersion YoloDetector::detectVersion()
     int64_t dim1 = m_outputShape[1];
     int64_t dim2 = m_outputShape[2];
 
-    // Handle dynamic shapes: assume v8 by default (most common)
+    // For end-to-end models: output [1, maxDet, 6], class count comes from metadata
+    if (m_metadata.endToEnd && dim2 == 6) {
+        m_numClasses = m_metadata.classNames.empty()
+            ? 80
+            : static_cast<int>(m_metadata.classNames.size());
+        return detectVersionFromMetadata(YoloVersion::V8);
+    }
+
+    // Handle dynamic shapes
     if (dim1 <= 0 || dim2 <= 0) {
-        m_numClasses = 80; // default COCO
-        return YoloVersion::V8;
+        m_numClasses = m_metadata.classNames.empty()
+            ? 80
+            : static_cast<int>(m_metadata.classNames.size());
+        return detectVersionFromMetadata(YoloVersion::V8);
     }
 
     // V5: [B, N, C+5] where N (e.g., 25200) >> C+5 (e.g., 85)
-    // V8: [B, C+4, N] where N (e.g., 8400) >> C+4 (e.g., 84)
+    // V8+: [B, C+4, N] where N (e.g., 8400) >> C+4 (e.g., 84)
     if (dim1 > dim2) {
         // V5 format: dim1=N (large), dim2=C+5 (small)
         m_numClasses = static_cast<int>(dim2 - 5);
         return (m_numClasses > 0) ? YoloVersion::V5 : YoloVersion::Unknown;
     } else {
-        // V8 format: dim1=C+4 (small), dim2=N (large)
+        // V8+ format: dim1=C+4 (small), dim2=N (large)
         m_numClasses = static_cast<int>(dim1 - 4);
-        return (m_numClasses > 0) ? YoloVersion::V8 : YoloVersion::Unknown;
+        if (m_numClasses <= 0) return YoloVersion::Unknown;
+        return detectVersionFromMetadata(YoloVersion::V8);
     }
+}
+
+YoloVersion YoloDetector::detectVersionFromMetadata(YoloVersion fallback)
+{
+    // Try to determine specific YOLO version from metadata description
+    // Ultralytics sets description like "Ultralytics YOLOv8n model" or "Ultralytics YOLO11n model"
+    const std::string& desc = m_metadata.description;
+    if (!desc.empty()) {
+        // Check for newer versions first (higher number = check first)
+        if (desc.find("YOLOv26") != std::string::npos || desc.find("YOLO26") != std::string::npos)
+            return YoloVersion::V26;
+        if (desc.find("YOLO12") != std::string::npos) return YoloVersion::V12;
+        if (desc.find("YOLO11") != std::string::npos) return YoloVersion::V11;
+        if (desc.find("YOLOv8") != std::string::npos) return YoloVersion::V8;
+        if (desc.find("YOLOv5") != std::string::npos) return YoloVersion::V5;
+    }
+    return fallback;
+}
+
+void YoloDetector::readMetadata()
+{
+    m_metadata = YoloModelMetadata{};
+    try {
+        auto modelMetadata = m_session->GetModelMetadata();
+        auto keys = modelMetadata.GetCustomMetadataMapKeysAllocated(m_allocator);
+
+        for (size_t i = 0; i < keys.size(); ++i) {
+            std::string key = keys[i].get();
+            auto val = modelMetadata.LookupCustomMetadataMapAllocated(key.c_str(), m_allocator);
+            if (!val) continue;
+            std::string value = val.get();
+
+            if (key == "names") {
+                m_metadata.classNames = parsePythonDictStr(value);
+            } else if (key == "task") {
+                m_metadata.task = value;
+            } else if (key == "stride") {
+                try { m_metadata.stride = std::stoi(value); } catch (...) {}
+            } else if (key == "imgsz") {
+                auto sz = parseImgsz(value);
+                m_metadata.imgszH = sz.first;
+                m_metadata.imgszW = sz.second;
+            } else if (key == "end2end") {
+                m_metadata.endToEnd = (value == "True" || value == "true");
+            } else if (key == "author") {
+                m_metadata.author = value;
+            } else if (key == "description") {
+                m_metadata.description = value;
+            }
+        }
+    } catch (...) {
+        // Non-Ultralytics models may not have metadata — that's ok
+    }
+}
+
+std::map<int, std::string> YoloDetector::parsePythonDictStr(const std::string& str)
+{
+    // Parse: "{0: 'person', 1: 'bicycle', 2: 'car'}"
+    std::map<int, std::string> result;
+
+    // Find content between outermost braces
+    auto start = str.find('{');
+    auto end = str.rfind('}');
+    if (start == std::string::npos || end == std::string::npos || end <= start)
+        return result;
+
+    std::string content = str.substr(start + 1, end - start - 1);
+
+    // Split by comma, but handle quoted values that may contain commas
+    size_t pos = 0;
+    while (pos < content.size()) {
+        // Find the colon separating key: value
+        auto colonPos = content.find(':', pos);
+        if (colonPos == std::string::npos) break;
+
+        // Parse integer key
+        std::string keyStr = content.substr(pos, colonPos - pos);
+        int key = 0;
+        try { key = std::stoi(keyStr); } catch (...) { break; }
+
+        // Find the value (quoted string)
+        auto quoteStart = content.find_first_of("'\"", colonPos + 1);
+        if (quoteStart == std::string::npos) break;
+        char quoteChar = content[quoteStart];
+        auto quoteEnd = content.find(quoteChar, quoteStart + 1);
+        if (quoteEnd == std::string::npos) break;
+
+        std::string value = content.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
+        result[key] = value;
+
+        // Move past this entry's comma
+        pos = content.find(',', quoteEnd);
+        if (pos == std::string::npos) break;
+        pos++; // skip comma
+    }
+
+    return result;
+}
+
+std::pair<int, int> YoloDetector::parseImgsz(const std::string& str)
+{
+    // Parse "[640, 640]" or "640"
+    std::string s = str;
+    // Remove brackets
+    s.erase(std::remove(s.begin(), s.end(), '['), s.end());
+    s.erase(std::remove(s.begin(), s.end(), ']'), s.end());
+
+    auto commaPos = s.find(',');
+    if (commaPos != std::string::npos) {
+        try {
+            int h = std::stoi(s.substr(0, commaPos));
+            int w = std::stoi(s.substr(commaPos + 1));
+            return {h, w};
+        } catch (...) {}
+    } else {
+        try {
+            int v = std::stoi(s);
+            return {v, v};
+        } catch (...) {}
+    }
+    return {640, 640};
 }
 
 std::vector<float> YoloDetector::preprocess(
@@ -213,11 +360,18 @@ std::vector<DetectionResult> YoloDetector::detect(
 
     std::vector<DetectionResult> results;
 
-    if (m_version == YoloVersion::V5) {
+    if (m_metadata.endToEnd && dim2 == 6) {
+        // End-to-end model: [1, maxDet, 6], NMS already applied
+        results = postprocessEndToEnd(outputData,
+            static_cast<int>(dim1),
+            confThreshold, scaleX, scaleY, padX, padY, imgW, imgH);
+        return results;
+    } else if (m_version == YoloVersion::V5) {
         results = postprocessV5(outputData,
             static_cast<int>(dim1), static_cast<int>(dim2 - 5),
             confThreshold, scaleX, scaleY, padX, padY, imgW, imgH);
     } else {
+        // V8, V11, V12 all share the same output format [B, C+4, N]
         results = postprocessV8(outputData,
             static_cast<int>(dim1 - 4), static_cast<int>(dim2),
             confThreshold, scaleX, scaleY, padX, padY, imgW, imgH);
@@ -350,6 +504,53 @@ std::vector<DetectionResult> YoloDetector::postprocessV8(
     return results;
 }
 
+std::vector<DetectionResult> YoloDetector::postprocessEndToEnd(
+    const float* outputData,
+    int numDetections,
+    float confThreshold,
+    float scaleX, float scaleY,
+    float padX, float padY,
+    int imgWidth, int imgHeight)
+{
+    // End-to-end output: [1, maxDet, 6]
+    // Each row = [x1, y1, x2, y2, score, class_id] in letterbox pixel coords
+    std::vector<DetectionResult> results;
+
+    for (int i = 0; i < numDetections; ++i) {
+        const float* row = outputData + i * 6;
+        float score = row[4];
+
+        if (score < confThreshold) continue;
+
+        float x1_lb = row[0];
+        float y1_lb = row[1];
+        float x2_lb = row[2];
+        float y2_lb = row[3];
+        int classId = static_cast<int>(row[5]);
+
+        // Convert from letterbox pixel coords to original image coords
+        float x1 = (x1_lb - padX) / scaleX;
+        float y1 = (y1_lb - padY) / scaleY;
+        float x2 = (x2_lb - padX) / scaleX;
+        float y2 = (y2_lb - padY) / scaleY;
+
+        // Normalize to [0, 1]
+        DetectionResult det;
+        det.classId = classId;
+        det.confidence = score;
+        det.x = std::max(0.0f, x1 / imgWidth);
+        det.y = std::max(0.0f, y1 / imgHeight);
+        det.width = std::min(x2 / imgWidth, 1.0f) - det.x;
+        det.height = std::min(y2 / imgHeight, 1.0f) - det.y;
+
+        if (det.width > 0 && det.height > 0) {
+            results.push_back(det);
+        }
+    }
+
+    return results;
+}
+
 std::vector<int> YoloDetector::nms(
     const std::vector<DetectionResult>& boxes,
     float iouThreshold)
@@ -404,7 +605,10 @@ float YoloDetector::iou(const DetectionResult& a, const DetectionResult& b)
 }
 
 bool YoloDetector::isLoaded() const { return m_loaded; }
+bool YoloDetector::isEndToEnd() const { return m_metadata.endToEnd; }
 int YoloDetector::getNumClasses() const { return m_numClasses; }
 int YoloDetector::getInputWidth() const { return m_inputWidth; }
 int YoloDetector::getInputHeight() const { return m_inputHeight; }
 YoloVersion YoloDetector::getVersion() const { return m_version; }
+const YoloModelMetadata& YoloDetector::getMetadata() const { return m_metadata; }
+const std::map<int, std::string>& YoloDetector::getClassNames() const { return m_metadata.classNames; }
