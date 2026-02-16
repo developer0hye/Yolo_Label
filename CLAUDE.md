@@ -8,8 +8,48 @@ Key design: uses a **two-click method** (not drag-and-drop) to define bounding b
 
 - **MainWindow** (`mainwindow.cpp/h`): Application logic, UI controls, file I/O, keyboard shortcuts
 - **label_img** (`label_img.cpp/h`): Custom QLabel widget for image display, mouse-based bounding box drawing, contrast adjustment
+- **YoloDetector** (`yolo_detector.cpp/h`): ONNX Runtime-based YOLO inference engine for pseudo labeling (see below)
 - **Build**: qmake (`YoloLabel.pro`), CI via GitHub Actions (`.github/workflows/ci-release.yml`)
 - **Output format**: YOLO annotation `.txt` files with normalized bounding box coordinates
+
+## Pseudo Labeling (Auto-Label)
+
+Local YOLO object detection that auto-generates bounding boxes from an Ultralytics `.onnx` model. Loading a single `.onnx` file is sufficient — class names, input size, and model configuration are all read from the ONNX metadata embedded by Ultralytics.
+
+### Supported Models
+
+Covers all [Ultralytics](https://github.com/ultralytics/ultralytics) **object detection** models: YOLOv5, YOLOv8, YOLO11, YOLO12, YOLOv26. Both standard and end-to-end (NMS baked in) exports are supported.
+
+### ONNX Metadata
+
+Ultralytics embeds metadata as string key-value pairs in `metadata_props` when exporting to ONNX. The detector reads these to configure itself automatically:
+
+| Key | Example | Usage |
+|---|---|---|
+| `names` | `"{0: 'person', 1: 'car', ...}"` | Auto-populate class list (no `.names` file needed) |
+| `task` | `"detect"` | Validate model type; reject non-detection models |
+| `stride` | `"32"` | Model stride |
+| `imgsz` | `"[640, 640]"` | Input resolution for dynamic-shape models |
+| `end2end` | `"True"` | Skip NMS when model has NMS baked in |
+| `description` | `"Ultralytics YOLOv8n model"` | Detect specific YOLO version |
+
+### Inference Pipeline (`yolo_detector.cpp`)
+
+The C++ inference code references the Ultralytics Python implementation but maximizes use of ONNX metadata to make a single `.onnx` file self-sufficient for detection:
+
+1. **Load**: `Ort::Session` loads the model. Metadata is read via `GetModelMetadata()` → `GetCustomMetadataMapKeysAllocated()` / `LookupCustomMetadataMapAllocated()`.
+2. **Version detection**: First checks metadata `description` for specific version (V5/V8/V11/V12/V26), then falls back to output shape heuristic (`dim1 > dim2` → V5, else V8+). End-to-end is a boolean flag (`endToEnd`), not a version.
+3. **Preprocess**: Letterbox resize via `QImage::scaled()`, gray padding (114/255), HWC→CHW, normalize to [0,1].
+4. **Postprocess**: Three paths depending on model:
+   - **V5**: `[B, N, C+5]` — has objectness score, row-major layout
+   - **V8/V11/V12/V26**: `[B, C+4, N]` — no objectness, transposed (column-major per detection)
+   - **End-to-end**: `[1, maxDet, 6]` — `[x1, y1, x2, y2, score, class_id]`, NMS already applied
+5. **NMS**: Pure C++ greedy NMS (class-aware, sorted by confidence). Skipped for end-to-end models.
+6. **Output**: `DetectionResult` with normalized [0,1] coordinates matching `ObjectLabelingBox.box` format.
+
+### Conditional Build
+
+ONNX Runtime is optional. When `ONNXRUNTIME_DIR` points to a valid installation, `YoloLabel.pro` defines `ONNXRUNTIME_AVAILABLE` and compiles the detector. Without it, the app builds normally without the auto-label UI. See `scripts/download_onnxruntime.sh` for downloading pre-built ONNX Runtime binaries.
 
 # Project Guidelines
 
