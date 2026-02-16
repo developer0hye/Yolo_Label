@@ -391,7 +391,7 @@ void MainWindow::open_img_dir(bool& ret)
 
     QString opened_dir;
     if(m_imgDir.size() > 0) opened_dir = m_imgDir;
-    else opened_dir = QDir::currentPath();
+    else opened_dir = QCoreApplication::applicationDirPath();
 
     QString imgDir = QFileDialog::getExistingDirectory(
                 nullptr,
@@ -417,7 +417,7 @@ void MainWindow::open_obj_file(bool& ret)
 
     QString opened_dir;
     if(m_imgDir.size() > 0) opened_dir = m_imgDir;
-    else opened_dir = QDir::currentPath();
+    else opened_dir = QCoreApplication::applicationDirPath();
 
     QString fileLabelList = QFileDialog::getOpenFileName(
                 nullptr,
