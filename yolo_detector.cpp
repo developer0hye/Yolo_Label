@@ -300,13 +300,13 @@ std::vector<float> YoloDetector::preprocess(
     for (int y = 0; y < newH; ++y) {
         const uchar* row = resized.constScanLine(y);
         for (int x = 0; x < newW; ++x) {
-            int srcIdx = y * resized.bytesPerLine() + x * 3;
             int dstX = padLeft + x;
             int dstY = padTop + y;
+            int px = x * 3;
 
-            blob[0 * m_inputHeight * m_inputWidth + dstY * m_inputWidth + dstX] = row[srcIdx + 0] / 255.0f; // R
-            blob[1 * m_inputHeight * m_inputWidth + dstY * m_inputWidth + dstX] = row[srcIdx + 1] / 255.0f; // G
-            blob[2 * m_inputHeight * m_inputWidth + dstY * m_inputWidth + dstX] = row[srcIdx + 2] / 255.0f; // B
+            blob[0 * m_inputHeight * m_inputWidth + dstY * m_inputWidth + dstX] = row[px + 0] / 255.0f; // R
+            blob[1 * m_inputHeight * m_inputWidth + dstY * m_inputWidth + dstX] = row[px + 1] / 255.0f; // G
+            blob[2 * m_inputHeight * m_inputWidth + dstY * m_inputWidth + dstX] = row[px + 2] / 255.0f; // B
         }
     }
 
