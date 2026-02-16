@@ -118,6 +118,32 @@ jobs:
           qmake YoloLabel.pro CONFIG+=release "ONNXRUNTIME_DIR=%CD%\onnxruntime"
           nmake
 
+      # ── Accuracy Test (Linux only) ────────────────────────────
+      - name: Setup Python for accuracy test
+        if: runner.os == 'Linux'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ultralytics
+        if: runner.os == 'Linux'
+        run: pip install ultralytics
+
+      - name: Build test binary
+        if: runner.os == 'Linux'
+        run: |
+          cd tests
+          qmake test_inference.pro "ONNXRUNTIME_DIR=$PWD/../onnxruntime"
+          make -j$(nproc)
+
+      - name: Run accuracy test
+        if: runner.os == 'Linux'
+        run: |
+          python tests/run_accuracy_test.py \
+            --test-binary tests/test_inference \
+            --image Samples/images/raccoon_1.jpg \
+            --conf 0.25
+
       # ── Package: Windows ──────────────────────────────────────
       - name: Package (Windows)
         if: runner.os == 'Windows'
