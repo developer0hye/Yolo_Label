@@ -180,8 +180,8 @@ To minimize wrist strain when labeling, I adopted the method **"twice left butto
 | `Double Click` on color column in label table | Change label color |
 | `Ctrl + Scroll` (Windows/Linux) / `Cmd + Scroll` (macOS) | Zoom in/out (centered on cursor, up to 10x) |
 | `Ctrl + Left Drag` (Windows/Linux) / `Cmd + Left Drag` (macOS) or `Middle Mouse Drag` | Pan while zoomed in |
-| `Wheel Down` | Save and Next Image  |
-| `Wheel Up` | Save and Prev Image |
+| `Wheel Down` (when cursor is over image) | Save and Next Image  |
+| `Wheel Up` (when cursor is over image) | Save and Prev Image |
 
 ## Contrast Adjustment
 
