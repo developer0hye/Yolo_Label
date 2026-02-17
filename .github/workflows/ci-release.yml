@@ -206,9 +206,14 @@ jobs:
 
           if [ -n "$CODESIGN_IDENTITY" ]; then
             echo "Signing with: $CODESIGN_IDENTITY"
-            # Sign the entire bundle with --deep and entitlements for hardened runtime.
-            # Entitlements allow ONNX Runtime's dynamic memory allocation under hardened runtime.
-            codesign --force --deep --sign "$CODESIGN_IDENTITY" \
+            # Sign nested code (frameworks, dylibs, plugins) with Developer ID
+            # but WITHOUT --options runtime to avoid Apple notarization hang.
+            find YoloLabel.app/Contents -type f \( -name '*.dylib' -o -name '*.so' \) \
+              -exec codesign --force --sign "$CODESIGN_IDENTITY" --timestamp {} \;
+            find YoloLabel.app/Contents/Frameworks -type d -name '*.framework' \
+              -exec codesign --force --sign "$CODESIGN_IDENTITY" --timestamp {} \;
+            # Sign main bundle with hardened runtime + entitlements
+            codesign --force --sign "$CODESIGN_IDENTITY" \
               --options runtime --timestamp \
               --entitlements scripts/entitlements.plist \
               YoloLabel.app
