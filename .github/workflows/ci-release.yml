@@ -206,17 +206,11 @@ jobs:
 
           if [ -n "$CODESIGN_IDENTITY" ]; then
             echo "Signing with: $CODESIGN_IDENTITY"
-            # Sign nested code (frameworks, dylibs, plugins) with Developer ID
-            # but WITHOUT --options runtime to avoid Apple notarization hang.
-            find YoloLabel.app/Contents -type f \( -name '*.dylib' -o -name '*.so' \) \
-              -exec codesign --force --sign "$CODESIGN_IDENTITY" --timestamp {} \;
-            find YoloLabel.app/Contents/Frameworks -type d -name '*.framework' \
-              -exec codesign --force --sign "$CODESIGN_IDENTITY" --timestamp {} \;
-            # Sign main bundle with hardened runtime + entitlements
-            codesign --force --sign "$CODESIGN_IDENTITY" \
-              --options runtime --timestamp \
-              --entitlements scripts/entitlements.plist \
-              YoloLabel.app
+            # Use --deep to sign the entire bundle in a single pass.
+            # Apple's notary hangs when nested code is individually signed
+            # with separate codesign invocations (find+exec approach).
+            codesign --force --deep --sign "$CODESIGN_IDENTITY" \
+              --options runtime --timestamp YoloLabel.app
 
             # Verify the signature before proceeding
             echo "Verifying code signature..."
