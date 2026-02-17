@@ -33,7 +33,7 @@ But... I've reinvented one...
 
  It's the **SENSITIVE** image-labeling tool for object detection!
  
-![image](https://user-images.githubusercontent.com/35001605/211553495-66e81a7d-df00-44ca-82e4-966000cddbd1.png)
+![image](docs/screenshot_main.png)
 
 https://user-images.githubusercontent.com/35001605/211560039-367f27d7-63ab-4342-824e-9f47f2afbc35.mp4
 
@@ -173,6 +173,7 @@ Arguments are detected by file extension — `.onnx` files are loaded as YOLO mo
 | `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Paste bounding boxes from clipboard |
 | `Ctrl + Z` (Windows/Linux) / `Cmd + Z` (macOS) | Undo last action (add, remove, or clear all) |
 | `Ctrl + Y` (Windows) / `Ctrl + Shift + Z` (Linux) / `Cmd + Shift + Z` (macOS) | Redo last undone action |
+| `R` | Auto Label current image (requires loaded ONNX model) |
 | `Ctrl + 0` (Windows/Linux) / `Cmd + 0` (macOS) | Reset zoom to 100% |
 
 | Mouse | Action |
@@ -185,6 +186,48 @@ Arguments are detected by file extension — `.onnx` files are loaded as YOLO mo
 | `Ctrl + Left Drag` (Windows/Linux) / `Cmd + Left Drag` (macOS) or `Middle Mouse Drag` | Pan while zoomed in |
 | `Wheel Down` (when cursor is over image) | Save and Next Image  |
 | `Wheel Up` (when cursor is over image) | Save and Prev Image |
+
+## Auto-Label (Pseudo Labeling)
+
+Tired of drawing every single bounding box by hand? Load a pre-trained YOLO model and let it do the boring work for you.
+
+YOLO-Label supports **local ONNX inference** — just export any [Ultralytics](https://github.com/ultralytics/ultralytics) detection model to `.onnx` and load it. Class names, input size, and model configuration are all read from the ONNX metadata automatically. No separate config files needed.
+
+### Supported Models
+
+Any Ultralytics detection model exported with `model.export(format="onnx")`:
+
+| Model | Note |
+|---|---|
+| YOLOv5 | Anchor-based, objectness score |
+| YOLOv8, YOLO11, YOLO12, YOLOv26 | Anchor-free |
+| End-to-end models | NMS baked in |
+
+### How to Use
+
+1. Open your dataset as usual (images + class file)
+2. Click **Load Model** and select a `.onnx` file
+3. Adjust the **confidence threshold** with the slider (default 25%)
+4. Click **Auto Label** (or press `R`) to detect objects on the current image
+5. Click **Auto Label All** to batch-process all images
+6. Review and correct results using the existing manual annotation tools — auto-labeled boxes can be moved, deleted, or undone (`Ctrl+Z`)
+
+> **Tip:** You can skip the class file entirely. If the model has embedded class names (all Ultralytics exports do), they will be loaded automatically.
+
+### Build with ONNX Runtime
+
+Pre-built releases include ONNX Runtime. To build from source with auto-label support:
+
+```bash
+# Download ONNX Runtime (one-time setup)
+./scripts/download_onnxruntime.sh
+
+# Build
+qmake YoloLabel.pro "ONNXRUNTIME_DIR=$PWD/onnxruntime"
+make -j$(nproc)
+```
+
+Without ONNX Runtime, the app builds and works normally — just without the auto-label feature.
 
 ## Contrast Adjustment
 
