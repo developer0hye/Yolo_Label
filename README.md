@@ -54,9 +54,7 @@ Pre-built binaries are available on the [Releases](https://github.com/developer0
 |---|---|---|
 | **Windows (x64)** | [YoloLabel-Windows-x64.zip](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-Windows-x64.zip) | Unzip and run `YoloLabel.exe` |
 | **Linux (x64)** | [YoloLabel-Linux-x64.AppImage](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-Linux-x64.AppImage) | `chmod +x` and run |
-| **macOS** | [YoloLabel-macOS.dmg](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-macOS.dmg) | See note below |
-
-> **macOS note:** The macOS binary is not signed with an Apple Developer certificate. macOS Gatekeeper will block it from running. To use YoloLabel on macOS, build from source (see below).
+| **macOS (Apple Silicon)** | [YoloLabel-macOS.dmg](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-macOS.dmg) | Open DMG and drag to Applications |
 
 ## Install and Run
 
@@ -80,22 +78,15 @@ chmod +x YoloLabel-Linux-x64.AppImage
 ./YoloLabel-Linux-x64.AppImage
 ```
 
-### For macOS (build from source)
+### For macOS
 
-1. Install Qt 6 (e.g. via Homebrew: `brew install qt@6`)
+1. Download [YoloLabel-macOS.dmg](https://github.com/developer0hye/Yolo_Label/releases/latest/download/YoloLabel-macOS.dmg)
 
-2. Clone or download the source code of this repository
+2. Open the DMG and drag `YoloLabel.app` to Applications
 
-3. Open terminal and type command in the downloaded directory.
-```console
-qmake
-make
-```
+3. Launch YoloLabel from Applications
 
-4. Run YoloLabel.app/Contents/MacOS/YoloLabel in terminal or double click YoloLabel.app to run
-```console
-./YoloLabel.app/Contents/MacOS/YoloLabel
-```
+> **Build from source:** If you prefer, install Qt 6 (`brew install qt@6`), clone this repo, then run `qmake && make`. See [Build with ONNX Runtime](#build-with-onnx-runtime) for auto-label support.
 
 ## Prepare Custom Dataset and Load
 
@@ -261,4 +252,4 @@ I've reinvented the wheel.
 
 - [x] ~~Upload binary file for easy usage for windows and ubuntu~~
 - [x] ~~deployment for ubuntu~~
-- [ ] macOS Developer signing for Gatekeeper
+- [x] ~~macOS Developer signing for Gatekeeper~~
