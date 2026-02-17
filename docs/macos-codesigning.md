@@ -122,13 +122,43 @@ stapler validate YoloLabel-macOS.dmg
 - Ensure the `.p12` file contains both the certificate **and** the private key
 - Verify the certificate is a **Developer ID Application** type (not Developer ID Installer or other types)
 
+### "The user name or passphrase you entered is not correct"
+- The `MACOS_CERTIFICATE_PASSWORD` secret is empty or does not match the `.p12` export password
+- **Secret name matters**: verify the name is exactly `MACOS_CERTIFICATE_PASSWORD` (not `MACOS_CERTIFICATE_PWD` or other variations). Use `gh secret list` to check registered secret names.
+- If you forgot the password, re-export the certificate from Keychain Access with a new password and update both `MACOS_CERTIFICATE` and `MACOS_CERTIFICATE_PASSWORD` secrets
+
 ### Notarization fails with "Invalid credentials"
 - Confirm `APPLE_ID_PASSWORD` is an **app-specific password**, not your regular Apple ID password
 - Ensure the Apple ID is associated with the same team as the Developer ID certificate
 
+### App crashes with "Could not load the Qt platform plugin" after signing
+
+This happens when hardened runtime is enabled (`--options runtime`) but not all nested binaries are re-signed with the same Developer ID.
+
+**Root cause:** `macdeployqt` copies Qt plugins (e.g., `libqcocoa.dylib`) into `Contents/PlugIns/`. These plugins retain Qt Company's original signature. With hardened runtime, macOS enforces **library validation** — all loaded dylibs must be signed by the same Team ID as the main executable. If a plugin is signed by a different team (Qt Company vs. your Developer ID), the app fails to load it at runtime.
+
+**Solution:** Sign **all** dylibs under `Contents/` (not just `Contents/Frameworks/`):
+```bash
+# Wrong: only signs Frameworks, misses PlugIns
+find YoloLabel.app/Contents/Frameworks -name '*.dylib' -exec codesign ...
+
+# Correct: signs everything under Contents (Frameworks + PlugIns)
+find YoloLabel.app/Contents -name '*.dylib' -exec codesign ...
+```
+
+**How to diagnose:** Compare signing authorities across binaries:
+```bash
+# Check main binary
+codesign -d --verbose=2 YoloLabel.app/Contents/MacOS/YoloLabel 2>&1 | grep Authority
+
+# Check a plugin
+codesign -d --verbose=2 YoloLabel.app/Contents/PlugIns/platforms/libqcocoa.dylib 2>&1 | grep Authority
+```
+If the `Authority` lines show different Team IDs, the plugin needs to be re-signed.
+
 ### Notarization fails with "Hardened Runtime not enabled"
 - The `--options runtime` flag must be present in the `codesign` command
-- Ensure all nested binaries (dylibs in Frameworks/) are also signed — `--deep` handles this
+- Ensure all nested binaries (dylibs in Frameworks/ **and** PlugIns/) are also signed with `--options runtime`
 
 ### Notarization times out
 - Apple's notary service usually completes within 5-15 minutes, but can occasionally take longer
