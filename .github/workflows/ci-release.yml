@@ -199,35 +199,77 @@ jobs:
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: |
-          mkdir -p YoloLabel.app/Contents/Frameworks
-          cp onnxruntime/lib/libonnxruntime.*.dylib YoloLabel.app/Contents/Frameworks/
-          install_name_tool -add_rpath @executable_path/../Frameworks YoloLabel.app/Contents/MacOS/YoloLabel || true
+          # 1. Bundle Qt frameworks and plugins (do NOT pass -codesign
+          #    because macdeployqt has a known bug that skips signing
+          #    .framework bundle directories)
           macdeployqt YoloLabel.app
 
+          # 2. Copy ONNX Runtime dylibs into Frameworks (after macdeployqt
+          #    so it does not interfere with them)
+          cp -a onnxruntime/lib/libonnxruntime*.dylib \
+            YoloLabel.app/Contents/Frameworks/
+
+          # 3. Ensure @executable_path/../Frameworks rpath exists.
+          #    macdeployqt usually adds this, but we add it defensively;
+          #    ignore "already exists" error.
+          install_name_tool -add_rpath @executable_path/../Frameworks \
+            YoloLabel.app/Contents/MacOS/YoloLabel 2>&1 \
+            | grep -v "would duplicate" || true
+
+          # 4. Code signing — inside-out per Apple requirements.
+          #    (codesign --deep is deprecated for signing as of macOS 13;
+          #     entitlements must only be applied to the main executable)
           if [ -n "$CODESIGN_IDENTITY" ]; then
             echo "Signing with: $CODESIGN_IDENTITY"
-            codesign --force --deep --sign "$CODESIGN_IDENTITY" \
+
+            # 4a. Sign all dylibs in Frameworks/
+            find YoloLabel.app/Contents/Frameworks -name "*.dylib" -exec \
+              codesign --force --sign "$CODESIGN_IDENTITY" \
+                --options runtime --timestamp {} \;
+
+            # 4b. Sign .framework bundles (inside-out: binary first, then bundle)
+            for fw in YoloLabel.app/Contents/Frameworks/*.framework; do
+              [ -d "$fw" ] || continue
+              fw_name=$(basename "$fw" .framework)
+              if [ -f "$fw/Versions/A/$fw_name" ]; then
+                codesign --force --sign "$CODESIGN_IDENTITY" \
+                  --options runtime --timestamp "$fw/Versions/A/$fw_name"
+              fi
+              codesign --force --sign "$CODESIGN_IDENTITY" \
+                --options runtime --timestamp "$fw"
+            done
+
+            # 4c. Sign Qt plugins
+            find YoloLabel.app/Contents/PlugIns -name "*.dylib" -exec \
+              codesign --force --sign "$CODESIGN_IDENTITY" \
+                --options runtime --timestamp {} \;
+
+            # 4d. Sign the main app bundle LAST (with entitlements)
+            codesign --force --sign "$CODESIGN_IDENTITY" \
               --options runtime --timestamp \
               --entitlements scripts/entitlements.plist \
               YoloLabel.app
+
+            # 4e. Verify (--deep is fine for verification)
             codesign --verify --deep --strict --verbose=2 YoloLabel.app
           else
             echo "No certificate available, using ad-hoc signing"
             codesign --force --deep --sign - YoloLabel.app
           fi
 
-          sleep 2
+          # 5. Create DMG
           hdiutil create -volname YoloLabel -srcfolder YoloLabel.app \
             -ov -format UDZO "${{ matrix.artifact_name }}.dmg"
 
+          # 6. Sign the DMG (no --options runtime needed for disk images)
           if [ -n "$CODESIGN_IDENTITY" ]; then
             codesign --force --sign "$CODESIGN_IDENTITY" \
               --timestamp "${{ matrix.artifact_name }}.dmg"
           fi
 
-      # ── macOS: notarize DMG ─────────────────────────────────
+      # ── macOS: notarize DMG (releases only) ───────────────────
       - name: Notarize DMG (macOS)
-        if: runner.os == 'macOS' && env.CODESIGN_IDENTITY != ''
+        if: runner.os == 'macOS' && env.CODESIGN_IDENTITY != '' && startsWith(github.ref, 'refs/tags/')
         timeout-minutes: 25
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
