@@ -206,8 +206,8 @@ jobs:
 
           if [ -n "$CODESIGN_IDENTITY" ]; then
             echo "Signing with: $CODESIGN_IDENTITY"
-            # Sign inside-out: frameworks/dylibs first, then the main bundle
-            find YoloLabel.app/Contents/Frameworks -type f \( -name '*.dylib' -o -name '*.so' \) \
+            # Sign inside-out: all nested binaries first, then the main bundle
+            find YoloLabel.app/Contents -type f \( -name '*.dylib' -o -name '*.so' \) \
               -exec codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp {} \;
             find YoloLabel.app/Contents/Frameworks -type d -name '*.framework' \
               -exec codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp {} \;
