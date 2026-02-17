@@ -4,7 +4,6 @@
 #include <QFileDialog>
 #include <QColorDialog>
 #include <QKeyEvent>
-#include <QDebug>
 #include <QShortcut>
 #include <QCollator>
 #include <QHBoxLayout>
@@ -14,8 +13,6 @@
 #include <iomanip>
 #include <cmath>
 
-using std::cout;
-using std::endl;
 using std::ofstream;
 using std::ifstream;
 using std::string;
@@ -196,25 +193,12 @@ void MainWindow::on_pushButton_open_files_clicked()
     init();
 }
 
-//void MainWindow::on_pushButton_change_dir_clicked()
-//{
-//    bool bRetImgDir     = false;
-
-//    open_img_dir(bRetImgDir);
-
-//    if (!bRetImgDir) return ;
-
-//    init();
-//}
-
-
 void MainWindow::init()
 {
     m_lastLabeledImgIndex = -1;
 
     ui->label_image->init();
 
-    init_button_event();
     init_horizontal_slider();
 
 #ifdef ONNXRUNTIME_AVAILABLE
@@ -417,7 +401,6 @@ void MainWindow::set_label(const int labelIndex)
     {
         m_objIndex = labelIndex;
         ui->label_image->setFocusObjectLabel(m_objIndex);
-        ui->label_image->setFocusObjectName(m_objList.at(m_objIndex));
         ui->tableWidget_label->setCurrentCell(m_objIndex, 0);
     }
 }
@@ -626,11 +609,6 @@ void MainWindow::on_tableWidget_label_cellClicked(int row, int column)
 void MainWindow::on_horizontalSlider_images_sliderMoved(int position)
 {
     goto_img(position);
-}
-
-void MainWindow::init_button_event()
-{
-//    ui->pushButton_change_dir->setEnabled(true);
 }
 
 void MainWindow::init_horizontal_slider()

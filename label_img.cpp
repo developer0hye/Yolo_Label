@@ -3,7 +3,6 @@
 #include <QImageReader>
 #include <math.h>       /* fabs */
 #include <algorithm>
-//#include <omp.h>
 
 using std::ifstream;
 
@@ -362,8 +361,7 @@ void label_img::loadLabelData(const QString& labelFilePath)
 
                 m_objBoundingBoxes.push_back(objBox);
             }
-            catch (const std::out_of_range& e) {
-//                std::cout << "loadLabelData: Out of Range error.";
+            catch (const std::out_of_range&) {
             }
         }
     }
@@ -374,19 +372,9 @@ void label_img::setFocusObjectLabel(int nLabel)
     m_focusedObjectLabel = nLabel;
 }
 
-void label_img::setFocusObjectName(QString qstrName)
-{
-    m_foucsedObjectName = qstrName;
-}
-
 bool label_img::isOpened()
 {
     return !m_inputImg.isNull();
-}
-
-QImage label_img::crop(QRect rect)
-{
-    return m_inputImg.copy(rect);
 }
 
 QImage label_img::getInputImage() const
@@ -628,14 +616,6 @@ QRect label_img::cvtRelativeToAbsoluteRectInUi(QRectF rectF)
     int w = static_cast<int>(rectF.width()  * m_zoomFactor * this->width()  + 0.5);
     int h = static_cast<int>(rectF.height() * m_zoomFactor * this->height() + 0.5);
     return QRect(topLeft.x(), topLeft.y(), w, h);
-}
-
-QRect label_img::cvtRelativeToAbsoluteRectInImage(QRectF rectF)
-{
-    return QRect(static_cast<int>(rectF.x() * m_inputImg.width()),
-                 static_cast<int>(rectF.y() * m_inputImg.height()),
-                 static_cast<int>(rectF.width() * m_inputImg.width()),
-                 static_cast<int>(rectF.height()* m_inputImg.height()));
 }
 
 QPoint label_img::cvtRelativeToAbsolutePoint(QPointF p)
