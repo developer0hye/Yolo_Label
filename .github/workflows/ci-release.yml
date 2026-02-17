@@ -221,6 +221,8 @@ jobs:
             codesign --force --deep --sign - YoloLabel.app
           fi
 
+          # Brief pause to release resource locks after code signing
+          sleep 2
           hdiutil create -volname YoloLabel -srcfolder YoloLabel.app \
             -ov -format UDZO "${{ matrix.artifact_name }}.dmg"
 
