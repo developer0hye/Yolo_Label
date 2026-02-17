@@ -154,6 +154,47 @@ jobs:
           copy onnxruntime\lib\onnxruntime.dll deploy\
           windeployqt deploy\YoloLabel.exe --release --no-translations
 
+      # ── macOS: import signing certificate ────────────────────
+      - name: Import signing certificate (macOS)
+        if: runner.os == 'macOS'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_CERTIFICATE" ]; then
+            echo "No signing certificate found, will use ad-hoc signing"
+            exit 0
+          fi
+
+          # Decode the certificate
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+
+          # Create a temporary keychain
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 20)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate into the keychain
+          security import certificate.p12 -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Add temporary keychain to the search list
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+
+          # Verify signing identity
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+          # Clean up certificate file
+          rm -f certificate.p12
+
+          # Export for later steps
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "CODESIGN_IDENTITY=Developer ID Application" >> "$GITHUB_ENV"
+
       # ── Package: macOS ────────────────────────────────────────
       - name: Package (macOS)
         if: runner.os == 'macOS'
@@ -162,8 +203,50 @@ jobs:
           cp onnxruntime/lib/libonnxruntime.*.dylib YoloLabel.app/Contents/Frameworks/
           install_name_tool -add_rpath @executable_path/../Frameworks YoloLabel.app/Contents/MacOS/YoloLabel || true
           macdeployqt YoloLabel.app
-          codesign --force --deep --sign - YoloLabel.app
-          hdiutil create -volname YoloLabel -srcfolder YoloLabel.app -ov -format UDZO "${{ matrix.artifact_name }}.dmg"
+
+          if [ -n "$CODESIGN_IDENTITY" ]; then
+            echo "Signing with: $CODESIGN_IDENTITY"
+            # Sign inside-out: frameworks/dylibs first, then the main bundle
+            find YoloLabel.app/Contents/Frameworks -type f \( -name '*.dylib' -o -name '*.so' \) \
+              -exec codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp {} \;
+            find YoloLabel.app/Contents/Frameworks -type d -name '*.framework' \
+              -exec codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp {} \;
+            codesign --force --sign "$CODESIGN_IDENTITY" \
+              --options runtime --timestamp YoloLabel.app
+          else
+            echo "No certificate available, using ad-hoc signing"
+            codesign --force --deep --sign - YoloLabel.app
+          fi
+
+          hdiutil create -volname YoloLabel -srcfolder YoloLabel.app \
+            -ov -format UDZO "${{ matrix.artifact_name }}.dmg"
+
+          if [ -n "$CODESIGN_IDENTITY" ]; then
+            codesign --force --sign "$CODESIGN_IDENTITY" \
+              --timestamp "${{ matrix.artifact_name }}.dmg"
+          fi
+
+      # ── macOS: notarize DMG ─────────────────────────────────
+      - name: Notarize DMG (macOS)
+        if: runner.os == 'macOS' && env.CODESIGN_IDENTITY != ''
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit "${{ matrix.artifact_name }}.dmg" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          xcrun stapler staple "${{ matrix.artifact_name }}.dmg"
+
+      # ── macOS: cleanup keychain ──────────────────────────────
+      - name: Cleanup keychain (macOS)
+        if: always() && runner.os == 'macOS' && env.KEYCHAIN_PATH != ''
+        run: |
+          security delete-keychain "$KEYCHAIN_PATH"
 
       # ── Package: Linux ────────────────────────────────────────
       - name: Package (Linux)
