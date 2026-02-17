@@ -213,6 +213,10 @@ jobs:
               -exec codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp {} \;
             codesign --force --sign "$CODESIGN_IDENTITY" \
               --options runtime --timestamp YoloLabel.app
+
+            # Verify the signature before proceeding
+            echo "Verifying code signature..."
+            codesign --verify --deep --strict --verbose=2 YoloLabel.app
           else
             echo "No certificate available, using ad-hoc signing"
             codesign --force --deep --sign - YoloLabel.app
@@ -229,18 +233,18 @@ jobs:
       # ── macOS: notarize DMG ─────────────────────────────────
       - name: Notarize DMG (macOS)
         if: runner.os == 'macOS' && env.CODESIGN_IDENTITY != ''
-        timeout-minutes: 15
+        timeout-minutes: 35
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          # Submit and wait with a 10-minute timeout
+          # Submit and wait with a 30-minute timeout
           SUBMIT_OUTPUT=$(xcrun notarytool submit "${{ matrix.artifact_name }}.dmg" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait --timeout 10m 2>&1) || true
+            --wait --timeout 30m 2>&1) || true
 
           echo "$SUBMIT_OUTPUT"
 
