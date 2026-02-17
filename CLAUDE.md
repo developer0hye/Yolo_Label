@@ -102,5 +102,9 @@ ONNX Runtime is optional. When `ONNXRUNTIME_DIR` points to a valid installation,
   - Correct: `open YoloLabel.app --args /full/path/to/Samples/images /full/path/to/coco_names.txt /full/path/to/yolov8n.onnx`
 - Alternatively, run the binary directly to use relative paths: `./YoloLabel.app/Contents/MacOS/YoloLabel Samples/images ...`
 
+## Incremental Build Verification
+- When modifying C++ source files, make minimal changes and build (`qmake && make`) after each edit to catch syntax errors immediately
+- Do not batch large numbers of changes across files before verifying the build — fix one file (or one logical group of changes) at a time
+
 ## Language
 - All commit messages, PR descriptions, code comments, and documentation must be written in **English only**

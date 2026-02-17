@@ -6,7 +6,6 @@
 #include <QImage>
 #include <QMouseEvent>
 #include <QWheelEvent>
-#include <iostream>
 #include <fstream>
 
 struct ObjectLabelingBox
@@ -50,7 +49,6 @@ public:
     void loadLabelData(const QString & );
 
     void setFocusObjectLabel(int);
-    void setFocusObjectName(QString);
     void setContrastGamma(float);
 
     bool isOpened();
@@ -63,7 +61,6 @@ public:
 
     void moveBox(int boxIdx, double dx, double dy);
     int  findBoxUnderCursor(QPointF point) const;
-    QImage crop(QRect);
     QImage getInputImage() const;
 
     void zoomIn(QPoint widgetPos);
@@ -73,8 +70,6 @@ public:
     QRectF  getRelativeRectFromTwoPoints(QPointF , QPointF);
 
     QRect   cvtRelativeToAbsoluteRectInUi(QRectF);
-    QRect   cvtRelativeToAbsoluteRectInImage(QRectF);
-
     QPoint  cvtRelativeToAbsolutePoint(QPointF);
     QPointF cvtAbsoluteToRelativePoint(QPoint);
 
@@ -86,7 +81,6 @@ signals:
 
 private:
     int             m_focusedObjectLabel;
-    QString         m_foucsedObjectName;
 
     double m_aspectRatioWidth;
     double m_aspectRatioHeight;

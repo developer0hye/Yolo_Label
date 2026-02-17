@@ -14,7 +14,6 @@
 #ifdef ONNXRUNTIME_AVAILABLE
 #include "yolo_detector.h"
 #endif
-#include <iostream>
 #include <fstream>
 
 namespace Ui {
@@ -72,7 +71,6 @@ private:
 
     void            init();
     void            init_table_widget();
-    void            init_button_event();
     void            init_horizontal_slider();
 
     void            set_label_progress(const int);
