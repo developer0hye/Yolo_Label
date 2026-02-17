@@ -233,39 +233,77 @@ jobs:
       # ── macOS: notarize DMG ─────────────────────────────────
       - name: Notarize DMG (macOS)
         if: runner.os == 'macOS' && env.CODESIGN_IDENTITY != ''
-        timeout-minutes: 35
+        timeout-minutes: 25
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          # Submit and wait with a 30-minute timeout
+          # Debug: list all signed binaries and their signature status
+          echo "=== Signed binaries in the app bundle ==="
+          find YoloLabel.app -type f -perm +111 -exec sh -c \
+            'file "$1" | grep -q Mach-O && echo "$1"' _ {} \; 2>/dev/null || true
+          echo ""
+          echo "=== Checking previous submission statuses ==="
+          xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" 2>&1 | head -30 || true
+          echo ""
+
+          # Submit without --wait so we can poll manually with verbose output
+          echo "=== Submitting DMG for notarization ==="
           SUBMIT_OUTPUT=$(xcrun notarytool submit "${{ matrix.artifact_name }}.dmg" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait --timeout 30m 2>&1) || true
-
+            --team-id "$APPLE_TEAM_ID" 2>&1)
           echo "$SUBMIT_OUTPUT"
 
-          # Extract submission ID for log retrieval on failure
           SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+          if [ -z "$SUBMISSION_ID" ]; then
+            echo "::error::Failed to submit for notarization"
+            exit 1
+          fi
+          echo "Submission ID: $SUBMISSION_ID"
 
-          if echo "$SUBMIT_OUTPUT" | grep -q "status: Accepted"; then
-            echo "Notarization accepted"
-          else
-            echo "::error::Notarization did not succeed"
-            if [ -n "$SUBMISSION_ID" ]; then
-              echo "Fetching notarization log for $SUBMISSION_ID..."
+          # Poll for status with explicit logging
+          echo "=== Polling for notarization result ==="
+          MAX_ATTEMPTS=40  # 40 * 30s = 20 minutes
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            sleep 30
+            INFO_OUTPUT=$(xcrun notarytool info "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_ID_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" 2>&1) || true
+            echo "[$i/$MAX_ATTEMPTS] $(date -u '+%H:%M:%S') $INFO_OUTPUT"
+
+            if echo "$INFO_OUTPUT" | grep -q "status: Accepted"; then
+              echo "Notarization accepted!"
+              xcrun stapler staple "${{ matrix.artifact_name }}.dmg"
+              exit 0
+            elif echo "$INFO_OUTPUT" | grep -q "status: Invalid"; then
+              echo "::error::Notarization rejected (Invalid)"
               xcrun notarytool log "$SUBMISSION_ID" \
                 --apple-id "$APPLE_ID" \
                 --password "$APPLE_ID_PASSWORD" \
                 --team-id "$APPLE_TEAM_ID" 2>&1 || true
+              exit 1
+            elif echo "$INFO_OUTPUT" | grep -q "status: Rejected"; then
+              echo "::error::Notarization rejected"
+              xcrun notarytool log "$SUBMISSION_ID" \
+                --apple-id "$APPLE_ID" \
+                --password "$APPLE_ID_PASSWORD" \
+                --team-id "$APPLE_TEAM_ID" 2>&1 || true
+              exit 1
             fi
-            exit 1
-          fi
+          done
 
-          xcrun stapler staple "${{ matrix.artifact_name }}.dmg"
+          echo "::error::Notarization timed out after $MAX_ATTEMPTS attempts"
+          xcrun notarytool info "$SUBMISSION_ID" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" 2>&1 || true
+          exit 1
 
       # ── macOS: cleanup keychain ──────────────────────────────
       - name: Cleanup keychain (macOS)
