@@ -229,16 +229,37 @@ jobs:
       # ── macOS: notarize DMG ─────────────────────────────────
       - name: Notarize DMG (macOS)
         if: runner.os == 'macOS' && env.CODESIGN_IDENTITY != ''
+        timeout-minutes: 15
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          xcrun notarytool submit "${{ matrix.artifact_name }}.dmg" \
+          # Submit and wait with a 10-minute timeout
+          SUBMIT_OUTPUT=$(xcrun notarytool submit "${{ matrix.artifact_name }}.dmg" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --wait --timeout 10m 2>&1) || true
+
+          echo "$SUBMIT_OUTPUT"
+
+          # Extract submission ID for log retrieval on failure
+          SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+
+          if echo "$SUBMIT_OUTPUT" | grep -q "status: Accepted"; then
+            echo "Notarization accepted"
+          else
+            echo "::error::Notarization did not succeed"
+            if [ -n "$SUBMISSION_ID" ]; then
+              echo "Fetching notarization log for $SUBMISSION_ID..."
+              xcrun notarytool log "$SUBMISSION_ID" \
+                --apple-id "$APPLE_ID" \
+                --password "$APPLE_ID_PASSWORD" \
+                --team-id "$APPLE_TEAM_ID" 2>&1 || true
+            fi
+            exit 1
+          fi
 
           xcrun stapler staple "${{ matrix.artifact_name }}.dmg"
 
