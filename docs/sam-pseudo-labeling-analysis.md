@@ -93,6 +93,11 @@ SAM consists of 3 components, split into **2 ONNX files** for deployment:
 | EfficientSAM-S | ~20M | ~100MB | ~21ms | Good (-1.5~3.5 mIoU) |
 | FastSAM | 68M (CNN) | YOLO format | ~10ms | Low |
 | SAM2 Tiny | ~39M | ~155MB | Fast | Good |
+| EfficientSAM3-EV-S | 0.68M | TBD | ~420ms* | 61.6 mIoU |
+| EfficientSAM3-RV-M | 7.77M | TBD | ~413ms* | 65.3 mIoU |
+| EfficientSAM3-TV-L | 20.62M | TBD | ~452ms* | 66.3 mIoU |
+
+\* EfficientSAM3 speeds are Stage 1 only (encoder distillation). Full pipeline optimization pending.
 
 **Optimal choice for desktop apps: MobileSAM**
 - 66x smaller model (vs SAM ViT-H)
@@ -162,3 +167,85 @@ Mask → tight bbox / polygon → YOLO format
 3. **Interactive UI required**: Point clicks (positive/negative) + real-time mask overlay
 4. **MobileSAM is optimal**: ~56MB (encoder+decoder), <300ms even on CPU
 5. **Combinable with existing YOLO detection**: YOLO boxes → SAM segmentation → tight bbox/polygon
+
+---
+
+## 9. EfficientSAM3 — Lightweight SAM3 Distillation
+
+[EfficientSAM3](https://github.com/SimonZeng7108/efficientsam3) compresses SAM3 into lightweight, edge-friendly models via progressive knowledge distillation, preserving promptable concept segmentation and video tracking capabilities.
+
+### Three-Stage Progressive Distillation
+
+```
+Stage 1: Compact Encoder (Released)
+    SAM3 ViT encoder (461.84M) → Student backbones (0.68M ~ 22.4M)
+    Trained on 1% SA-1B with prompt-in-the-loop supervision
+
+Stage 2: Temporal Memory (Planned)
+    SAM3 dense memory bank → Perceiver-based compact module
+    Trained on SA-V dataset for video tracking
+
+Stage 3: End-to-End PCS Fine-Tuning (Planned)
+    Joint fine-tuning on SAM3 dataset
+    Preserves promptable concept segmentation quality
+```
+
+### Model Variants (27 combinations)
+
+**Image Encoder** — 9 variants across 3 backbone families:
+
+| Model | Backbone | Encoder Params | mIoU (COCO) | Compression vs SAM3 |
+|-------|----------|---------------|-------------|---------------------|
+| ES-EV-S | EfficientViT-B0 | 0.68M | 61.62% | 99.85% smaller |
+| ES-EV-M | EfficientViT-B1 | 4.64M | — | 99.0% smaller |
+| ES-EV-L | EfficientViT-B2 | 14.98M | — | 96.8% smaller |
+| ES-RV-S | RepViT-M0.9 | 4.72M | — | 99.0% smaller |
+| ES-RV-M | RepViT-M1.1 | 7.77M | 65.28% | 98.3% smaller |
+| ES-RV-L | RepViT-M2.3 | 22.40M | — | 95.2% smaller |
+| ES-TV-S | TinyViT-5M | 5.07M | — | 98.9% smaller |
+| ES-TV-M | TinyViT-11M | 10.55M | — | 97.7% smaller |
+| ES-TV-L | TinyViT-21M | 20.62M | 66.29% | 95.5% smaller |
+
+**Text Encoder** — 3 MobileCLIP variants (distilled from SAM3's 354M text encoder):
+
+| Model | Compression | Notes |
+|-------|-------------|-------|
+| MobileCLIP-S0 | 87.96% smaller | Smallest |
+| MobileCLIP-S1 | — | Balanced |
+| MobileCLIP2-L | — | Best quality |
+
+### SAM3 vs SAM1/2 — Key Differences
+
+SAM3 adds capabilities beyond geometry-only segmentation:
+
+| Feature | SAM1 | SAM2 | SAM3 |
+|---------|------|------|------|
+| Point/box prompts | Yes | Yes | Yes |
+| Video tracking | No | Yes | Yes |
+| Text prompts | No | No | Yes (built-in) |
+| Concept segmentation | No | No | Yes |
+
+EfficientSAM3 preserves all SAM3 capabilities in distilled form, including text-based prompting without needing an external model like Grounding DINO.
+
+### ONNX / Deployment Status (as of Feb 2026)
+
+- **PyTorch weights**: Released (Stage 1 — all 9 image encoders + 3 text encoders)
+- **ONNX export**: Under development (not yet available)
+- **CoreML export**: Under development
+- **Stage 2/3 weights**: Not yet released
+
+### Implications for YOLO-Label
+
+**Advantages over MobileSAM:**
+- Built-in text prompting (no separate Grounding DINO needed)
+- Video tracking capability (future use for video labeling)
+- Potentially smaller encoders (EfficientViT-B0: 0.68M vs MobileSAM: 5.78M)
+- Active development with regular updates
+
+**Current limitations:**
+- ONNX export not yet available — cannot integrate until export pipeline is ready
+- Only Stage 1 (encoder) weights released; full pipeline (Stages 2+3) still pending
+- No published ONNX file sizes or CPU inference benchmarks yet
+- Decoder compatibility with SAM1-style decoder not confirmed
+
+**Recommendation:** Monitor EfficientSAM3 for ONNX export readiness. Once available, evaluate ES-RV-M (RepViT-M1.1, 7.77M params, 65.28 mIoU) as a potential MobileSAM replacement that adds text prompting support.
