@@ -586,6 +586,28 @@ void label_img::moveBox(int boxIdx, double dx, double dy)
     showImage();
 }
 
+void label_img::resizeBox(int boxIdx, double dw, double dh)
+{
+    if(boxIdx < 0 || boxIdx >= m_objBoundingBoxes.size())
+        return;
+
+    constexpr double MIN_BOX_DIM = 0.002;
+
+    QRectF &box = m_objBoundingBoxes[boxIdx].box;
+    double newW = box.width()  + dw;
+    double newH = box.height() + dh;
+
+    newW = std::max(MIN_BOX_DIM, newW);
+    newH = std::max(MIN_BOX_DIM, newH);
+
+    newW = std::min(newW, 1.0 - box.x());
+    newH = std::min(newH, 1.0 - box.y());
+
+    box.setWidth(newW);
+    box.setHeight(newH);
+    showImage();
+}
+
 void label_img::setFocusedObjectBoxLabel(QPointF point, int newLabel)
 {
     int boxIdx = findBoxUnderCursor(point);

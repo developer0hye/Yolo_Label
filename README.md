@@ -160,6 +160,8 @@ Arguments are detected by file extension — `.onnx` files are loaded as YOLO mo
 | `0-9` | Quick select class by number |
 | `Arrow Keys` | Nudge the bounding box under the cursor (~1-2px step) |
 | `Shift + Arrow Keys` | Nudge the bounding box under the cursor (~5px step) |
+| `Ctrl + Arrow Keys` (Windows/Linux) / `Cmd + Arrow Keys` (macOS) | Resize the bounding box under the cursor (~1-2px step) |
+| `Ctrl + Shift + Arrow Keys` (Windows/Linux) / `Cmd + Shift + Arrow Keys` (macOS) | Resize the bounding box under the cursor (~5px step) |
 | `Ctrl + C` (Windows/Linux) / `Cmd + C` (macOS) | Copy bounding boxes to clipboard |
 | `Ctrl + V` (Windows/Linux) / `Cmd + V` (macOS) | Paste bounding boxes from clipboard |
 | `Ctrl + Z` (Windows/Linux) / `Cmd + Z` (macOS) | Undo last action (add, remove, or clear all) |
