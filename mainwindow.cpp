@@ -570,16 +570,30 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
 
         if(nudgeBoxIdx != -1)
         {
+            bool ctrlHeld  = (event->modifiers() & Qt::ControlModifier);
             bool shiftHeld = (event->modifiers() & Qt::ShiftModifier);
             double step = shiftHeld ? 0.01 : 0.002;
 
-            double dx = 0.0, dy = 0.0;
-            if(nKey == Qt::Key_Left)  dx = -step;
-            if(nKey == Qt::Key_Right) dx =  step;
-            if(nKey == Qt::Key_Up)    dy = -step;
-            if(nKey == Qt::Key_Down)  dy =  step;
+            if(ctrlHeld)
+            {
+                double dw = 0.0, dh = 0.0;
+                if(nKey == Qt::Key_Left)  dw = -step;
+                if(nKey == Qt::Key_Right) dw =  step;
+                if(nKey == Qt::Key_Up)    dh = -step;
+                if(nKey == Qt::Key_Down)  dh =  step;
 
-            ui->label_image->moveBox(nudgeBoxIdx, dx, dy);
+                ui->label_image->resizeBox(nudgeBoxIdx, dw, dh);
+            }
+            else
+            {
+                double dx = 0.0, dy = 0.0;
+                if(nKey == Qt::Key_Left)  dx = -step;
+                if(nKey == Qt::Key_Right) dx =  step;
+                if(nKey == Qt::Key_Up)    dy = -step;
+                if(nKey == Qt::Key_Down)  dy =  step;
+
+                ui->label_image->moveBox(nudgeBoxIdx, dx, dy);
+            }
         }
     }
 }

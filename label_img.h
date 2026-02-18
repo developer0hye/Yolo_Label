@@ -60,6 +60,7 @@ public:
     void clearUndoHistory();
 
     void moveBox(int boxIdx, double dx, double dy);
+    void resizeBox(int boxIdx, double dw, double dh);
     int  findBoxUnderCursor(QPointF point) const;
     QImage getInputImage() const;
 
