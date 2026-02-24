@@ -222,6 +222,39 @@ make -j$(nproc)
 
 Without ONNX Runtime, the app builds and works normally — just without the auto-label feature.
 
+## Cloud Auto-Label (yololabel.com)
+
+No local GPU? No problem. YOLO-Label integrates with **[yololabel.com](https://yololabel.com)** — a cloud inference service that runs open-vocabulary object detection on your images without requiring any local model or GPU.
+
+### Create an Account and Get an API Key
+
+1. Go to [yololabel.com](https://yololabel.com) and sign up with **email + password** or **Sign in with Google**
+2. If you registered with email, check your inbox and click the verification link (required before API keys can be used)
+3. Log in to your dashboard
+4. Navigate to **API Keys** and click **Create Key**
+5. Give the key a name (e.g. `yolo-label-desktop`) and click **Create**
+6. **Copy the key immediately** — it is displayed only once and cannot be retrieved again
+
+### How to Use
+
+1. Open your dataset as usual
+2. In the **AI Settings** tab on the right panel, paste your API key and (optionally) a custom detection prompt
+   - The prompt is a semicolon-separated list of labels, e.g. `car; person; bicycle`
+   - If left empty, the loaded class names are used automatically
+3. Select **YoloLabel AI** from the model selector
+4. Click **☁ Auto Label AI** to detect objects on the current image
+5. Click **☁ Auto Label All AI** to process the entire dataset
+
+### Batch Processing
+
+When **☁ Auto Label All AI** is clicked with more than one image loaded, images are submitted in batches of up to 20 per request using the `/v1/jobs/batch` endpoint. This is significantly faster than submitting images one-by-one. The button label shows live progress (`☁ Auto Label All (N/Total)…`).
+
+For a single image, the standard single-job endpoint (`/v1/jobs`) is used instead.
+
+### Pricing & Quota
+
+Usage is tracked per API key. Check your current quota and billing at [yololabel.com](https://yololabel.com) under **Billing**.
+
 ## Contrast Adjustment
 
 Use the **Contrast slider** at the top of the window to adjust image brightness/contrast in real-time. This is useful when labeling dark or overexposed images. The slider ranges from 0% to 100% (default 50%).

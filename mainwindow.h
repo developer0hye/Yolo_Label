@@ -9,6 +9,21 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QHttpMultiPart>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QSettings>
+#include <QDialog>
+#include <QFormLayout>
+#include <QLineEdit>
+#include <QDialogButtonBox>
+#include <QTabWidget>
+#include <QVBoxLayout>
+#include <QComboBox>
 
 #include "label_img.h"
 #ifdef ONNXRUNTIME_AVAILABLE
@@ -81,6 +96,9 @@ private:
     void            load_label_list_data(QString);
     QString         get_labeling_data(QString)const;
 
+    void            saveSession();
+    void            restoreLastSession();
+
     void            set_label(const int);
     void            set_label_color(const int , const QColor);
 
@@ -90,9 +108,65 @@ private:
     void            open_obj_file(bool&);
     bool            get_files(QString imgDir);
 
+    // ── Cloud auto-label ───────────────────────────────────────────────
+    QNetworkAccessManager *m_cloudNet;
+    QPushButton           *m_btnCloudAutoLabel;
+    QPushButton           *m_btnCloudAutoLabelAll;
+    QTimer                *m_pollTimer;
+    int                    m_pendingJobId = -1;
+    QString                m_pendingImagePath;
+    QList<int>             m_cloudQueue;
+
+    QString m_cloudHost;
+    QString m_cloudApiKey;
+    QString m_cloudPrompt;
+
+    QTabWidget *m_sideTabWidget;
+    QLineEdit  *m_settingsKeyEdit;
+    QLineEdit  *m_settingsPromptEdit;
+
+    void initSideTabWidget();
+    void syncAiSettingsTab();
+    void saveAiSettings();
+
+    // ── autolabel-cloud ───────────────────────────────────────────────
+    void submitCloudJob();
+    void doSubmitCloudJob(const QString &imagePath);
+    void cloudAutoLabelAll();
+    void cloudProcessNextInQueue();
+    void pollJobStatus();
+    void fetchJobResult();
+    void openCloudSettings();
+
+    // batch
+    void doSubmitBatchCloudJob(const QStringList &imagePaths);
+    void pollBatchJobStatuses();
+    void fetchAllBatchResults(int idx);
+
+    bool             m_batchMode         = false;
+    bool             m_batchPolling      = false;
+    QList<int>       m_batchPendingJobIds;
+    QStringList      m_batchPendingPaths;
+    QList<QStringList> m_batchChunks;
+    int              m_batchTotalImages  = 0;
+    int              m_batchDoneImages   = 0;
+
+    // ── Landing AI ────────────────────────────────────────────────────
+    QComboBox   *m_modelCombo;
+    QString      m_landingApiKey;
+    QList<int>   m_landingQueue;
+    QString      m_landingPendingImagePath;
+
+    void submitLandingAIJob();
+    void doLandingAIJob(const QString &imagePath);
+    void landingAIAutoLabelAll();
+    void landingAIProcessNextInQueue();
+    // ──────────────────────────────────────────────────────────────────
+
     Ui::MainWindow *ui;
 
     QString         m_imgDir;
+    QString         m_objFilePath;
     QStringList     m_imgList;
     int             m_imgIndex;
 
