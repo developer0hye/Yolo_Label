@@ -728,7 +728,7 @@ void MainWindow::on_loadModel_clicked()
 {
     QString dir = m_imgDir.isEmpty() ? QDir::currentPath() : m_imgDir;
     QString modelPath = QFileDialog::getOpenFileName(
-        this, tr("Open YOLO ONNX Model"), dir,
+        nullptr, tr("Open YOLO ONNX Model"), dir,
         tr("ONNX Models (*.onnx)"));
 
     if (modelPath.isEmpty()) return;
