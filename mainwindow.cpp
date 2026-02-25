@@ -153,6 +153,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_cloudLabeler->setPrompt(m_cloudPrompt);
 
     connect(m_cloudLabeler, &CloudAutoLabeler::busyChanged, this, [this](bool busy) {
+        // Disable image slider while a batch is running to prevent navigation
+        ui->horizontalSlider_images->setEnabled(!busy);
         if (!busy) resetCloudButtons();
     });
     connect(m_cloudLabeler, &CloudAutoLabeler::progress, this, [this](int done, int total) {
@@ -342,12 +344,14 @@ void MainWindow::goto_img(const int fileIndex)
 
 void MainWindow::next_img(bool bSavePrev)
 {
+    if (m_cloudLabeler && m_cloudLabeler->isBusy()) return;
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex + 1);
 }
 
 void MainWindow::prev_img(bool bSavePrev)
 {
+    if (m_cloudLabeler && m_cloudLabeler->isBusy()) return;
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex - 1);
 }
@@ -1153,8 +1157,10 @@ void MainWindow::initSideTabWidget()
 void MainWindow::syncAiSettingsTab()
 {
     m_settingsKeyEdit->setText(m_cloudApiKey);
-    m_settingsPromptEdit->setText(
-        m_cloudPrompt.isEmpty() ? m_objList.join(" ; ") : m_cloudPrompt);
+    // Show only the explicitly saved prompt (empty = auto from class file,
+    // shown via placeholder text). Never auto-fill from the class list here
+    // to avoid accidentally hardcoding classes as the prompt on Save.
+    m_settingsPromptEdit->setText(m_cloudPrompt);
 }
 
 void MainWindow::saveAiSettings()
@@ -1198,6 +1204,8 @@ void MainWindow::submitCloudJob()
         statusBar()->showMessage("Enter your API key in the AI Settings tab.", 4000);
         return;
     }
+
+    save_label_data();  // preserve current manual annotations before overwriting
 
     m_btnCloudAutoLabel->setEnabled(false);
     m_btnCloudAutoLabelAll->setEnabled(false);

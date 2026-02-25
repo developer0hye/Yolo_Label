@@ -68,6 +68,7 @@ private:
     static QString  mimeForImage(const QString &path);
     static void     backupLabelFile(const QString &labelPath);
     static QString  labelPathFor(const QString &imagePath);
+    static QString  filterValidDetections(const QString &yoloTxt, int numClasses);
     QNetworkRequest makeRequest(const QString &endpoint) const;
 
     static constexpr const char *API_HOST      = "https://api.yololabel.com";
@@ -85,6 +86,7 @@ private:
 
     bool          m_busy           = false;
     bool          m_cancelRequested= false;
+    int           m_generation     = 0;    // incremented on cancel to invalidate in-flight callbacks
     int           m_pollCount      = 0;
     int           m_retryCount     = 0;
 
@@ -97,10 +99,12 @@ private:
     bool                m_batchMode     = false;
     bool                m_batchPolling  = false;
     QList<qint64>       m_batchJobIds;
+    QVector<int>        m_batchJobStatuses;  // 0=pending, 1=succeeded, 2=failed
     QStringList         m_batchPaths;
     QList<QStringList>  m_batchChunks;
     int                 m_batchTotal    = 0;
     int                 m_batchDone     = 0;
+    int                 m_batchFailed   = 0;  // cumulative failed count across chunks
 
     QStringList   m_allPaths;  // full image list for queue-based "label all"
 };
