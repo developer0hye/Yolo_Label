@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets
+QT       += core gui widgets network
 
 TARGET = YoloLabel
 TEMPLATE = app
@@ -16,11 +16,13 @@ CONFIG += c++17
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    label_img.cpp
+    label_img.cpp \
+    cloud_labeler.cpp
 
 HEADERS += \
         mainwindow.h \
-    label_img.h
+    label_img.h \
+    cloud_labeler.h
 
 FORMS += \
         mainwindow.ui
@@ -29,12 +31,7 @@ FORMS += \
 isEmpty(ONNXRUNTIME_DIR): ONNXRUNTIME_DIR = $$PWD/onnxruntime
 exists($$ONNXRUNTIME_DIR/include) {
     DEFINES += ONNXRUNTIME_AVAILABLE
-    # Support both flat layout (include/onnxruntime_cxx_api.h)
-    # and Homebrew layout (include/onnxruntime/onnxruntime_cxx_api.h)
     INCLUDEPATH += $$ONNXRUNTIME_DIR/include
-    exists($$ONNXRUNTIME_DIR/include/onnxruntime) {
-        INCLUDEPATH += $$ONNXRUNTIME_DIR/include/onnxruntime
-    }
     LIBS += -L$$ONNXRUNTIME_DIR/lib -lonnxruntime
     unix: QMAKE_RPATHDIR += $$ONNXRUNTIME_DIR/lib
     SOURCES += yolo_detector.cpp

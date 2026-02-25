@@ -6,14 +6,17 @@
 #include <QKeyEvent>
 #include <QShortcut>
 #include <QCollator>
-#include <QDir>
-#include <QSettings>
+#include <QFile>
+#include <QFileInfo>
 #include <QHBoxLayout>
+#include <QSettings>
+#include <QVBoxLayout>
 #ifdef ONNXRUNTIME_AVAILABLE
 #include <QProgressDialog>
 #endif
 #include <iomanip>
 #include <cmath>
+#include <memory>
 
 using std::ofstream;
 using std::ifstream;
@@ -138,9 +141,84 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_R), this), &QShortcut::activated, this, &MainWindow::on_autoLabel_clicked);
 #endif
 
-    init_table_widget();
+    // ── Cloud auto-label setup ─────────────────────────────────────────
+    {
+        QSettings s("YoloLabel", "CloudAI");
+        m_cloudApiKey = s.value("apiKey",  "").toString();
+        m_cloudPrompt = s.value("prompt",  "").toString();
+    }
 
-    QTimer::singleShot(0, this, &MainWindow::restoreLastSession);
+    m_cloudLabeler = new CloudAutoLabeler(this);
+    m_cloudLabeler->setApiKey(m_cloudApiKey);
+    m_cloudLabeler->setPrompt(m_cloudPrompt);
+
+    connect(m_cloudLabeler, &CloudAutoLabeler::busyChanged, this, [this](bool busy) {
+        if (!busy) resetCloudButtons();
+    });
+    connect(m_cloudLabeler, &CloudAutoLabeler::progress, this, [this](int done, int total) {
+        m_btnCloudAutoLabelAll->setText(
+            QString("\u2601 Auto Label All (%1/%2)\u2026").arg(done).arg(total));
+    });
+    connect(m_cloudLabeler, &CloudAutoLabeler::labelReady, this,
+            [this](const QString &imagePath, int /*n*/, int /*ms*/) {
+        if (imagePath == m_imgList.value(m_imgIndex))
+            goto_img(m_imgIndex);
+    });
+    connect(m_cloudLabeler, &CloudAutoLabeler::finished, this, [this](int) {
+        goto_img(m_imgIndex);
+    });
+    connect(m_cloudLabeler, &CloudAutoLabeler::errorOccurred, this, [this](const QString &msg) {
+        QMessageBox::warning(this, "Auto Label", msg);
+    });
+    connect(m_cloudLabeler, &CloudAutoLabeler::statusMessage, this,
+            [this](const QString &msg, int ms) {
+        statusBar()->showMessage(msg, ms);
+    });
+
+    QString cloudBtnStyle =
+        "QPushButton { background-color: rgb(0, 0, 17); color: rgb(0, 255, 255); "
+        "border: 2px solid rgb(0, 255, 255); border-radius: 4px; padding: 4px 12px; "
+        "font-weight: bold; font-size: 12px; }"
+        "QPushButton:hover { background-color: rgb(0, 40, 60); }"
+        "QPushButton:pressed { background-color: rgb(0, 80, 100); }"
+        "QPushButton:disabled { color: rgb(80,80,80); border-color: rgb(80,80,80); }";
+
+    m_btnCloudAutoLabel = new QPushButton("\u2601 Auto Label AI", this);
+    m_btnCloudAutoLabel->setToolTip("Label current image using cloud AI");
+    m_btnCloudAutoLabel->setStyleSheet(cloudBtnStyle);
+    connect(m_btnCloudAutoLabel, &QPushButton::clicked, this, &MainWindow::submitCloudJob);
+
+    m_btnCloudAutoLabelAll = new QPushButton("\u2601 Auto Label All AI", this);
+    m_btnCloudAutoLabelAll->setToolTip("Label all images using cloud AI");
+    m_btnCloudAutoLabelAll->setStyleSheet(cloudBtnStyle);
+    connect(m_btnCloudAutoLabelAll, &QPushButton::clicked, this, &MainWindow::cloudAutoLabelAll);
+
+    m_btnCancelAutoLabel = new QPushButton("\u2715 Cancel", this);
+    m_btnCancelAutoLabel->setToolTip("Cancel cloud auto-labeling");
+    m_btnCancelAutoLabel->setStyleSheet(
+        "QPushButton { background-color: rgb(0, 0, 17); color: rgb(255, 80, 80); "
+        "border: 2px solid rgb(255, 80, 80); border-radius: 4px; padding: 4px 12px; "
+        "font-weight: bold; font-size: 12px; }"
+        "QPushButton:hover { background-color: rgb(40, 0, 0); }");
+    m_btnCancelAutoLabel->setVisible(false);
+    connect(m_btnCancelAutoLabel, &QPushButton::clicked, this, &MainWindow::cancelAutoLabel);
+
+    {
+        QHBoxLayout *cloudLayout = new QHBoxLayout();
+        cloudLayout->setContentsMargins(0, 2, 0, 2);
+        cloudLayout->addWidget(m_btnCloudAutoLabel);
+        cloudLayout->addWidget(m_btnCloudAutoLabelAll);
+        cloudLayout->addWidget(m_btnCancelAutoLabel);
+        cloudLayout->addStretch();
+        // Insert below the ONNX auto-label row (or at row 1 if ONNX is not built)
+        int cloudRow = ui->gridLayout->rowCount();
+        ui->gridLayout->addLayout(cloudLayout, cloudRow, 0);
+    }
+
+    initSideTabWidget();
+    // ──────────────────────────────────────────────────────────────────
+
+    init_table_widget();
 }
 
 MainWindow::~MainWindow()
@@ -161,7 +239,6 @@ void MainWindow::set_args(int argc, char *argv[])
       if (arg.endsWith(".onnx", Qt::CaseInsensitive)) {
         onnxModelPath = arg;
       } else {
-        m_objFilePath = arg;
         load_label_list_data(arg);
       }
     }
@@ -215,62 +292,12 @@ void MainWindow::init()
 
     set_label(0);
     goto_img(0);
-    saveSession();
-}
-
-void MainWindow::saveSession()
-{
-    QSettings s("YoloLabel", "Session");
-    s.setValue("imgDir",   m_imgDir);
-    s.setValue("objFile",  m_objFilePath);
-
-    QStringList colors;
-    for (const QColor &c : ui->label_image->m_drawObjectBoxColor)
-        colors << c.name();
-    s.setValue("classColors", colors);
-}
-
-void MainWindow::restoreLastSession()
-{
-    // Skip if set_args() already loaded a folder
-    if (!m_imgList.isEmpty()) return;
-
-    QSettings s("YoloLabel", "Session");
-    QString lastDir = s.value("imgDir").toString();
-    QString lastObj = s.value("objFile").toString();
-
-    if (lastDir.isEmpty() || !QDir(lastDir).exists()) return;
-
-    if (!get_files(lastDir)) return;
-
-    QStringList savedColors;
-    if (!lastObj.isEmpty() && QFile::exists(lastObj)) {
-        m_objFilePath = lastObj;
-        load_label_list_data(lastObj);
-        savedColors = s.value("classColors").toStringList();
-    } else {
-        return;  // class file missing — skip restore silently
-    }
-
-    init();
-
-    // Restore custom class colors after init() so they aren't overwritten
-    for (int i = 0; i < savedColors.size() && i < ui->label_image->m_drawObjectBoxColor.size(); ++i) {
-        QColor c(savedColors[i]);
-        if (!c.isValid()) continue;
-        ui->label_image->m_drawObjectBoxColor[i] = c;
-        if (ui->tableWidget_label->item(i, 1))
-            ui->tableWidget_label->item(i, 1)->setBackground(c);
-    }
-    ui->label_image->showImage();
-
-    statusBar()->showMessage("Session restored: " + lastDir, 4000);
 }
 
 void MainWindow::set_label_progress(const int fileIndex)
 {
-    QString strCurFileIndex = QString::number(fileIndex + 1);
-    QString strEndFileIndex = QString::number(m_imgList.size());
+    QString strCurFileIndex = QString::number(fileIndex);
+    QString strEndFileIndex = QString::number(m_imgList.size() - 1);
 
     ui->label_progress->setText(strCurFileIndex + " / " + strEndFileIndex);
 }
@@ -553,7 +580,6 @@ void MainWindow::open_obj_file(bool& ret)
     else
     {
         ret = true;
-        m_objFilePath = fileLabelList;
         load_label_list_data(fileLabelList);
     }
 }
@@ -665,7 +691,6 @@ void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
         {
             set_label_color(row, color);
             ui->tableWidget_label->item(row, 1)->setBackground(color);
-            saveSession();
         }
         set_label(row);
         ui->label_image->showImage();
@@ -785,7 +810,7 @@ void MainWindow::on_loadModel_clicked()
 {
     QString dir = m_imgDir.isEmpty() ? QDir::currentPath() : m_imgDir;
     QString modelPath = QFileDialog::getOpenFileName(
-        nullptr, tr("Open YOLO ONNX Model"), dir,
+        this, tr("Open YOLO ONNX Model"), dir,
         tr("ONNX Models (*.onnx)"));
 
     if (modelPath.isEmpty()) return;
@@ -1008,3 +1033,220 @@ float MainWindow::getConfidenceThreshold() const
     return static_cast<float>(m_sliderConfidence->value()) / 100.0f;
 }
 #endif
+
+// ── Side tab widget ─────────────────────────────────────────────────────────
+
+void MainWindow::initSideTabWidget()
+{
+    const QString tabStyle =
+        "QTabWidget::pane { border: 2px solid rgb(0,255,255); background: rgb(0,0,17); }"
+        "QTabBar::tab { background: rgb(0,0,17); color: rgb(0,255,255); "
+        "border: 1px solid rgb(0,255,255); padding: 5px 12px; font-weight: bold; font-size: 12px; }"
+        "QTabBar::tab:selected { background: rgb(0,40,60); }"
+        "QTabBar::tab:hover    { background: rgb(0,20,40); }";
+
+    const QString fieldStyle =
+        "QLineEdit { background: rgb(0,0,17); color: rgb(0,255,255); "
+        "border: 1px solid rgb(0,255,255); border-radius: 3px; padding: 3px 6px; font-size: 12px; }"
+        "QLineEdit:focus { border: 2px solid rgb(0,255,255); }";
+
+    const QString labelStyle =
+        "QLabel { color: rgb(0,255,255); font-weight: bold; font-size: 12px; }";
+
+    const QString btnStyle =
+        "QPushButton { background: rgb(0,0,17); color: rgb(0,255,255); "
+        "border: 2px solid rgb(0,255,255); border-radius: 4px; padding: 5px 16px; "
+        "font-weight: bold; font-size: 12px; }"
+        "QPushButton:hover   { background: rgb(0,40,60); }"
+        "QPushButton:pressed { background: rgb(0,80,100); }";
+
+    // ── Tab 1: Labels ────────────────────────────────────────────────
+    QWidget *labelsTab = new QWidget();
+    QVBoxLayout *labelsLayout = new QVBoxLayout(labelsTab);
+    labelsLayout->setContentsMargins(0, 0, 0, 0);
+    labelsLayout->setSpacing(0);
+    ui->horizontalLayout_5->removeWidget(ui->tableWidget_label);
+    labelsLayout->addWidget(ui->tableWidget_label);
+
+    // ── Tab 2: AI Settings ───────────────────────────────────────────
+    QWidget *aiTab = new QWidget();
+    aiTab->setStyleSheet("background: rgb(0,0,17);");
+    QVBoxLayout *aiLayout = new QVBoxLayout(aiTab);
+    aiLayout->setContentsMargins(10, 14, 10, 10);
+    aiLayout->setSpacing(10);
+
+    auto *keyLabel = new QLabel("API Key:", aiTab);
+    keyLabel->setStyleSheet(labelStyle);
+
+    m_settingsKeyEdit = new QLineEdit(aiTab);
+    m_settingsKeyEdit->setEchoMode(QLineEdit::Password);
+    m_settingsKeyEdit->setStyleSheet(fieldStyle);
+    m_settingsKeyEdit->setPlaceholderText("ylk_\u2026");
+
+    auto *toggleKeyBtn = new QPushButton("Show", aiTab);
+    toggleKeyBtn->setCheckable(true);
+    toggleKeyBtn->setFixedWidth(54);
+    toggleKeyBtn->setStyleSheet(btnStyle);
+    connect(toggleKeyBtn, &QPushButton::toggled, this, [this, toggleKeyBtn](bool checked){
+        m_settingsKeyEdit->setEchoMode(checked ? QLineEdit::Normal : QLineEdit::Password);
+        toggleKeyBtn->setText(checked ? "Hide" : "Show");
+    });
+    auto *keyRow = new QHBoxLayout();
+    keyRow->addWidget(m_settingsKeyEdit);
+    keyRow->addWidget(toggleKeyBtn);
+
+    auto *promptLabel = new QLabel("Prompt:", aiTab);
+    promptLabel->setStyleSheet(labelStyle);
+    m_settingsPromptEdit = new QLineEdit(aiTab);
+    m_settingsPromptEdit->setPlaceholderText("auto (from class file)");
+    m_settingsPromptEdit->setStyleSheet(fieldStyle);
+    m_settingsPromptEdit->setToolTip(
+        "Labels separated by  ;  \u2014 leave blank to use the loaded class file automatically");
+
+    auto *hintLabel = new QLabel("Tip: leave blank to use class file labels", aiTab);
+    hintLabel->setStyleSheet("color: rgb(120,180,180); font-size: 11px;");
+    hintLabel->setWordWrap(true);
+
+    const QString clearBtnStyle =
+        "QPushButton { background: rgb(0,0,17); color: rgb(255,80,80); "
+        "border: 2px solid rgb(255,80,80); border-radius: 4px; padding: 5px 12px; "
+        "font-weight: bold; font-size: 12px; }"
+        "QPushButton:hover { background: rgb(40,0,0); }";
+
+    auto *saveBtn  = new QPushButton("Save", aiTab);
+    auto *clearBtn = new QPushButton("Clear Key", aiTab);
+    saveBtn->setStyleSheet(btnStyle);
+    clearBtn->setStyleSheet(clearBtnStyle);
+
+    auto *btnRow = new QHBoxLayout();
+    btnRow->addWidget(saveBtn);
+    btnRow->addWidget(clearBtn);
+    btnRow->addStretch();
+
+    connect(saveBtn,  &QPushButton::clicked, this, &MainWindow::saveAiSettings);
+    connect(clearBtn, &QPushButton::clicked, this, [this](){ m_settingsKeyEdit->clear(); saveAiSettings(); });
+
+    aiLayout->addWidget(keyLabel);
+    aiLayout->addLayout(keyRow);
+    aiLayout->addWidget(promptLabel);
+    aiLayout->addWidget(m_settingsPromptEdit);
+    aiLayout->addWidget(hintLabel);
+    aiLayout->addLayout(btnRow);
+    aiLayout->addStretch();
+
+    // ── Assemble tab widget ──────────────────────────────────────────
+    m_sideTabWidget = new QTabWidget(this);
+    m_sideTabWidget->setStyleSheet(tabStyle);
+    m_sideTabWidget->setMinimumWidth(220);
+    m_sideTabWidget->setMaximumWidth(330);
+    m_sideTabWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+    m_sideTabWidget->addTab(labelsTab, "Labels");
+    m_sideTabWidget->addTab(aiTab, "\u2699 AI Settings");
+
+    connect(m_sideTabWidget, &QTabWidget::currentChanged, this, [this](int idx){
+        if (idx == 1) syncAiSettingsTab();
+    });
+
+    ui->gridLayout->addWidget(m_sideTabWidget, 0, 1, ui->gridLayout->rowCount(), 1);
+}
+
+void MainWindow::syncAiSettingsTab()
+{
+    m_settingsKeyEdit->setText(m_cloudApiKey);
+    m_settingsPromptEdit->setText(
+        m_cloudPrompt.isEmpty() ? m_objList.join(" ; ") : m_cloudPrompt);
+}
+
+void MainWindow::saveAiSettings()
+{
+    m_cloudApiKey = m_settingsKeyEdit->text().trimmed();
+    m_cloudPrompt = m_settingsPromptEdit->text().trimmed();
+
+    QSettings s("YoloLabel", "CloudAI");
+    s.setValue("apiKey", m_cloudApiKey);
+    s.setValue("prompt", m_cloudPrompt);
+
+    m_cloudLabeler->setApiKey(m_cloudApiKey);
+    m_cloudLabeler->setPrompt(m_cloudPrompt);
+
+    statusBar()->showMessage("AI settings saved.", 2000);
+}
+
+void MainWindow::resetCloudButtons()
+{
+    m_btnCloudAutoLabel->setEnabled(true);
+    m_btnCloudAutoLabel->setText("\u2601 Auto Label AI");
+    m_btnCloudAutoLabelAll->setEnabled(true);
+    m_btnCloudAutoLabelAll->setText("\u2601 Auto Label All AI");
+    m_btnCancelAutoLabel->setVisible(false);
+}
+
+void MainWindow::cancelAutoLabel()
+{
+    m_cloudLabeler->cancel();
+}
+
+// ── Cloud auto-label ────────────────────────────────────────────────────────
+
+void MainWindow::submitCloudJob()
+{
+    if (m_imgList.isEmpty()) return;
+
+    if (m_cloudApiKey.isEmpty()) {
+        m_sideTabWidget->setCurrentIndex(1);
+        syncAiSettingsTab();
+        statusBar()->showMessage("Enter your API key in the AI Settings tab.", 4000);
+        return;
+    }
+
+    m_btnCloudAutoLabel->setEnabled(false);
+    m_btnCloudAutoLabelAll->setEnabled(false);
+    m_btnCloudAutoLabel->setText("\u2601 Labelling\u2026");
+    m_cloudLabeler->setApiKey(m_cloudApiKey);
+    m_cloudLabeler->setPrompt(m_cloudPrompt);
+    m_cloudLabeler->setClasses(m_objList);
+    m_cloudLabeler->labelImage(m_imgList[m_imgIndex]);
+}
+
+void MainWindow::cloudAutoLabelAll()
+{
+    if (m_imgList.isEmpty()) return;
+
+    if (m_cloudApiKey.isEmpty()) {
+        m_sideTabWidget->setCurrentIndex(1);
+        syncAiSettingsTab();
+        statusBar()->showMessage("Enter your API key in the AI Settings tab.", 4000);
+        return;
+    }
+
+    // Estimate total upload size and warn if large
+    qint64 totalBytes = 0;
+    for (const QString &path : m_imgList)
+        totalBytes += QFileInfo(path).size();
+    QString confirmMsg = QString("Send all %1 images to cloud AI?\nExisting labels will be overwritten.")
+        .arg(m_imgList.size());
+    constexpr qint64 warnThresholdMB = 500;
+    if (totalBytes > warnThresholdMB * 1024 * 1024) {
+        confirmMsg += QString("\n\nWarning: estimated upload size is ~%1 MB. "
+                              "This may take a while and use significant bandwidth.")
+            .arg(totalBytes / (1024 * 1024));
+    }
+
+    QMessageBox msgBox(QMessageBox::Question, "Auto Label All",
+        confirmMsg, QMessageBox::Yes | QMessageBox::No, this);
+    if (msgBox.exec() != QMessageBox::Yes) return;
+
+    save_label_data();
+
+    m_btnCloudAutoLabel->setEnabled(false);
+    m_btnCloudAutoLabelAll->setEnabled(false);
+    m_btnCancelAutoLabel->setVisible(true);
+    m_btnCloudAutoLabelAll->setText(
+        QString("\u2601 Auto Label All (0/%1)\u2026").arg(m_imgList.size()));
+
+    m_cloudLabeler->setApiKey(m_cloudApiKey);
+    m_cloudLabeler->setPrompt(m_cloudPrompt);
+    m_cloudLabeler->setClasses(m_objList);
+    m_cloudLabeler->labelImages(m_imgList);
+}
+
