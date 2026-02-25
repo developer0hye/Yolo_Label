@@ -81,6 +81,9 @@ private:
     void            load_label_list_data(QString);
     QString         get_labeling_data(QString)const;
 
+    void            saveSession();
+    void            restoreLastSession();
+
     void            set_label(const int);
     void            set_label_color(const int , const QColor);
 
@@ -93,6 +96,7 @@ private:
     Ui::MainWindow *ui;
 
     QString         m_imgDir;
+    QString         m_objFilePath;
     QStringList     m_imgList;
     int             m_imgIndex;
 
