@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QComboBox>
 #include <QLineEdit>
 #include <QTabWidget>
 
@@ -110,6 +111,19 @@ private:
     QPushButton       *m_btnCloudAutoLabel;
     QPushButton       *m_btnCloudAutoLabelAll;
     QPushButton       *m_btnCancelAutoLabel;
+
+    // ── Landing AI ────────────────────────────────────────────────────
+    void submitLandingAIJob();
+    void doLandingAIJob(const QString &imagePath);
+    void landingAIAutoLabelAll();
+    void landingAIProcessNextInQueue();
+
+    QNetworkAccessManager *m_landingNet;
+    QString      m_landingApiKey;
+    QList<int>   m_landingQueue;
+    QString      m_landingPendingImagePath;
+    QComboBox   *m_modelCombo;
+    // ──────────────────────────────────────────────────────────────────
 
     QString    m_cloudApiKey;
     QString    m_cloudPrompt;
