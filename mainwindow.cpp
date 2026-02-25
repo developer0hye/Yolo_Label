@@ -214,8 +214,8 @@ void MainWindow::init()
 
 void MainWindow::set_label_progress(const int fileIndex)
 {
-    QString strCurFileIndex = QString::number(fileIndex);
-    QString strEndFileIndex = QString::number(m_imgList.size() - 1);
+    QString strCurFileIndex = QString::number(fileIndex + 1);
+    QString strEndFileIndex = QString::number(m_imgList.size());
 
     ui->label_progress->setText(strCurFileIndex + " / " + strEndFileIndex);
 }
