@@ -6,6 +6,7 @@
 #include <QKeyEvent>
 #include <QShortcut>
 #include <QCollator>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #ifdef ONNXRUNTIME_AVAILABLE
 #include <QProgressDialog>
@@ -137,6 +138,8 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 
     init_table_widget();
+
+    QTimer::singleShot(0, this, &MainWindow::restoreLastSession);
 }
 
 MainWindow::~MainWindow()
@@ -157,6 +160,7 @@ void MainWindow::set_args(int argc, char *argv[])
       if (arg.endsWith(".onnx", Qt::CaseInsensitive)) {
         onnxModelPath = arg;
       } else {
+        m_objFilePath = arg;
         load_label_list_data(arg);
       }
     }
@@ -210,6 +214,58 @@ void MainWindow::init()
 
     set_label(0);
     goto_img(0);
+    saveSession();
+}
+
+void MainWindow::saveSession()
+{
+    QSettings s("YoloLabel", "Session");
+    s.setValue("imgDir",   m_imgDir);
+    s.setValue("objFile",  m_objFilePath);
+
+    QStringList colors;
+    for (const QColor &c : ui->label_image->m_drawObjectBoxColor)
+        colors << c.name();
+    s.setValue("classColors", colors);
+}
+
+void MainWindow::restoreLastSession()
+{
+    // Skip if set_args() already loaded a folder
+    if (!m_imgList.isEmpty()) return;
+
+    QSettings s("YoloLabel", "Session");
+    QString lastDir = s.value("imgDir").toString();
+    QString lastObj = s.value("objFile").toString();
+
+    if (lastDir.isEmpty() || !QDir(lastDir).exists()) return;
+
+    if (!get_files(lastDir)) return;
+
+    QStringList savedColors;
+    if (!lastObj.isEmpty() && QFile::exists(lastObj)) {
+        m_objFilePath = lastObj;
+        load_label_list_data(lastObj);
+        savedColors = s.value("classColors").toStringList();
+    } else if (m_objList.isEmpty()) {
+        bool bRet = false;
+        open_obj_file(bRet);
+        if (!bRet) return;
+    }
+
+    init();
+
+    // Restore custom class colors after init() so they aren't overwritten
+    for (int i = 0; i < savedColors.size() && i < ui->label_image->m_drawObjectBoxColor.size(); ++i) {
+        QColor c(savedColors[i]);
+        if (!c.isValid()) continue;
+        ui->label_image->m_drawObjectBoxColor[i] = c;
+        if (ui->tableWidget_label->item(i, 1))
+            ui->tableWidget_label->item(i, 1)->setBackground(c);
+    }
+    ui->label_image->showImage();
+
+    statusBar()->showMessage("Session restored: " + lastDir, 4000);
 }
 
 void MainWindow::set_label_progress(const int fileIndex)
@@ -498,6 +554,7 @@ void MainWindow::open_obj_file(bool& ret)
     else
     {
         ret = true;
+        m_objFilePath = fileLabelList;
         load_label_list_data(fileLabelList);
     }
 }
@@ -609,6 +666,7 @@ void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
         {
             set_label_color(row, color);
             ui->tableWidget_label->item(row, 1)->setBackground(color);
+            saveSession();
         }
         set_label(row);
         ui->label_image->showImage();
