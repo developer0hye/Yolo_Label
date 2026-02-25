@@ -8,7 +8,6 @@
 #include <QTimer>
 #include <QLabel>
 #include <QPushButton>
-#include <QSettings>
 #include <QSlider>
 
 #include "label_img.h"

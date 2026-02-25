@@ -6,7 +6,8 @@
 #include <QKeyEvent>
 #include <QShortcut>
 #include <QCollator>
-#include <QFileInfo>
+#include <QDir>
+#include <QSettings>
 #include <QHBoxLayout>
 #ifdef ONNXRUNTIME_AVAILABLE
 #include <QProgressDialog>
@@ -247,10 +248,8 @@ void MainWindow::restoreLastSession()
         m_objFilePath = lastObj;
         load_label_list_data(lastObj);
         savedColors = s.value("classColors").toStringList();
-    } else if (m_objList.isEmpty()) {
-        bool bRet = false;
-        open_obj_file(bRet);
-        if (!bRet) return;
+    } else {
+        return;  // class file missing — skip restore silently
     }
 
     init();
