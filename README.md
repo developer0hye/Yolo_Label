@@ -222,6 +222,30 @@ make -j$(nproc)
 
 Without ONNX Runtime, the app builds and works normally — just without the auto-label feature.
 
+## Cloud Auto-Label (yololabel.com)
+
+No local GPU? No problem. YOLO-Label integrates with **[yololabel.com](https://yololabel.com)** — a cloud inference service that runs open-vocabulary object detection on your images without requiring any local model or GPU.
+
+### Create an Account and Get an API Key
+
+1. Go to [yololabel.com](https://yololabel.com) and sign up with **email + password** or **Sign in with Google**
+2. If you registered with email, check your inbox and click the verification link
+3. Log in and navigate to **API Keys**, then click **Create Key**
+4. Give the key a name and copy it immediately — it is shown only once
+
+### How to Use
+
+1. Open your dataset as usual
+2. In the **⚙ AI Settings** tab on the right panel, paste your API key and (optionally) a custom detection prompt
+   - The prompt is a semicolon-separated list of labels, e.g. `car; person; bicycle`
+   - Leave blank to use the loaded class names automatically
+3. Click **☁ Auto Label AI** to detect objects in the current image
+4. Click **☁ Auto Label All AI** to process the entire dataset
+
+### Batch Processing
+
+When **☁ Auto Label All AI** is clicked with multiple images, images are submitted in batches of up to 20 per request using the `/v1/jobs/batch` endpoint. Progress is shown live in the button label.
+
 ## Contrast Adjustment
 
 Use the **Contrast slider** at the top of the window to adjust image brightness/contrast in real-time. This is useful when labeling dark or overexposed images. The slider ranges from 0% to 100% (default 50%).

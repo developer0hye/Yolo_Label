@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets
+QT       += core gui widgets network
 
 TARGET = YoloLabel
 TEMPLATE = app
@@ -16,11 +16,13 @@ CONFIG += c++17
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    label_img.cpp
+    label_img.cpp \
+    cloud_labeler.cpp
 
 HEADERS += \
         mainwindow.h \
-    label_img.h
+    label_img.h \
+    cloud_labeler.h
 
 FORMS += \
         mainwindow.ui

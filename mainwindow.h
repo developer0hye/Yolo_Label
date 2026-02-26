@@ -9,8 +9,11 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QLineEdit>
+#include <QTabWidget>
 
 #include "label_img.h"
+#include "cloud_labeler.h"
 #ifdef ONNXRUNTIME_AVAILABLE
 #include "yolo_detector.h"
 #endif
@@ -81,17 +84,40 @@ private:
     void            load_label_list_data(QString);
     QString         get_labeling_data(QString)const;
 
-    void            saveSession();
-    void            restoreLastSession();
-
     void            set_label(const int);
     void            set_label_color(const int , const QColor);
 
     void            pjreddie_style_msgBox(QMessageBox::Icon, QString, QString);
 
+    void            saveSession();
+    void            restoreLastSession();
+
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
     bool            get_files(QString imgDir);
+
+    // ── Cloud auto-label ───────────────────────────────────────────────
+    void initSideTabWidget();
+    void syncAiSettingsTab();
+    void saveAiSettings();
+    void resetCloudButtons();
+    void cancelAutoLabel();
+    void submitCloudJob();
+    void cloudAutoLabelAll();
+    bool checkUploadConsent();
+
+    CloudAutoLabeler  *m_cloudLabeler;
+    QPushButton       *m_btnCloudAutoLabel;
+    QPushButton       *m_btnCloudAutoLabelAll;
+    QPushButton       *m_btnCancelAutoLabel;
+
+    QString    m_cloudApiKey;
+    QString    m_cloudPrompt;
+
+    QTabWidget *m_sideTabWidget;
+    QLineEdit  *m_settingsKeyEdit;
+    QLineEdit  *m_settingsPromptEdit;
+    // ──────────────────────────────────────────────────────────────────
 
     Ui::MainWindow *ui;
 
