@@ -89,6 +89,9 @@ private:
 
     void            pjreddie_style_msgBox(QMessageBox::Icon, QString, QString);
 
+    void            saveSession();
+    void            restoreLastSession();
+
     void            open_img_dir(bool&);
     void            open_obj_file(bool&);
     bool            get_files(QString imgDir);
@@ -118,6 +121,7 @@ private:
     Ui::MainWindow *ui;
 
     QString         m_imgDir;
+    QString         m_objFilePath;
     QStringList     m_imgList;
     int             m_imgIndex;
 

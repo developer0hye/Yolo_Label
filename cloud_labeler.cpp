@@ -92,15 +92,17 @@ void CloudAutoLabeler::resetState()
     m_pendingJobId = -1;
     m_pendingPath.clear();
     m_queue.clear();
+    m_singlePolling = false;
     m_batchMode    = false;
     m_batchPolling = false;
     m_batchJobIds.clear();
     m_batchJobStatuses.clear();
     m_batchPaths.clear();
     m_batchChunks.clear();
-    m_batchTotal   = 0;
-    m_batchDone    = 0;
-    m_batchFailed  = 0;
+    m_batchTotal              = 0;
+    m_batchDone               = 0;
+    m_batchFailed             = 0;
+    m_batchChunkWriteSucceeded = 0;
 }
 
 void CloudAutoLabeler::handleFatalError(const QString &message)
@@ -143,19 +145,37 @@ QString CloudAutoLabeler::labelPathFor(const QString &imagePath)
         QFileInfo(imagePath).baseName() + ".txt");
 }
 
-// Filters out lines with class IDs outside [0, numClasses-1].
-// Protects against server returning IDs that do not exist in the loaded class file.
+// Validates and filters server-returned YOLO text.
+// Each line must have exactly 5 fields, all numeric, with classId in [0, numClasses)
+// and coordinates/dimensions within [0, 1] range.
+// Returns empty string when numClasses <= 0 (no class file loaded) to prevent
+// writing unvalidatable data to disk.
 QString CloudAutoLabeler::filterValidDetections(const QString &yoloTxt, int numClasses)
 {
-    if (numClasses <= 0) return yoloTxt;
+    // Reject all results when no class file is loaded — class IDs cannot be validated.
+    if (numClasses <= 0) return QString();
+
     QString result;
     for (const QString &rawLine : yoloTxt.split('\n')) {
         const QString line = rawLine.trimmed();
         if (line.isEmpty()) continue;
-        bool ok = false;
-        const int classId = line.section(' ', 0, 0).toInt(&ok);
-        if (ok && classId >= 0 && classId < numClasses)
-            result += line + '\n';
+
+        const QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+        if (parts.size() != 5) continue; // reject malformed lines
+
+        bool okId, okCx, okCy, okW, okH;
+        const int    classId = parts[0].toInt(&okId);
+        const double cx      = parts[1].toDouble(&okCx);
+        const double cy      = parts[2].toDouble(&okCy);
+        const double w       = parts[3].toDouble(&okW);
+        const double h       = parts[4].toDouble(&okH);
+
+        if (!okId || !okCx || !okCy || !okW || !okH) continue; // non-numeric fields
+        if (classId < 0 || classId >= numClasses)    continue; // class ID out of range
+        if (cx < 0.0 || cx > 1.0 || cy < 0.0 || cy > 1.0) continue; // center out of [0,1]
+        if (w <= 0.0 || w > 1.0  || h <= 0.0 || h > 1.0)  continue; // size out of (0,1]
+
+        result += line + '\n';
     }
     return result;
 }
@@ -255,6 +275,7 @@ void CloudAutoLabeler::submitSingle(const QString &imagePath)
 void CloudAutoLabeler::pollSingle()
 {
     if (m_cancelRequested) return;
+    if (m_singlePolling) return;  // previous poll reply still in-flight
 
     if (++m_pollCount > MAX_POLLS) {
         handleFatalError("Job timed out. Please try again.");
@@ -265,10 +286,12 @@ void CloudAutoLabeler::pollSingle()
         QString("/v1/jobs/%1").arg(m_pendingJobId));
     req.setTransferTimeout(10000);
 
+    m_singlePolling = true;
     const int gen = m_generation;
     QNetworkReply *reply = m_net->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, gen]() {
         reply->deleteLater();
+        m_singlePolling = false;
         if (m_generation != gen) return;
 
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
@@ -287,7 +310,7 @@ void CloudAutoLabeler::pollSingle()
     });
 }
 
-void CloudAutoLabeler::fetchSingleResult()
+void CloudAutoLabeler::fetchSingleResult(int retryCount)
 {
     QNetworkRequest req = makeRequest(
         QString("/v1/jobs/%1/result").arg(m_pendingJobId));
@@ -295,9 +318,21 @@ void CloudAutoLabeler::fetchSingleResult()
 
     const int gen = m_generation;
     QNetworkReply *reply = m_net->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, gen]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, gen, retryCount]() {
         reply->deleteLater();
         if (m_generation != gen) return;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (retryCount < MAX_RETRIES) {
+                emit statusMessage(
+                    QString("Fetch failed (%1/%2), retrying\u2026")
+                        .arg(retryCount + 1).arg(MAX_RETRIES), 2000);
+                fetchSingleResult(retryCount + 1);
+                return;
+            }
+            handleFatalError("Fetch result failed: " + reply->errorString());
+            return;
+        }
 
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         if (doc.isNull() || !doc.isObject()) {
@@ -315,10 +350,15 @@ void CloudAutoLabeler::fetchSingleResult()
         const QString lp = labelPathFor(m_pendingPath);
         backupLabelFile(lp);
         QFile lf(lp);
-        if (lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            lf.write(yoloTxt.toUtf8());
-            lf.close();
+        if (!lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            emit statusMessage(
+                QString("Cloud auto-label: write failed for %1").arg(lp), 5000);
+            processNextInQueue();
+            return;
         }
+        lf.write(yoloTxt.toUtf8());
+        lf.close();
+
         emit statusMessage(
             QString("Cloud auto-label: %1 detection(s) in %2 ms").arg(n).arg(ms), 4000);
         emit labelReady(m_pendingPath, n, ms);
@@ -404,6 +444,14 @@ void CloudAutoLabeler::submitBatchChunk(const QStringList &imagePaths)
         for (const QJsonValue &v : doc.object()["job_ids"].toArray())
             m_batchJobIds.append(v.toVariant().toLongLong());
 
+        // Validate that the server returned exactly one job ID per submitted image
+        if (m_batchJobIds.size() != m_batchPaths.size()) {
+            handleFatalError(
+                QString("Server returned %1 job IDs for %2 images — aborting.")
+                    .arg(m_batchJobIds.size()).arg(m_batchPaths.size()));
+            return;
+        }
+
         // Initialize per-job status tracking (0 = pending)
         m_batchJobStatuses.resize(m_batchJobIds.size());
         m_batchJobStatuses.fill(0);
@@ -484,6 +532,7 @@ void CloudAutoLabeler::pollBatch()
                 }
 
                 if (succeeded > 0) {
+                    m_batchChunkWriteSucceeded = 0; // reset before fetch pass for this chunk
                     fetchBatchResults(0);  // skips failed indices
                 } else {
                     handleFatalError("All batch jobs in this chunk failed.");
@@ -493,14 +542,13 @@ void CloudAutoLabeler::pollBatch()
     }
 }
 
-void CloudAutoLabeler::fetchBatchResults(int idx)
+void CloudAutoLabeler::fetchBatchResults(int idx, int retryCount)
 {
     const int gen = m_generation;  // captured for lambdas in this call frame
 
     if (idx >= m_batchJobIds.size()) {
-        // Chunk complete — count succeeded images in this chunk
-        const int chunkSucceeded = m_batchJobStatuses.count(1);
-        m_batchDone += chunkSucceeded;
+        // Chunk complete — count only images where the file was actually written
+        m_batchDone += m_batchChunkWriteSucceeded;
         m_batchJobIds.clear();
         m_batchJobStatuses.clear();
         m_batchPaths.clear();
@@ -525,7 +573,7 @@ void CloudAutoLabeler::fetchBatchResults(int idx)
         return;
     }
 
-    // Skip jobs that failed — just move to the next
+    // Skip jobs that failed on the server — just move to the next
     if (idx < m_batchJobStatuses.size() && m_batchJobStatuses[idx] == 2) {
         fetchBatchResults(idx + 1);
         return;
@@ -538,9 +586,20 @@ void CloudAutoLabeler::fetchBatchResults(int idx)
     req.setTransferTimeout(15000);
 
     QNetworkReply *reply = m_net->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePath, idx, gen]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePath, idx, gen, retryCount]() {
         reply->deleteLater();
         if (m_generation != gen) return;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (retryCount < MAX_RETRIES) {
+                fetchBatchResults(idx, retryCount + 1);
+                return;
+            }
+            // Fetch failed after retries — count as failure, move to next image
+            ++m_batchFailed;
+            fetchBatchResults(idx + 1);
+            return;
+        }
 
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         if (!doc.isNull() && doc.isObject()) {
@@ -549,13 +608,22 @@ void CloudAutoLabeler::fetchBatchResults(int idx)
             const QString lp      = labelPathFor(imagePath);
             // No backup in batch mode — avoids creating N .bak files
             QFile lf(lp);
-            if (lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                lf.write(yoloTxt.toUtf8());
-                lf.close();
+            if (!lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                // File write failed — count as failure, do not emit labelReady
+                ++m_batchFailed;
+                fetchBatchResults(idx + 1);
+                return;
             }
+            lf.write(yoloTxt.toUtf8());
+            lf.close();
+
+            ++m_batchChunkWriteSucceeded;
             const int n = yoloTxt.isEmpty() ? 0
                           : yoloTxt.trimmed().count('\n') + 1;
             emit labelReady(imagePath, n, 0);
+        } else {
+            // JSON parse failure — count as failure, move to next image
+            ++m_batchFailed;
         }
         fetchBatchResults(idx + 1);
     });

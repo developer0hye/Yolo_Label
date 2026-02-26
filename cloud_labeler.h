@@ -60,8 +60,8 @@ private:
     void submitBatchChunk(const QStringList &imagePaths);
     void pollSingle();
     void pollBatch();
-    void fetchSingleResult();
-    void fetchBatchResults(int idx);
+    void fetchSingleResult(int retryCount = 0);
+    void fetchBatchResults(int idx, int retryCount = 0);
     void processNextInQueue();
     void handleFatalError(const QString &message);
 
@@ -95,6 +95,9 @@ private:
     QString       m_pendingPath;
     QList<int>    m_queue;          // indices into m_allPaths
 
+    // Single-poll in-flight guard
+    bool          m_singlePolling  = false;
+
     // Batch state
     bool                m_batchMode     = false;
     bool                m_batchPolling  = false;
@@ -102,9 +105,10 @@ private:
     QVector<int>        m_batchJobStatuses;  // 0=pending, 1=succeeded, 2=failed
     QStringList         m_batchPaths;
     QList<QStringList>  m_batchChunks;
-    int                 m_batchTotal    = 0;
-    int                 m_batchDone     = 0;
-    int                 m_batchFailed   = 0;  // cumulative failed count across chunks
+    int                 m_batchTotal              = 0;
+    int                 m_batchDone               = 0;
+    int                 m_batchFailed             = 0;  // cumulative failed count across chunks
+    int                 m_batchChunkWriteSucceeded = 0; // write successes in the current chunk's fetch pass
 
     QStringList   m_allPaths;  // full image list for queue-based "label all"
 };

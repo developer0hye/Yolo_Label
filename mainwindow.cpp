@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QDir>
 #include <QFileDialog>
 #include <QColorDialog>
 #include <QKeyEvent>
@@ -16,7 +17,6 @@
 #endif
 #include <iomanip>
 #include <cmath>
-#include <memory>
 
 using std::ofstream;
 using std::ifstream;
@@ -221,6 +221,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // ──────────────────────────────────────────────────────────────────
 
     init_table_widget();
+
+    QTimer::singleShot(0, this, &MainWindow::restoreLastSession);
 }
 
 MainWindow::~MainWindow()
@@ -241,6 +243,7 @@ void MainWindow::set_args(int argc, char *argv[])
       if (arg.endsWith(".onnx", Qt::CaseInsensitive)) {
         onnxModelPath = arg;
       } else {
+        m_objFilePath = arg;
         load_label_list_data(arg);
       }
     }
@@ -294,12 +297,63 @@ void MainWindow::init()
 
     set_label(0);
     goto_img(0);
+    saveSession();
+}
+
+void MainWindow::saveSession()
+{
+    QSettings s("YoloLabel", "Session");
+    s.setValue("imgDir",  m_imgDir);
+    s.setValue("objFile", m_objFilePath);
+
+    QStringList colors;
+    for (const QColor &c : ui->label_image->m_drawObjectBoxColor)
+        colors << c.name();
+    s.setValue("classColors", colors);
+}
+
+void MainWindow::restoreLastSession()
+{
+    // Skip if set_args() already loaded a folder
+    if (!m_imgList.isEmpty()) return;
+
+    QSettings s("YoloLabel", "Session");
+    const QString lastDir = s.value("imgDir").toString();
+    const QString lastObj = s.value("objFile").toString();
+
+    if (lastDir.isEmpty() || !QDir(lastDir).exists()) return;
+    if (!get_files(lastDir)) return;
+
+    QStringList savedColors;
+    if (!lastObj.isEmpty() && QFile::exists(lastObj)) {
+        m_objFilePath = lastObj;
+        load_label_list_data(lastObj);
+        savedColors = s.value("classColors").toStringList();
+    } else if (m_objList.isEmpty()) {
+        bool bRet = false;
+        open_obj_file(bRet);
+        if (!bRet) return;
+    }
+
+    init();
+
+    // Restore custom class colors after init() so they aren't overwritten
+    for (int i = 0; i < savedColors.size() && i < ui->label_image->m_drawObjectBoxColor.size(); ++i) {
+        QColor c(savedColors[i]);
+        if (!c.isValid()) continue;
+        ui->label_image->m_drawObjectBoxColor[i] = c;
+        if (ui->tableWidget_label->item(i, 1))
+            ui->tableWidget_label->item(i, 1)->setBackground(c);
+    }
+    ui->label_image->showImage();
+
+    statusBar()->showMessage("Session restored: " + lastDir, 4000);
 }
 
 void MainWindow::set_label_progress(const int fileIndex)
 {
-    QString strCurFileIndex = QString::number(fileIndex);
-    QString strEndFileIndex = QString::number(m_imgList.size() - 1);
+    QString strCurFileIndex = QString::number(fileIndex + 1);
+    QString strEndFileIndex = QString::number(m_imgList.size());
 
     ui->label_progress->setText(strCurFileIndex + " / " + strEndFileIndex);
 }
@@ -584,6 +638,7 @@ void MainWindow::open_obj_file(bool& ret)
     else
     {
         ret = true;
+        m_objFilePath = fileLabelList;
         load_label_list_data(fileLabelList);
     }
 }
@@ -695,6 +750,7 @@ void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
         {
             set_label_color(row, color);
             ui->tableWidget_label->item(row, 1)->setBackground(color);
+            saveSession();
         }
         set_label(row);
         ui->label_image->showImage();
@@ -1206,9 +1262,11 @@ void MainWindow::submitCloudJob()
     }
 
     save_label_data();  // preserve current manual annotations before overwriting
+    ui->label_image->saveState(); // enable Ctrl+Z undo after cloud labels are applied
 
     m_btnCloudAutoLabel->setEnabled(false);
     m_btnCloudAutoLabelAll->setEnabled(false);
+    m_btnCancelAutoLabel->setVisible(true);
     m_btnCloudAutoLabel->setText("\u2601 Labelling\u2026");
     m_cloudLabeler->setApiKey(m_cloudApiKey);
     m_cloudLabeler->setPrompt(m_cloudPrompt);
