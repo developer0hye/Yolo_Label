@@ -91,6 +91,7 @@ void CloudAutoLabeler::resetState()
     m_pendingJobId = -1;
     m_pendingPath.clear();
     m_queue.clear();
+    m_singleWriteOk = 0;
     m_singlePolling = false;
     m_batchMode    = false;
     m_batchPolling = false;
@@ -102,6 +103,7 @@ void CloudAutoLabeler::resetState()
     m_batchDone               = 0;
     m_batchFailed             = 0;
     m_batchChunkWriteSucceeded = 0;
+    m_pollOffset              = 0;
 }
 
 void CloudAutoLabeler::handleFatalError(const QString &message)
@@ -196,11 +198,11 @@ QString CloudAutoLabeler::remapWithClassNames(
     // Server may return "Person" when the class file has "person" — treat as equal.
     QHash<QString, int> nameToLocalId;
     for (int j = 0; j < localClasses.size(); ++j)
-        nameToLocalId[localClasses[j].toLower()] = j;
+        nameToLocalId[localClasses[j].trimmed().toLower()] = j;
 
     QHash<int, int> remap;
     for (int serverId = 0; serverId < serverClassNames.size(); ++serverId)
-        remap[serverId] = nameToLocalId.value(serverClassNames[serverId].toLower(), -1);
+        remap[serverId] = nameToLocalId.value(serverClassNames[serverId].trimmed().toLower(), -1);
 
     QString result;
     for (const QString &rawLine : yoloTxt.split('\n')) {
@@ -235,7 +237,7 @@ void CloudAutoLabeler::processNextInQueue()
 {
     if (m_cancelRequested || m_queue.isEmpty()) {
         if (!m_cancelRequested)
-            emit finished(m_allPaths.size());
+            emit finished(m_singleWriteOk);
         resetState();
         setBusy(false);
         return;
@@ -415,6 +417,7 @@ void CloudAutoLabeler::fetchSingleResult(int retryCount)
         lf.write(yoloTxt.toUtf8());
         lf.close();
 
+        ++m_singleWriteOk;
         emit statusMessage(
             QString("Cloud auto-label: %1 detection(s) in %2 ms").arg(n).arg(ms), 4000);
         emit labelReady(m_pendingPath, n, ms);
@@ -536,9 +539,15 @@ void CloudAutoLabeler::pollBatch()
     if (pendingIdxs.isEmpty()) return;  // all terminal, timer will be stopped
 
     // Rate-limit: poll at most MAX_CONCURRENT_POLLS jobs per tick.
-    // Remaining pending jobs are polled on the next tick when their status is still 0.
-    if (pendingIdxs.size() > MAX_CONCURRENT_POLLS)
-        pendingIdxs = pendingIdxs.mid(0, MAX_CONCURRENT_POLLS);
+    // Round-robin so that jobs at the back of the list are not starved.
+    if (pendingIdxs.size() > MAX_CONCURRENT_POLLS) {
+        m_pollOffset = m_pollOffset % pendingIdxs.size();
+        QList<int> selected;
+        for (int k = 0; k < MAX_CONCURRENT_POLLS; ++k)
+            selected.append(pendingIdxs[(m_pollOffset + k) % pendingIdxs.size()]);
+        m_pollOffset += MAX_CONCURRENT_POLLS;
+        pendingIdxs = selected;
+    }
 
     m_batchPolling = true;
     const int pollCount = pendingIdxs.size();

@@ -97,6 +97,7 @@ private:
     qint64        m_pendingJobId   = -1;
     QString       m_pendingPath;
     QList<int>    m_queue;          // indices into m_allPaths
+    int           m_singleWriteOk  = 0;   // write successes for queue-based flow
 
     // Single-poll in-flight guard
     bool          m_singlePolling  = false;
@@ -112,6 +113,7 @@ private:
     int                 m_batchDone               = 0;
     int                 m_batchFailed             = 0;  // cumulative failed count across chunks
     int                 m_batchChunkWriteSucceeded = 0; // write successes in the current chunk's fetch pass
+    int                 m_pollOffset              = 0;  // round-robin offset for batch polling
 
     QStringList   m_allPaths;  // full image list for queue-based "label all"
 };
