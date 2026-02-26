@@ -180,6 +180,49 @@ QString CloudAutoLabeler::filterValidDetections(const QString &yoloTxt, int numC
     return result;
 }
 
+// Remaps yolo_txt using the server-provided class_names list (Option B).
+// serverClassNames[i] is the class name the server assigned to ID i.
+// Matches by name against the local class list and rewrites each line with
+// the local class ID. Lines whose server class is not in the local file are
+// dropped. Coordinate validation is preserved.
+QString CloudAutoLabeler::remapWithClassNames(
+    const QString &yoloTxt,
+    const QStringList &serverClassNames,
+    const QStringList &localClasses)
+{
+    if (localClasses.isEmpty()) return QString();
+
+    QHash<int, int> remap;
+    for (int serverId = 0; serverId < serverClassNames.size(); ++serverId)
+        remap[serverId] = localClasses.indexOf(serverClassNames[serverId]);
+
+    QString result;
+    for (const QString &rawLine : yoloTxt.split('\n')) {
+        const QString line = rawLine.trimmed();
+        if (line.isEmpty()) continue;
+
+        const QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+        if (parts.size() != 5) continue;
+
+        bool okId, okCx, okCy, okW, okH;
+        const int    serverId = parts[0].toInt(&okId);
+        const double cx       = parts[1].toDouble(&okCx);
+        const double cy       = parts[2].toDouble(&okCy);
+        const double w        = parts[3].toDouble(&okW);
+        const double h        = parts[4].toDouble(&okH);
+
+        if (!okId || !okCx || !okCy || !okW || !okH)        continue;
+        if (cx < 0.0 || cx > 1.0 || cy < 0.0 || cy > 1.0)  continue;
+        if (w <= 0.0 || w > 1.0  || h <= 0.0 || h > 1.0)   continue;
+
+        const int localId = remap.value(serverId, -1);
+        if (localId == -1) continue;
+
+        result += QString::number(localId) + line.mid(line.indexOf(' ')) + '\n';
+    }
+    return result;
+}
+
 // ── Single-image flow ───────────────────────────────────────────────────────
 
 void CloudAutoLabeler::processNextInQueue()
@@ -341,9 +384,17 @@ void CloudAutoLabeler::fetchSingleResult(int retryCount)
             return;
         }
 
-        const QJsonObject result  = doc.object();
-        const QString     raw     = result.value("yolo_txt").toString();
-        const QString     yoloTxt = filterValidDetections(raw, m_classes.size());
+        const QJsonObject result = doc.object();
+        const QString     raw    = result.value("yolo_txt").toString();
+        QString yoloTxt;
+        if (result.contains("class_names")) {
+            QStringList serverNames;
+            for (const QJsonValue &v : result.value("class_names").toArray())
+                serverNames.append(v.toString());
+            yoloTxt = remapWithClassNames(raw, serverNames, m_classes);
+        } else {
+            yoloTxt = filterValidDetections(raw, m_classes.size());
+        }
         const int         n       = yoloTxt.isEmpty() ? 0
                                     : yoloTxt.trimmed().count('\n') + 1;
         const int         ms      = result.value("compute_ms").toInt();
@@ -609,8 +660,17 @@ void CloudAutoLabeler::fetchBatchResults(int idx, int retryCount)
 
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         if (!doc.isNull() && doc.isObject()) {
-            const QString raw     = doc.object().value("yolo_txt").toString();
-            const QString yoloTxt = filterValidDetections(raw, m_classes.size());
+            const QJsonObject obj = doc.object();
+            const QString     raw = obj.value("yolo_txt").toString();
+            QString yoloTxt;
+            if (obj.contains("class_names")) {
+                QStringList serverNames;
+                for (const QJsonValue &v : obj.value("class_names").toArray())
+                    serverNames.append(v.toString());
+                yoloTxt = remapWithClassNames(raw, serverNames, m_classes);
+            } else {
+                yoloTxt = filterValidDetections(raw, m_classes.size());
+            }
             const QString lp      = labelPathFor(imagePath);
             backupLabelFile(lp);
             QFile lf(lp);

@@ -69,6 +69,9 @@ private:
     static void     backupLabelFile(const QString &labelPath);
     static QString  labelPathFor(const QString &imagePath);
     static QString  filterValidDetections(const QString &yoloTxt, int numClasses);
+    static QString  remapWithClassNames(const QString &yoloTxt,
+                                        const QStringList &serverClassNames,
+                                        const QStringList &localClasses);
     QNetworkRequest makeRequest(const QString &endpoint) const;
 
     static constexpr const char *API_HOST            = "https://api.yololabel.com";
