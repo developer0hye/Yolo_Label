@@ -118,6 +118,41 @@ jobs:
           qmake YoloLabel.pro CONFIG+=release "ONNXRUNTIME_DIR=%CD%\onnxruntime"
           nmake
 
+      # ── Unit Tests (all platforms) ────────────────────────────
+      - name: Build and run unit tests (Unix)
+        if: runner.os != 'Windows'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          NPROC=$(nproc 2>/dev/null || sysctl -n hw.logicalcpu 2>/dev/null || echo 2)
+          cd tests
+
+          qmake test_cloud_labeler.pro && make -j$NPROC
+          ./test_cloud_labeler
+          make clean
+
+          qmake test_label_img.pro && make -j$NPROC
+          ./test_label_img
+          make clean
+
+      - name: Build and run unit tests (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          cd tests
+
+          qmake test_cloud_labeler.pro
+          nmake
+          release\test_cloud_labeler.exe
+          nmake clean
+
+          qmake test_label_img.pro
+          nmake
+          release\test_label_img.exe
+          nmake clean
+
       # ── Accuracy Test (Linux only) ────────────────────────────
       - name: Setup Python for accuracy test
         if: runner.os == 'Linux'
