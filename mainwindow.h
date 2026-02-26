@@ -104,6 +104,7 @@ private:
     void cancelAutoLabel();
     void submitCloudJob();
     void cloudAutoLabelAll();
+    bool checkUploadConsent();
 
     CloudAutoLabeler  *m_cloudLabeler;
     QPushButton       *m_btnCloudAutoLabel;

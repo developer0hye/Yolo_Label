@@ -203,14 +203,6 @@ void CloudAutoLabeler::submitSingle(const QString &imagePath)
     m_pendingPath  = imagePath;
     m_retryCount   = 0;
 
-    QFile f(imagePath);
-    if (!f.open(QIODevice::ReadOnly)) {
-        handleFatalError("Cannot read image: " + imagePath);
-        return;
-    }
-    QByteArray imageData = f.readAll();
-    f.close();
-
     QString effectivePrompt = m_prompt.isEmpty() ? m_classes.join(" ; ") : m_prompt;
 
     QJsonArray classesArr;
@@ -219,12 +211,21 @@ void CloudAutoLabeler::submitSingle(const QString &imagePath)
 
     auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
+    // Use setBodyDevice() so the file is streamed directly without a redundant in-memory copy.
+    // QFile is parented to multiPart and will be deleted when the reply is deleted.
+    QFile *imgFile = new QFile(imagePath, multiPart);
+    if (!imgFile->open(QIODevice::ReadOnly)) {
+        delete multiPart;
+        handleFatalError("Cannot read image: " + imagePath);
+        return;
+    }
+
     QHttpPart imgPart;
     imgPart.setHeader(QNetworkRequest::ContentTypeHeader, mimeForImage(imagePath));
     imgPart.setHeader(QNetworkRequest::ContentDispositionHeader,
         QString("form-data; name=\"image\"; filename=\"%1\"")
             .arg(QFileInfo(imagePath).fileName()));
-    imgPart.setBody(imageData);
+    imgPart.setBodyDevice(imgFile);
     multiPart->append(imgPart);
 
     QHttpPart promptPart;
@@ -378,21 +379,21 @@ void CloudAutoLabeler::submitBatchChunk(const QStringList &imagePaths)
     auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
     for (const QString &imagePath : imagePaths) {
-        QFile f(imagePath);
-        if (!f.open(QIODevice::ReadOnly)) {
+        // Use setBodyDevice() so each file is streamed without an in-memory copy.
+        // QFile is parented to multiPart and deleted automatically with the reply.
+        QFile *imgFile = new QFile(imagePath, multiPart);
+        if (!imgFile->open(QIODevice::ReadOnly)) {
             delete multiPart;
             handleFatalError("Cannot read image: " + imagePath);
             return;
         }
-        QByteArray imageData = f.readAll();
-        f.close();
 
         QHttpPart imgPart;
         imgPart.setHeader(QNetworkRequest::ContentTypeHeader, mimeForImage(imagePath));
         imgPart.setHeader(QNetworkRequest::ContentDispositionHeader,
             QString("form-data; name=\"images\"; filename=\"%1\"")
                 .arg(QFileInfo(imagePath).fileName()));
-        imgPart.setBody(imageData);
+        imgPart.setBodyDevice(imgFile);
         multiPart->append(imgPart);
     }
 
@@ -480,6 +481,11 @@ void CloudAutoLabeler::pollBatch()
             pendingIdxs.append(i);
 
     if (pendingIdxs.isEmpty()) return;  // all terminal, timer will be stopped
+
+    // Rate-limit: poll at most MAX_CONCURRENT_POLLS jobs per tick.
+    // Remaining pending jobs are polled on the next tick when their status is still 0.
+    if (pendingIdxs.size() > MAX_CONCURRENT_POLLS)
+        pendingIdxs = pendingIdxs.mid(0, MAX_CONCURRENT_POLLS);
 
     m_batchPolling = true;
     const int pollCount = pendingIdxs.size();
@@ -606,7 +612,7 @@ void CloudAutoLabeler::fetchBatchResults(int idx, int retryCount)
             const QString raw     = doc.object().value("yolo_txt").toString();
             const QString yoloTxt = filterValidDetections(raw, m_classes.size());
             const QString lp      = labelPathFor(imagePath);
-            // No backup in batch mode — avoids creating N .bak files
+            backupLabelFile(lp);
             QFile lf(lp);
             if (!lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
                 // File write failed — count as failure, do not emit labelReady

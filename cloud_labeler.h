@@ -71,11 +71,12 @@ private:
     static QString  filterValidDetections(const QString &yoloTxt, int numClasses);
     QNetworkRequest makeRequest(const QString &endpoint) const;
 
-    static constexpr const char *API_HOST      = "https://api.yololabel.com";
-    static constexpr int         POLL_INTERVAL  = 1500;   // ms
-    static constexpr int         MAX_POLLS      = 200;    // ~5 min
-    static constexpr int         BATCH_SIZE     = 20;
-    static constexpr int         MAX_RETRIES    = 3;
+    static constexpr const char *API_HOST            = "https://api.yololabel.com";
+    static constexpr int         POLL_INTERVAL        = 1500;  // ms
+    static constexpr int         MAX_POLLS            = 200;   // ~5 min
+    static constexpr int         BATCH_SIZE           = 20;
+    static constexpr int         MAX_RETRIES          = 3;
+    static constexpr int         MAX_CONCURRENT_POLLS = 5;     // per tick, to avoid rate-limit
 
     QNetworkAccessManager *m_net;
     QTimer                *m_pollTimer;

@@ -1250,6 +1250,24 @@ void MainWindow::cancelAutoLabel()
 
 // ── Cloud auto-label ────────────────────────────────────────────────────────
 
+bool MainWindow::checkUploadConsent()
+{
+    QSettings s("YoloLabel", "CloudAI");
+    if (s.value("uploadConsentGiven", false).toBool()) return true;
+
+    QMessageBox dlg(QMessageBox::Information, "Cloud Auto-Label — Privacy Notice",
+        "Images will be uploaded to <b>api.yololabel.com</b> for inference.<br><br>"
+        "By continuing you confirm that you have the right to share these images "
+        "with a third-party service and accept the associated privacy implications.",
+        QMessageBox::Ok | QMessageBox::Cancel, this);
+    dlg.button(QMessageBox::Ok)->setText("I Understand — Continue");
+
+    if (dlg.exec() != QMessageBox::Ok) return false;
+
+    s.setValue("uploadConsentGiven", true);
+    return true;
+}
+
 void MainWindow::submitCloudJob()
 {
     if (m_imgList.isEmpty()) return;
@@ -1260,6 +1278,8 @@ void MainWindow::submitCloudJob()
         statusBar()->showMessage("Enter your API key in the AI Settings tab.", 4000);
         return;
     }
+
+    if (!checkUploadConsent()) return;
 
     save_label_data();  // preserve current manual annotations before overwriting
     ui->label_image->saveState(); // enable Ctrl+Z undo after cloud labels are applied
@@ -1284,6 +1304,8 @@ void MainWindow::cloudAutoLabelAll()
         statusBar()->showMessage("Enter your API key in the AI Settings tab.", 4000);
         return;
     }
+
+    if (!checkUploadConsent()) return;
 
     // Estimate total upload size and warn if large
     qint64 totalBytes = 0;
