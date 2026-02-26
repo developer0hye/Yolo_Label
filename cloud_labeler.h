@@ -56,8 +56,8 @@ private:
     // Helpers
     void setBusy(bool busy);
     void resetState();
-    void submitSingle(const QString &imagePath);
-    void submitBatchChunk(const QStringList &imagePaths);
+    void submitSingle(const QString &imagePath, int retryCount = 0);
+    void submitBatchChunk(const QStringList &imagePaths, int retryCount = 0);
     void pollSingle();
     void pollBatch();
     void fetchSingleResult(int retryCount = 0);
@@ -92,7 +92,6 @@ private:
     bool          m_cancelRequested= false;
     int           m_generation     = 0;    // incremented on cancel to invalidate in-flight callbacks
     int           m_pollCount      = 0;
-    int           m_retryCount     = 0;
 
     // Single-image state
     qint64        m_pendingJobId   = -1;

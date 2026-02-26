@@ -88,7 +88,6 @@ void CloudAutoLabeler::setBusy(bool busy)
 void CloudAutoLabeler::resetState()
 {
     m_pollCount    = 0;
-    m_retryCount   = 0;
     m_pendingJobId = -1;
     m_pendingPath.clear();
     m_queue.clear();
@@ -107,6 +106,7 @@ void CloudAutoLabeler::resetState()
 
 void CloudAutoLabeler::handleFatalError(const QString &message)
 {
+    ++m_generation;  // invalidate all in-flight callbacks
     m_pollTimer->stop();
     resetState();
     setBusy(false);
@@ -192,9 +192,15 @@ QString CloudAutoLabeler::remapWithClassNames(
 {
     if (localClasses.isEmpty()) return QString();
 
+    // Build a lowercase → local-ID lookup for case-insensitive matching.
+    // Server may return "Person" when the class file has "person" — treat as equal.
+    QHash<QString, int> nameToLocalId;
+    for (int j = 0; j < localClasses.size(); ++j)
+        nameToLocalId[localClasses[j].toLower()] = j;
+
     QHash<int, int> remap;
     for (int serverId = 0; serverId < serverClassNames.size(); ++serverId)
-        remap[serverId] = localClasses.indexOf(serverClassNames[serverId]);
+        remap[serverId] = nameToLocalId.value(serverClassNames[serverId].toLower(), -1);
 
     QString result;
     for (const QString &rawLine : yoloTxt.split('\n')) {
@@ -241,10 +247,9 @@ void CloudAutoLabeler::processNextInQueue()
     submitSingle(m_allPaths[idx]);
 }
 
-void CloudAutoLabeler::submitSingle(const QString &imagePath)
+void CloudAutoLabeler::submitSingle(const QString &imagePath, int retryCount)
 {
     m_pendingPath  = imagePath;
-    m_retryCount   = 0;
 
     QString effectivePrompt = m_prompt.isEmpty() ? m_classes.join(" ; ") : m_prompt;
 
@@ -288,23 +293,22 @@ void CloudAutoLabeler::submitSingle(const QString &imagePath)
     multiPart->setParent(reply);
 
     const int gen = m_generation;
-    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePath, gen]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePath, gen, retryCount]() {
         reply->deleteLater();
         if (m_generation != gen) return;
 
         if (reply->error() != QNetworkReply::NoError) {
-            if (++m_retryCount <= MAX_RETRIES) {
+            if (retryCount < MAX_RETRIES) {
                 emit statusMessage(
                     QString("Submit failed (%1/%2), retrying\u2026")
-                        .arg(m_retryCount).arg(MAX_RETRIES), 2000);
-                submitSingle(imagePath);
+                        .arg(retryCount + 1).arg(MAX_RETRIES), 2000);
+                submitSingle(imagePath, retryCount + 1);
                 return;
             }
             handleFatalError("Submit failed: " + reply->errorString());
             return;
         }
 
-        m_retryCount = 0;
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         if (doc.isNull() || !doc.isObject() || !doc.object().contains("job_id")) {
             handleFatalError("Unexpected server response.");
@@ -421,11 +425,10 @@ void CloudAutoLabeler::fetchSingleResult(int retryCount)
 
 // ── Batch flow ──────────────────────────────────────────────────────────────
 
-void CloudAutoLabeler::submitBatchChunk(const QStringList &imagePaths)
+void CloudAutoLabeler::submitBatchChunk(const QStringList &imagePaths, int retryCount)
 {
     m_batchPaths = imagePaths;
     m_batchJobIds.clear();
-    m_retryCount = 0;
 
     auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
@@ -471,23 +474,22 @@ void CloudAutoLabeler::submitBatchChunk(const QStringList &imagePaths)
     multiPart->setParent(reply);
 
     const int gen = m_generation;
-    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePaths, gen]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePaths, gen, retryCount]() {
         reply->deleteLater();
         if (m_generation != gen) return;
 
         if (reply->error() != QNetworkReply::NoError) {
-            if (++m_retryCount <= MAX_RETRIES) {
+            if (retryCount < MAX_RETRIES) {
                 emit statusMessage(
                     QString("Batch submit failed (%1/%2), retrying\u2026")
-                        .arg(m_retryCount).arg(MAX_RETRIES), 2000);
-                submitBatchChunk(imagePaths);
+                        .arg(retryCount + 1).arg(MAX_RETRIES), 2000);
+                submitBatchChunk(imagePaths, retryCount + 1);
                 return;
             }
             handleFatalError("Batch submit failed: " + reply->errorString());
             return;
         }
 
-        m_retryCount = 0;
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         if (doc.isNull() || !doc.isObject() || !doc.object().contains("job_ids")) {
             handleFatalError("Unexpected batch response from server.");
