@@ -106,5 +106,12 @@ ONNX Runtime is optional. When `ONNXRUNTIME_DIR` points to a valid installation,
 - When modifying C++ source files, make minimal changes and build (`qmake && make`) after each edit to catch syntax errors immediately
 - Do not batch large numbers of changes across files before verifying the build — fix one file (or one logical group of changes) at a time
 
+## Testing
+- Follow a **TDD (Test-Driven Development)** approach: write tests first, then implement the feature or fix to make them pass
+- All new logic that can be tested without manual UI interaction **must** have QTest-based unit tests. This includes: data parsing, coordinate math, file I/O helpers, validation functions, and any pure or near-pure functions
+- Code that requires manual UI interaction (mouse events, visual rendering, interactive dialogs) is exempt from TDD — test these manually
+- Test files live in `tests/` with naming convention `test_<module>.pro` and `test_<module>.cpp`
+- Run `QT_QPA_PLATFORM=offscreen` for headless test execution on CI and locally
+
 ## Language
 - All commit messages, PR descriptions, code comments, and documentation must be written in **English only**
