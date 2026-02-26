@@ -114,14 +114,15 @@ private:
 
     // ── Landing AI ────────────────────────────────────────────────────
     void submitLandingAIJob();
-    void doLandingAIJob(const QString &imagePath);
+    void doLandingAIJob(const QString &imagePath, int retryCount = 0);
     void landingAIAutoLabelAll();
     void landingAIProcessNextInQueue();
+    bool checkLandingConsent();
 
     QNetworkAccessManager *m_landingNet;
     QString      m_landingApiKey;
     QList<int>   m_landingQueue;
-    QString      m_landingPendingImagePath;
+    bool         m_landingCancelled = false;
     QComboBox   *m_modelCombo;
     // ──────────────────────────────────────────────────────────────────
 
