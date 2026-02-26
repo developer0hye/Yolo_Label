@@ -61,6 +61,10 @@ public:
     const YoloModelMetadata& getMetadata() const;
     const std::map<int, std::string>& getClassNames() const;
 
+#ifdef UNIT_TEST
+    friend class TestYoloDetector;
+#endif
+
 private:
     std::vector<float> preprocess(
         const QImage& image,

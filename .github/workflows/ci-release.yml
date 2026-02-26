@@ -135,6 +135,10 @@ jobs:
           ./test_label_img
           make clean
 
+          qmake test_yolo_detector.pro "ONNXRUNTIME_DIR=$PWD/../onnxruntime" && make -j$NPROC
+          ./test_yolo_detector
+          make clean
+
       - name: Build and run unit tests (Windows)
         if: runner.os == 'Windows'
         shell: cmd
@@ -151,6 +155,11 @@ jobs:
           qmake test_label_img.pro
           nmake
           release\test_label_img.exe
+          nmake clean
+
+          qmake test_yolo_detector.pro "ONNXRUNTIME_DIR=%CD%\..\onnxruntime"
+          nmake
+          release\test_yolo_detector.exe
           nmake clean
 
       # ── Accuracy Test (Linux only) ────────────────────────────

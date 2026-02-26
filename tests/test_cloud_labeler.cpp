@@ -201,6 +201,41 @@ private slots:
             "0 1.5 0.5 0.2 0.3\n", serverNames, localNames);
         QCOMPARE(result, QString(""));
     }
+    // ── Edge cases for filterValidDetections ────────────────────
+    void filterValid_boundaryCoordZero()
+    {
+        // cx=0.0, cy=0.0 are valid (lower bound of [0,1])
+        QString result = CloudAutoLabeler::filterValidDetections(
+            "0 0.0 0.0 0.5 0.5\n", 3);
+        QCOMPARE(result, QString("0 0.0 0.0 0.5 0.5\n"));
+    }
+    void filterValid_boundaryCoordOne()
+    {
+        // cx=1.0, cy=1.0 are valid (upper bound of [0,1])
+        QString result = CloudAutoLabeler::filterValidDetections(
+            "0 1.0 1.0 0.5 0.5\n", 3);
+        QCOMPARE(result, QString("0 1.0 1.0 0.5 0.5\n"));
+    }
+    void filterValid_widthExactlyOne()
+    {
+        // w=1.0 is valid (upper bound of (0,1])
+        QString result = CloudAutoLabeler::filterValidDetections(
+            "0 0.5 0.5 1.0 1.0\n", 3);
+        QCOMPARE(result, QString("0 0.5 0.5 1.0 1.0\n"));
+    }
+    void filterValid_negativeClassId()
+    {
+        QString result = CloudAutoLabeler::filterValidDetections(
+            "-1 0.5 0.5 0.2 0.3\n", 3);
+        QCOMPARE(result, QString(""));
+    }
+    void filterValid_extraWhitespace()
+    {
+        // Extra spaces between fields — should still parse
+        QString result = CloudAutoLabeler::filterValidDetections(
+            "0   0.5   0.5   0.2   0.3\n", 3);
+        QCOMPARE(result, QString("0   0.5   0.5   0.2   0.3\n"));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestCloudLabeler)

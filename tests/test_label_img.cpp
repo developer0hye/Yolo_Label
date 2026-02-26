@@ -1,7 +1,9 @@
 #include <QtTest>
 #include <QApplication>
 #include <QTemporaryFile>
+#include <QTemporaryDir>
 #include <QTextStream>
+#include <QPainter>
 #include "label_img.h"
 
 class TestLabelImg : public QObject
@@ -435,6 +437,403 @@ private slots:
         // Should not crash and should return (0,0)
         QPointF result = widget.cvtAbsoluteToRelativePoint(QPoint(100, 100));
         QCOMPARE(result, QPointF(0.0, 0.0));
+    }
+    // ── undo / redo / saveState ────────────────────────────────
+    void undo_emptyHistoryReturnsFalse()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        QCOMPARE(widget.undo(), false);
+    }
+    void undo_restoresPreviousState()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        // Add a box and save state
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.1, 0.1, 0.3, 0.3);
+        widget.m_objBoundingBoxes.append(box);
+        widget.saveState(); // saves [box]
+
+        // Add another box
+        ObjectLabelingBox box2;
+        box2.label = 0;
+        box2.box = QRectF(0.5, 0.5, 0.2, 0.2);
+        widget.m_objBoundingBoxes.append(box2);
+        QCOMPARE(widget.m_objBoundingBoxes.size(), 2);
+
+        // Undo should restore to [box] only
+        QCOMPARE(widget.undo(), true);
+        QCOMPARE(widget.m_objBoundingBoxes.size(), 1);
+    }
+    void redo_afterUndo()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        widget.saveState(); // saves []
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.1, 0.1, 0.3, 0.3);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.undo(); // back to []
+        QCOMPARE(widget.m_objBoundingBoxes.size(), 0);
+
+        QCOMPARE(widget.redo(), true);
+        QCOMPARE(widget.m_objBoundingBoxes.size(), 1);
+    }
+    void redo_emptyReturnsFalse()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        QCOMPARE(widget.redo(), false);
+    }
+    void redo_clearedAfterNewEdit()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        widget.saveState(); // saves []
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.1, 0.1, 0.3, 0.3);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.undo(); // back to [], redo available
+        QCOMPARE(widget.redo(), true); // redo works
+
+        widget.undo(); // back to []
+        widget.saveState(); // new edit clears redo
+        QCOMPARE(widget.redo(), false); // redo cleared
+    }
+    void clearAllBoxes_savesStateThenClears()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.1, 0.1, 0.3, 0.3);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.clearAllBoxes();
+        QCOMPARE(widget.m_objBoundingBoxes.size(), 0);
+
+        // Should be able to undo back to 1 box
+        QCOMPARE(widget.undo(), true);
+        QCOMPARE(widget.m_objBoundingBoxes.size(), 1);
+    }
+    void clearUndoHistory_clearsBoth()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        widget.saveState();
+        widget.saveState();
+        widget.undo(); // creates redo
+
+        widget.clearUndoHistory();
+        QCOMPARE(widget.undo(), false);
+        QCOMPARE(widget.redo(), false);
+    }
+    void maxUndoHistory_limitsStack()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        // Push 55 states (MAX_UNDO_HISTORY = 50)
+        for (int i = 0; i < 55; ++i) {
+            ObjectLabelingBox box;
+            box.label = 0;
+            box.box = QRectF(0.01 * i, 0.01 * i, 0.1, 0.1);
+            widget.m_objBoundingBoxes.clear();
+            widget.m_objBoundingBoxes.append(box);
+            widget.saveState();
+        }
+
+        // Can undo at most 50 times
+        int undoCount = 0;
+        while (widget.undo()) ++undoCount;
+        QCOMPARE(undoCount, 50);
+    }
+
+    // ── setFocusedObjectBoxLabel ─────────────────────────────────
+    void setFocusedLabel_basic()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat", "dog"};
+        widget.m_drawObjectBoxColor = {Qt::green, Qt::red};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.2, 0.2, 0.4, 0.4);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.setFocusedObjectBoxLabel(QPointF(0.3, 0.3), 1);
+        QCOMPARE(widget.m_objBoundingBoxes[0].label, 1);
+    }
+    void setFocusedLabel_pointNotOnBox()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat", "dog"};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.2, 0.2, 0.4, 0.4);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.setFocusedObjectBoxLabel(QPointF(0.1, 0.1), 1);
+        QCOMPARE(widget.m_objBoundingBoxes[0].label, 0); // unchanged
+    }
+    void setFocusedLabel_outOfRange()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.2, 0.2, 0.4, 0.4);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.setFocusedObjectBoxLabel(QPointF(0.3, 0.3), 5); // out of range
+        QCOMPARE(widget.m_objBoundingBoxes[0].label, 0); // unchanged
+    }
+    void setFocusedLabel_savesUndoState()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat", "dog"};
+        widget.m_drawObjectBoxColor = {Qt::green, Qt::red};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.2, 0.2, 0.4, 0.4);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.setFocusedObjectBoxLabel(QPointF(0.3, 0.3), 1);
+        QCOMPARE(widget.m_objBoundingBoxes[0].label, 1);
+
+        widget.undo();
+        QCOMPARE(widget.m_objBoundingBoxes[0].label, 0);
+    }
+
+    // ── setContrastGamma ─────────────────────────────────────────
+    void gamma_identity()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        // gamma=1.0 should not crash (showImage is no-op without image)
+        widget.setContrastGamma(1.0f);
+    }
+    void gamma_zero()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.setContrastGamma(0.0f);
+    }
+    void gamma_high()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.setContrastGamma(3.0f);
+    }
+
+    // ── cvtRelativeToAbsoluteRectInUi ────────────────────────────
+    void absRect_basicAtZoom1()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        QRect r = widget.cvtRelativeToAbsoluteRectInUi(QRectF(0.0, 0.0, 0.5, 0.5));
+        QCOMPARE(r.x(), 0);
+        QCOMPARE(r.y(), 0);
+        QCOMPARE(r.width(), 320);
+        QCOMPARE(r.height(), 240);
+    }
+    void absRect_zeroSizeRect()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        QRect r = widget.cvtRelativeToAbsoluteRectInUi(QRectF(0.5, 0.5, 0.0, 0.0));
+        QCOMPARE(r.width(), 0);
+        QCOMPARE(r.height(), 0);
+    }
+
+    // ── isOpened ─────────────────────────────────────────────────
+    void isOpened_falseByDefault()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        QCOMPARE(widget.isOpened(), false);
+    }
+    void isOpened_trueAfterOpenImage()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        // Create a small temp PNG
+        QTemporaryDir tmpDir;
+        QVERIFY(tmpDir.isValid());
+        QString imgPath = tmpDir.path() + "/test.png";
+        QImage img(10, 10, QImage::Format_RGB888);
+        img.fill(Qt::red);
+        QVERIFY(img.save(imgPath));
+
+        bool ret = false;
+        widget.openImage(imgPath, ret);
+        QCOMPARE(ret, true);
+        QCOMPARE(widget.isOpened(), true);
+    }
+
+    // ── zoomIn / zoomOut / resetZoom ─────────────────────────────
+    void resetZoom_resetsValues()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        // Create a small temp image so zoom functions work
+        QTemporaryDir tmpDir;
+        QVERIFY(tmpDir.isValid());
+        QString imgPath = tmpDir.path() + "/test.png";
+        QImage img(100, 100, QImage::Format_RGB888);
+        img.fill(Qt::blue);
+        QVERIFY(img.save(imgPath));
+
+        bool ret = false;
+        widget.openImage(imgPath, ret);
+        QVERIFY(ret);
+
+        // Zoom in a few times
+        widget.zoomIn(QPoint(320, 240));
+        widget.zoomIn(QPoint(320, 240));
+        widget.zoomIn(QPoint(320, 240));
+
+        // Reset
+        widget.resetZoom();
+
+        // Verify (0,0) at zoom 1.0 maps correctly
+        QPoint p = widget.cvtRelativeToAbsolutePoint(QPointF(0.5, 0.5));
+        QCOMPARE(p, QPoint(320, 240));
+    }
+    void zoomIn_increasesZoom()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        QTemporaryDir tmpDir;
+        QVERIFY(tmpDir.isValid());
+        QString imgPath = tmpDir.path() + "/test.png";
+        QImage img(100, 100, QImage::Format_RGB888);
+        img.fill(Qt::blue);
+        QVERIFY(img.save(imgPath));
+
+        bool ret = false;
+        widget.openImage(imgPath, ret);
+        QVERIFY(ret);
+
+        // At zoom 1.0, relative (1.0, 1.0) maps to (640, 480)
+        QPoint before = widget.cvtRelativeToAbsolutePoint(QPointF(1.0, 1.0));
+        QCOMPARE(before, QPoint(640, 480));
+
+        widget.zoomIn(QPoint(320, 240));
+
+        // After zoom in, relative (1.0, 1.0) should map beyond widget bounds
+        QPoint after = widget.cvtRelativeToAbsolutePoint(QPointF(1.0, 1.0));
+        QVERIFY(after.x() > 640);
+        QVERIFY(after.y() > 480);
+    }
+    void zoomOut_doesNotGoBelowOne()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+
+        QTemporaryDir tmpDir;
+        QVERIFY(tmpDir.isValid());
+        QString imgPath = tmpDir.path() + "/test.png";
+        QImage img(100, 100, QImage::Format_RGB888);
+        img.fill(Qt::blue);
+        QVERIFY(img.save(imgPath));
+
+        bool ret = false;
+        widget.openImage(imgPath, ret);
+        QVERIFY(ret);
+
+        // Zoom out when already at 1.0 — should stay at 1.0
+        widget.zoomOut(QPoint(320, 240));
+        widget.zoomOut(QPoint(320, 240));
+
+        QPoint p = widget.cvtRelativeToAbsolutePoint(QPointF(0.5, 0.5));
+        QCOMPARE(p, QPoint(320, 240));
+    }
+
+    // ── Edge cases for existing functions ─────────────────────────
+    void moveBox_zeroMovement()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.3, 0.3, 0.2, 0.2);
+        widget.m_objBoundingBoxes.append(box);
+
+        widget.moveBox(0, 0.0, 0.0);
+        QCOMPARE(widget.m_objBoundingBoxes[0].box.x(), 0.3);
+        QCOMPARE(widget.m_objBoundingBoxes[0].box.y(), 0.3);
+    }
+    void findBox_pointOnEdge()
+    {
+        label_img widget;
+        widget.resize(640, 480);
+        widget.init();
+        widget.m_objList = {"cat"};
+
+        ObjectLabelingBox box;
+        box.label = 0;
+        box.box = QRectF(0.2, 0.2, 0.4, 0.4);
+        widget.m_objBoundingBoxes.append(box);
+
+        // QRectF::contains includes left/top edges
+        QVERIFY(widget.findBoxUnderCursor(QPointF(0.2, 0.2)) != -1);
     }
 };
 
