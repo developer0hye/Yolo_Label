@@ -1,0 +1,10 @@
+QT += core gui testlib
+CONFIG += c++17 console testcase
+CONFIG -= app_bundle
+DEFINES += UNIT_TEST ONNXRUNTIME_AVAILABLE
+SOURCES += test_yolo_detector.cpp ../yolo_detector.cpp
+HEADERS += ../yolo_detector.h
+isEmpty(ONNXRUNTIME_DIR): ONNXRUNTIME_DIR = $$PWD/../onnxruntime
+INCLUDEPATH += .. $$ONNXRUNTIME_DIR/include
+LIBS += -L$$ONNXRUNTIME_DIR/lib -lonnxruntime
+unix: QMAKE_RPATHDIR += $$ONNXRUNTIME_DIR/lib

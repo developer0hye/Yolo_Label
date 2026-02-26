@@ -52,6 +52,10 @@ signals:
     // True while a job or batch is in flight.
     void busyChanged(bool busy);
 
+#ifdef UNIT_TEST
+    friend class TestCloudLabeler;
+#endif
+
 private:
     // Helpers
     void setBusy(bool busy);
