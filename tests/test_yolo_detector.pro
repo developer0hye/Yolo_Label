@@ -1,5 +1,6 @@
 QT += core gui testlib
 CONFIG += c++17 console testcase
+CONFIG -= app_bundle
 DEFINES += UNIT_TEST ONNXRUNTIME_AVAILABLE
 SOURCES += test_yolo_detector.cpp ../yolo_detector.cpp
 HEADERS += ../yolo_detector.h
