@@ -1282,6 +1282,7 @@ void MainWindow::resetCloudButtons()
     m_btnCloudAutoLabelAll->setEnabled(true);
     m_btnCloudAutoLabelAll->setText("\u2601 Auto Label All AI");
     m_btnCancelAutoLabel->setVisible(false);
+    ui->horizontalSlider_images->setEnabled(true);
 }
 
 void MainWindow::cancelAutoLabel()
@@ -1427,6 +1428,7 @@ void MainWindow::submitLandingAIJob()
     m_btnCloudAutoLabelAll->setEnabled(false);
     m_btnCancelAutoLabel->setVisible(true);
     m_btnCloudAutoLabel->setText("\u2601 Labelling\u2026");
+    ui->horizontalSlider_images->setEnabled(false);
     doLandingAIJob(m_imgList[m_imgIndex]);
 }
 
@@ -1558,6 +1560,7 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount)
         CloudAutoLabeler::backupLabelFile(labelPath);
         QFile lf(labelPath);
         int written = 0;
+        QStringList skippedLabels;
         if (lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&lf);
             for (const QJsonValue &v : detections) {
@@ -1565,7 +1568,11 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount)
                 QJsonObject obj = v.toObject();
                 QString label   = obj.value("label").toString();
                 int classId     = m_objList.indexOf(label);
-                if (classId < 0) continue;
+                if (classId < 0) {
+                    if (!label.isEmpty() && !skippedLabels.contains(label))
+                        skippedLabels << label;
+                    continue;
+                }
 
                 QJsonArray bb = obj.value("bounding_box").toArray();
                 if (bb.size() < 4) continue;
@@ -1593,6 +1600,15 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount)
                 ++written;
             }
             lf.close();
+        } else {
+            statusBar()->showMessage(
+                "Landing AI: could not write label file: " + labelPath, 5000);
+        }
+
+        if (!skippedLabels.isEmpty()) {
+            statusBar()->showMessage(
+                QString("Landing AI: detections skipped (unknown labels: %1)")
+                    .arg(skippedLabels.join(", ")), 5000);
         }
 
         if (m_landingQueue.isEmpty()) {
@@ -1637,6 +1653,7 @@ void MainWindow::landingAIAutoLabelAll()
     m_btnCancelAutoLabel->setVisible(true);
     m_btnCloudAutoLabelAll->setText(
         QString("\u2601 Auto Label All (0/%1)\u2026").arg(m_imgList.size()));
+    ui->horizontalSlider_images->setEnabled(false);
 
     landingAIProcessNextInQueue();
 }
