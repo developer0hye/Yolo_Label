@@ -38,6 +38,10 @@ public:
     void labelImages(const QStringList &imagePaths);    // batch (all images)
     void cancel();
 
+    // Utilities used by MainWindow
+    static QString mimeForImage(const QString &path);
+    static void    backupLabelFile(const QString &labelPath);
+
 signals:
     // Emitted when a label file has been written for one image.
     void labelReady(const QString &imagePath, int nDetections, int computeMs);
@@ -69,8 +73,6 @@ private:
     void processNextInQueue();
     void handleFatalError(const QString &message);
 
-    static QString  mimeForImage(const QString &path);
-    static void     backupLabelFile(const QString &labelPath);
     static QString  labelPathFor(const QString &imagePath);
     static QString  filterValidDetections(const QString &yoloTxt, int numClasses);
     static QString  remapWithClassNames(const QString &yoloTxt,

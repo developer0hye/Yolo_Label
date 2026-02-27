@@ -9,7 +9,9 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QComboBox>
 #include <QLineEdit>
+#include <QNetworkAccessManager>
 #include <QTabWidget>
 
 #include "label_img.h"
@@ -110,6 +112,24 @@ private:
     QPushButton       *m_btnCloudAutoLabel;
     QPushButton       *m_btnCloudAutoLabelAll;
     QPushButton       *m_btnCancelAutoLabel;
+
+    // ── Landing AI ────────────────────────────────────────────────────
+    enum CloudProvider { ProviderYoloLabel = 0, ProviderLandingAI = 1 };
+
+    void submitLandingAIJob();
+    void doLandingAIJob(const QString &imagePath, int retryCount, int gen);
+    void landingAIAutoLabelAll();
+    void landingAIProcessNextInQueue();
+    bool checkLandingConsent();
+
+    QNetworkAccessManager *m_landingNet;
+    QString      m_landingApiKey;
+    QList<int>   m_landingQueue;
+    bool         m_landingCancelled  = false;
+    bool         m_landingBusy       = false;
+    int          m_landingGeneration = 0;
+    QComboBox   *m_modelCombo;
+    // ──────────────────────────────────────────────────────────────────
 
     QString    m_cloudApiKey;
     QString    m_cloudPrompt;

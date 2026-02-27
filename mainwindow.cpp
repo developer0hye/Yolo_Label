@@ -10,8 +10,17 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QImageReader>
 #include <QSettings>
+#include <QTextStream>
 #include <QVBoxLayout>
+#include <QHttpMultiPart>
+#include <QHttpPart>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #ifdef ONNXRUNTIME_AVAILABLE
 #include <QProgressDialog>
 #endif
@@ -144,13 +153,16 @@ MainWindow::MainWindow(QWidget *parent) :
     // ── Cloud auto-label setup ─────────────────────────────────────────
     {
         QSettings s("YoloLabel", "CloudAI");
-        m_cloudApiKey = s.value("apiKey",  "").toString();
-        m_cloudPrompt = s.value("prompt",  "").toString();
+        m_cloudApiKey   = s.value("apiKey",      "").toString();
+        m_cloudPrompt   = s.value("prompt",      "").toString();
+        m_landingApiKey = s.value("landingApiKey","").toString();
     }
 
     m_cloudLabeler = new CloudAutoLabeler(this);
     m_cloudLabeler->setApiKey(m_cloudApiKey);
     m_cloudLabeler->setPrompt(m_cloudPrompt);
+
+    m_landingNet = new QNetworkAccessManager(this);
 
     connect(m_cloudLabeler, &CloudAutoLabeler::busyChanged, this, [this](bool busy) {
         // Disable image slider while a batch is running to prevent navigation
@@ -188,12 +200,18 @@ MainWindow::MainWindow(QWidget *parent) :
     m_btnCloudAutoLabel = new QPushButton("\u2601 Auto Label AI", this);
     m_btnCloudAutoLabel->setToolTip("Label current image using cloud AI");
     m_btnCloudAutoLabel->setStyleSheet(cloudBtnStyle);
-    connect(m_btnCloudAutoLabel, &QPushButton::clicked, this, &MainWindow::submitCloudJob);
+    connect(m_btnCloudAutoLabel, &QPushButton::clicked, this, [this](){
+        if (m_modelCombo->currentIndex() == ProviderLandingAI) submitLandingAIJob();
+        else                                                    submitCloudJob();
+    });
 
     m_btnCloudAutoLabelAll = new QPushButton("\u2601 Auto Label All AI", this);
     m_btnCloudAutoLabelAll->setToolTip("Label all images using cloud AI");
     m_btnCloudAutoLabelAll->setStyleSheet(cloudBtnStyle);
-    connect(m_btnCloudAutoLabelAll, &QPushButton::clicked, this, &MainWindow::cloudAutoLabelAll);
+    connect(m_btnCloudAutoLabelAll, &QPushButton::clicked, this, [this](){
+        if (m_modelCombo->currentIndex() == ProviderLandingAI) landingAIAutoLabelAll();
+        else                                                    cloudAutoLabelAll();
+    });
 
     m_btnCancelAutoLabel = new QPushButton("\u2715 Cancel", this);
     m_btnCancelAutoLabel->setToolTip("Cancel cloud auto-labeling");
@@ -399,6 +417,7 @@ void MainWindow::goto_img(const int fileIndex)
 void MainWindow::next_img(bool bSavePrev)
 {
     if (m_cloudLabeler && m_cloudLabeler->isBusy()) return;
+    if (m_landingBusy) return;
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex + 1);
 }
@@ -406,6 +425,7 @@ void MainWindow::next_img(bool bSavePrev)
 void MainWindow::prev_img(bool bSavePrev)
 {
     if (m_cloudLabeler && m_cloudLabeler->isBusy()) return;
+    if (m_landingBusy) return;
     if(bSavePrev && ui->label_image->isOpened()) save_label_data();
     goto_img(m_imgIndex - 1);
 }
@@ -1135,13 +1155,40 @@ void MainWindow::initSideTabWidget()
     aiLayout->setContentsMargins(10, 14, 10, 10);
     aiLayout->setSpacing(10);
 
+    auto *modelLabel = new QLabel("Model:", aiTab);
+    modelLabel->setStyleSheet(labelStyle);
+
+    m_modelCombo = new QComboBox(aiTab);
+    m_modelCombo->addItem("YoloLabel AI");
+    m_modelCombo->addItem("Landing AI");
+    m_modelCombo->setStyleSheet(
+        "QComboBox { background: rgb(0,0,17); color: rgb(0,255,255);"
+        "  border: 2px solid rgb(0,255,255); border-radius: 4px;"
+        "  padding: 4px 32px 4px 10px; font-weight: bold; font-size: 12px; }"
+        "QComboBox::drop-down { subcontrol-origin: padding; subcontrol-position: right center;"
+        "  width: 24px; border-left: 1px solid rgb(0,255,255); }"
+        "QComboBox::down-arrow { width: 0; height: 0;"
+        "  border-left: 5px solid transparent; border-right: 5px solid transparent;"
+        "  border-top: 7px solid rgb(0,255,255); }"
+        "QComboBox QAbstractItemView { background: rgb(0,0,17); color: rgb(0,255,255);"
+        "  selection-background-color: rgb(0,40,60);"
+        "  border: 1px solid rgb(0,255,255); outline: none; }");
+    {
+        QSettings s("YoloLabel", "CloudAI");
+        m_modelCombo->setCurrentIndex(s.value("modelCombo", 0).toInt());
+    }
+    connect(m_modelCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](){ syncAiSettingsTab(); });
+
+    aiLayout->addWidget(modelLabel);
+    aiLayout->addWidget(m_modelCombo);
+
     auto *keyLabel = new QLabel("API Key:", aiTab);
     keyLabel->setStyleSheet(labelStyle);
 
     m_settingsKeyEdit = new QLineEdit(aiTab);
     m_settingsKeyEdit->setEchoMode(QLineEdit::Password);
     m_settingsKeyEdit->setStyleSheet(fieldStyle);
-    m_settingsKeyEdit->setPlaceholderText("ylk_\u2026");
 
     auto *toggleKeyBtn = new QPushButton("Show", aiTab);
     toggleKeyBtn->setCheckable(true);
@@ -1212,7 +1259,9 @@ void MainWindow::initSideTabWidget()
 
 void MainWindow::syncAiSettingsTab()
 {
-    m_settingsKeyEdit->setText(m_cloudApiKey);
+    bool isLanding = (m_modelCombo->currentIndex() == ProviderLandingAI);
+    m_settingsKeyEdit->setText(isLanding ? m_landingApiKey : m_cloudApiKey);
+    m_settingsKeyEdit->setPlaceholderText(isLanding ? "" : "ylk_\u2026");
     // Show only the explicitly saved prompt (empty = auto from class file,
     // shown via placeholder text). Never auto-fill from the class list here
     // to avoid accidentally hardcoding classes as the prompt on Save.
@@ -1221,12 +1270,18 @@ void MainWindow::syncAiSettingsTab()
 
 void MainWindow::saveAiSettings()
 {
-    m_cloudApiKey = m_settingsKeyEdit->text().trimmed();
-    m_cloudPrompt = m_settingsPromptEdit->text().trimmed();
+    bool isLanding = (m_modelCombo->currentIndex() == ProviderLandingAI);
+    QString key    = m_settingsKeyEdit->text().trimmed();
+    m_cloudPrompt  = m_settingsPromptEdit->text().trimmed();
+
+    if (isLanding) m_landingApiKey = key;
+    else           m_cloudApiKey   = key;
 
     QSettings s("YoloLabel", "CloudAI");
-    s.setValue("apiKey", m_cloudApiKey);
-    s.setValue("prompt", m_cloudPrompt);
+    s.setValue("apiKey",        m_cloudApiKey);
+    s.setValue("prompt",        m_cloudPrompt);
+    s.setValue("landingApiKey", m_landingApiKey);
+    s.setValue("modelCombo",    m_modelCombo->currentIndex());
 
     m_cloudLabeler->setApiKey(m_cloudApiKey);
     m_cloudLabeler->setPrompt(m_cloudPrompt);
@@ -1236,16 +1291,21 @@ void MainWindow::saveAiSettings()
 
 void MainWindow::resetCloudButtons()
 {
+    m_landingBusy = false;
     m_btnCloudAutoLabel->setEnabled(true);
     m_btnCloudAutoLabel->setText("\u2601 Auto Label AI");
     m_btnCloudAutoLabelAll->setEnabled(true);
     m_btnCloudAutoLabelAll->setText("\u2601 Auto Label All AI");
     m_btnCancelAutoLabel->setVisible(false);
+    ui->horizontalSlider_images->setEnabled(true);
 }
 
 void MainWindow::cancelAutoLabel()
 {
+    ++m_landingGeneration;  // invalidate any in-flight Landing AI callbacks
     m_cloudLabeler->cancel();
+    m_landingCancelled = true;
+    m_landingQueue.clear();
 }
 
 // ── Cloud auto-label ────────────────────────────────────────────────────────
@@ -1337,4 +1397,345 @@ void MainWindow::cloudAutoLabelAll()
     m_cloudLabeler->setClasses(m_objList);
     m_cloudLabeler->labelImages(m_imgList);
 }
+
+// ── Landing AI ───────────────────────────────────────────────────────────────
+// API docs: https://landing-ai.com/
+
+bool MainWindow::checkLandingConsent()
+{
+    QSettings s("YoloLabel", "CloudAI");
+    if (s.value("landingConsentGiven", false).toBool()) return true;
+
+    QMessageBox dlg(QMessageBox::Information, "Landing AI — Privacy Notice",
+        "Images will be uploaded to <b>api.va.landing.ai</b> for inference.<br><br>"
+        "By continuing you confirm that you have the right to share these images "
+        "with a third-party service and accept the associated privacy implications.",
+        QMessageBox::Ok | QMessageBox::Cancel, this);
+    dlg.button(QMessageBox::Ok)->setText("I Understand — Continue");
+
+    if (dlg.exec() != QMessageBox::Ok) return false;
+
+    s.setValue("landingConsentGiven", true);
+    return true;
+}
+
+static const char *LANDING_AI_ENDPOINT =
+    "https://api.va.landing.ai/v1/tools/text-to-object-detection";
+
+void MainWindow::submitLandingAIJob()
+{
+    if (m_imgList.isEmpty()) return;
+
+    if (m_objList.isEmpty()) {
+        QMessageBox::information(this, "Landing AI",
+            "Please load a class file first — Landing AI returns label names\n"
+            "that must be mapped to your class list.");
+        return;
+    }
+
+    if (m_landingApiKey.isEmpty()) {
+        m_sideTabWidget->setCurrentIndex(1);
+        syncAiSettingsTab();
+        QMessageBox::information(this, "Landing AI",
+            "Please enter your Landing AI API key in the AI Settings tab.");
+        return;
+    }
+
+    if (!checkLandingConsent()) return;
+
+    save_label_data();
+    ui->label_image->saveState();
+
+    m_landingCancelled = false;
+    m_landingBusy = true;
+    int gen = ++m_landingGeneration;
+    m_btnCloudAutoLabel->setEnabled(false);
+    m_btnCloudAutoLabelAll->setEnabled(false);
+    m_btnCancelAutoLabel->setVisible(true);
+    m_btnCloudAutoLabel->setText("\u2601 Labelling\u2026");
+    ui->horizontalSlider_images->setEnabled(false);
+    doLandingAIJob(m_imgList[m_imgIndex], 0, gen);
+}
+
+void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int gen)
+{
+    if (gen != m_landingGeneration || m_landingCancelled) {
+        resetCloudButtons();
+        return;
+    }
+
+    static constexpr int MAX_LANDING_RETRIES = 3;
+
+    auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+    // Stream image via setBodyDevice() to avoid redundant in-memory copy.
+    // QFile is parented to multiPart and deleted automatically with the reply.
+    QFile *imgFile = new QFile(imagePath, multiPart);
+    if (!imgFile->open(QIODevice::ReadOnly)) {
+        delete multiPart;
+        QMessageBox::warning(this, "Landing AI", "Cannot read image: " + imagePath);
+        m_landingQueue.clear();
+        resetCloudButtons();
+        return;
+    }
+
+    QHttpPart imgPart;
+    imgPart.setHeader(QNetworkRequest::ContentTypeHeader,
+                      CloudAutoLabeler::mimeForImage(imagePath));
+    imgPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+        QString("form-data; name=\"image\"; filename=\"%1\"")
+            .arg(QFileInfo(imagePath).fileName()));
+    imgPart.setBodyDevice(imgFile);
+    multiPart->append(imgPart);
+
+    QString effectivePrompt = m_cloudPrompt.isEmpty()
+        ? m_objList.join(" ; ")
+        : m_cloudPrompt;
+    for (const QString &p : effectivePrompt.split(";")) {
+        const QString label = p.trimmed();
+        if (label.isEmpty()) continue;
+        QHttpPart promptsPart;
+        promptsPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                              "form-data; name=\"prompts\"");
+        promptsPart.setBody(label.toUtf8());
+        multiPart->append(promptsPart);
+    }
+
+    QHttpPart modelPart;
+    modelPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                        "form-data; name=\"model\"");
+    modelPart.setBody("agentic");
+    multiPart->append(modelPart);
+
+    QNetworkRequest req(QUrl(QString::fromLatin1(LANDING_AI_ENDPOINT)));
+    req.setRawHeader("Authorization", "Bearer " + m_landingApiKey.toUtf8());
+    req.setTransferTimeout(30000);
+
+    QNetworkReply *reply = m_landingNet->post(req, multiPart);
+    multiPart->setParent(reply);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, imagePath, retryCount, gen]() {
+        reply->deleteLater();
+
+        // Discard stale callbacks (e.g. after cancel + re-submit)
+        if (gen != m_landingGeneration) return;
+
+        if (m_landingCancelled) {
+            resetCloudButtons();
+            return;
+        }
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (retryCount < MAX_LANDING_RETRIES) {
+                statusBar()->showMessage(
+                    QString("Landing AI: network error, retrying (%1/%2)…")
+                        .arg(retryCount + 1).arg(MAX_LANDING_RETRIES), 2000);
+                doLandingAIJob(imagePath, retryCount + 1, gen);
+            } else {
+                QMessageBox::warning(this, "Landing AI",
+                                     "Request failed: " + reply->errorString());
+                m_landingQueue.clear();
+                resetCloudButtons();
+            }
+            return;
+        }
+
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        if (doc.isNull() || !doc.isObject()) {
+            QMessageBox::warning(this, "Landing AI", "Unexpected response from server.");
+            m_landingQueue.clear();
+            resetCloudButtons();
+            return;
+        }
+
+        // Response: {"data": [[{label, score, bounding_box:[x1,y1,x2,y2]}, ...], ...]}
+        QJsonValue dataVal = doc.object().value("data");
+        if (!dataVal.isArray() || dataVal.toArray().isEmpty()) {
+            // Server returned no detections — preserve existing label file
+            if (m_landingQueue.isEmpty()) {
+                goto_img(m_imgIndex);
+                statusBar()->showMessage("Landing AI: no detections.", 4000);
+                resetCloudButtons();
+            } else {
+                landingAIProcessNextInQueue();
+            }
+            return;
+        }
+
+        QJsonValue firstVal = dataVal.toArray().first();
+        if (!firstVal.isArray()) {
+            QMessageBox::warning(this, "Landing AI", "Unexpected response format from server.");
+            m_landingQueue.clear();
+            resetCloudButtons();
+            return;
+        }
+        QJsonArray detections = firstVal.toArray();
+
+        // Use QImageReader to get image dimensions without decoding pixels
+        QImageReader reader(imagePath);
+        QSize imgSize = reader.size();
+        if (!imgSize.isValid() || imgSize.isEmpty())
+            imgSize = QImage(imagePath).size();
+        double imgW = imgSize.width();
+        double imgH = imgSize.height();
+
+        // Collect valid detections before touching the file — only write if non-empty
+        // (consistent with the "no detections" path above, which preserves the file).
+        QStringList outputLines;
+        QStringList skippedLabels;
+        for (const QJsonValue &v : detections) {
+            if (!v.isObject()) continue;
+            QJsonObject obj = v.toObject();
+            QString label   = obj.value("label").toString();
+
+            int classId = m_objList.indexOf(label);
+            if (classId < 0) {
+                // Case-insensitive fallback
+                for (int i = 0; i < m_objList.size(); ++i) {
+                    if (m_objList[i].compare(label, Qt::CaseInsensitive) == 0) {
+                        classId = i; break;
+                    }
+                }
+            }
+            if (classId < 0) {
+                if (!label.isEmpty() && !skippedLabels.contains(label))
+                    skippedLabels << label;
+                continue;
+            }
+
+            QJsonArray bb = obj.value("bounding_box").toArray();
+            if (bb.size() < 4) continue;
+            if (!bb[0].isDouble() || !bb[1].isDouble() ||
+                !bb[2].isDouble() || !bb[3].isDouble()) continue;
+            double x1 = bb[0].toDouble(), y1 = bb[1].toDouble();
+            double x2 = bb[2].toDouble(), y2 = bb[3].toDouble();
+
+            double cx = ((x1 + x2) / 2.0) / imgW;
+            double cy = ((y1 + y2) / 2.0) / imgH;
+            double nw = (x2 - x1) / imgW;
+            double nh = (y2 - y1) / imgH;
+
+            if (cx < 0.0 || cx > 1.0 || cy < 0.0 || cy > 1.0 ||
+                nw <= 0.0 || nw > 1.0 || nh <= 0.0 || nh > 1.0) continue;
+
+            outputLines << QString("%1 %2 %3 %4 %5")
+                .arg(classId)
+                .arg(QString::number(cx, 'f', 6))
+                .arg(QString::number(cy, 'f', 6))
+                .arg(QString::number(nw, 'f', 6))
+                .arg(QString::number(nh, 'f', 6));
+        }
+
+        if (!outputLines.isEmpty()) {
+            QString labelPath = QFileInfo(imagePath).dir().filePath(
+                QFileInfo(imagePath).baseName() + ".txt");
+            CloudAutoLabeler::backupLabelFile(labelPath);
+            QFile lf(labelPath);
+            if (lf.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream out(&lf);
+                for (const QString &line : outputLines)
+                    out << line << "\n";
+                lf.close();
+            } else {
+                statusBar()->showMessage(
+                    "Landing AI: could not write label file: " + labelPath, 5000);
+            }
+        }
+
+        if (!skippedLabels.isEmpty()) {
+            statusBar()->showMessage(
+                QString("Landing AI: detections skipped (unknown labels: %1)")
+                    .arg(skippedLabels.join(", ")), 5000);
+        }
+
+        if (m_landingQueue.isEmpty()) {
+            goto_img(m_imgIndex);
+            statusBar()->showMessage(
+                QString("Landing AI: %1 detection(s)").arg(outputLines.size()), 4000);
+            resetCloudButtons();
+        } else {
+            landingAIProcessNextInQueue();
+        }
+    });
+}
+
+void MainWindow::landingAIAutoLabelAll()
+{
+    if (m_imgList.isEmpty()) return;
+
+    if (m_objList.isEmpty()) {
+        QMessageBox::information(this, "Landing AI",
+            "Please load a class file first — Landing AI returns label names\n"
+            "that must be mapped to your class list.");
+        return;
+    }
+
+    if (m_landingApiKey.isEmpty()) {
+        m_sideTabWidget->setCurrentIndex(1);
+        syncAiSettingsTab();
+        statusBar()->showMessage("Enter your Landing AI API key in the AI Settings tab.", 4000);
+        return;
+    }
+
+    if (!checkLandingConsent()) return;
+
+    // Estimate total upload size and warn if large
+    qint64 totalBytes = 0;
+    for (const QString &path : m_imgList)
+        totalBytes += QFileInfo(path).size();
+    QString confirmMsg = QString("Send all %1 images to Landing AI?\nExisting labels will be overwritten.")
+        .arg(m_imgList.size());
+    constexpr qint64 warnThresholdMB = 500;
+    if (totalBytes > warnThresholdMB * 1024 * 1024) {
+        confirmMsg += QString("\n\nWarning: estimated upload size is ~%1 MB. "
+                              "This may take a while and use significant bandwidth.")
+            .arg(totalBytes / (1024 * 1024));
+    }
+
+    QMessageBox msgBox(QMessageBox::Question, "Landing AI All",
+        confirmMsg, QMessageBox::Yes | QMessageBox::No, this);
+    if (msgBox.exec() != QMessageBox::Yes) return;
+
+    save_label_data();
+    ui->label_image->saveState();  // enable Ctrl+Z undo after batch labels are applied
+
+    m_landingCancelled = false;
+    m_landingBusy = true;
+    ++m_landingGeneration;
+    m_landingQueue.clear();
+    for (int i = 0; i < m_imgList.size(); ++i)
+        m_landingQueue.append(i);
+
+    m_btnCloudAutoLabel->setEnabled(false);
+    m_btnCloudAutoLabelAll->setEnabled(false);
+    m_btnCancelAutoLabel->setVisible(true);
+    m_btnCloudAutoLabelAll->setText(
+        QString("\u2601 Auto Label All (0/%1)\u2026").arg(m_imgList.size()));
+    ui->horizontalSlider_images->setEnabled(false);
+
+    landingAIProcessNextInQueue();
+}
+
+void MainWindow::landingAIProcessNextInQueue()
+{
+    if (m_landingQueue.isEmpty()) {
+        goto_img(m_imgIndex);
+        statusBar()->showMessage(
+            QString("Landing AI: all %1 images done.").arg(m_imgList.size()), 5000);
+        resetCloudButtons();
+        return;
+    }
+
+    int idx   = m_landingQueue.takeFirst();
+    // After takeFirst(), remaining = m_landingQueue.size().
+    // done = total - remaining - 1 (current image is in-flight, not yet done).
+    int done  = m_imgList.size() - m_landingQueue.size() - 1;
+    int total = m_imgList.size();
+    m_btnCloudAutoLabelAll->setText(
+        QString("\u2601 Auto Label All (%1/%2)\u2026").arg(done).arg(total));
+    m_btnCloudAutoLabel->setText("\u2601 Labelling\u2026");
+
+    doLandingAIJob(m_imgList[idx], 0, m_landingGeneration);
+}
+// ────────────────────────────────────────────────────────────────────────────
 
