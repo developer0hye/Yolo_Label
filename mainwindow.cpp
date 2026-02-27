@@ -1679,10 +1679,21 @@ void MainWindow::landingAIAutoLabelAll()
 
     if (!checkLandingConsent()) return;
 
+    // Estimate total upload size and warn if large
+    qint64 totalBytes = 0;
+    for (const QString &path : m_imgList)
+        totalBytes += QFileInfo(path).size();
+    QString confirmMsg = QString("Send all %1 images to Landing AI?\nExisting labels will be overwritten.")
+        .arg(m_imgList.size());
+    constexpr qint64 warnThresholdMB = 500;
+    if (totalBytes > warnThresholdMB * 1024 * 1024) {
+        confirmMsg += QString("\n\nWarning: estimated upload size is ~%1 MB. "
+                              "This may take a while and use significant bandwidth.")
+            .arg(totalBytes / (1024 * 1024));
+    }
+
     QMessageBox msgBox(QMessageBox::Question, "Landing AI All",
-        QString("Send all %1 images to Landing AI?\nExisting labels will be overwritten.")
-            .arg(m_imgList.size()),
-        QMessageBox::Yes | QMessageBox::No, this);
+        confirmMsg, QMessageBox::Yes | QMessageBox::No, this);
     if (msgBox.exec() != QMessageBox::Yes) return;
 
     save_label_data();
