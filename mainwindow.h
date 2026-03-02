@@ -12,6 +12,7 @@
 #include <QComboBox>
 #include <QLineEdit>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QTabWidget>
 
 #include "label_img.h"
@@ -125,7 +126,10 @@ private:
     static constexpr int MAX_LANDING_RETRIES = 3;
 
     QNetworkAccessManager *m_landingNet;
+    QNetworkReply         *m_activeLandingReply = nullptr;
     QString      m_landingApiKey;
+    QString      m_batchLandingApiKey;
+    QString      m_batchLandingPrompt;
     QList<int>   m_landingQueue;
     bool         m_landingCancelled  = false;
     bool         m_landingBusy       = false;

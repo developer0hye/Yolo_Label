@@ -1307,6 +1307,10 @@ void MainWindow::resetCloudButtons()
 void MainWindow::cancelAutoLabel()
 {
     ++m_landingGeneration;  // invalidate any in-flight Landing AI callbacks
+    if (m_activeLandingReply) {
+        m_activeLandingReply->abort();  // stop upload on the wire, not just in the callback
+        m_activeLandingReply = nullptr;
+    }
     m_cloudLabeler->cancel();
     m_landingCancelled = true;
     m_landingQueue.clear();
@@ -1451,6 +1455,8 @@ void MainWindow::submitLandingAIJob()
     save_label_data();
     ui->label_image->saveState();
 
+    m_batchLandingApiKey = m_landingApiKey;  // snapshot — cannot change mid-request
+    m_batchLandingPrompt = m_cloudPrompt;
     m_landingCancelled = false;
     m_landingBusy = true;
     int gen = ++m_landingGeneration;
@@ -1491,9 +1497,9 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
     imgPart.setBodyDevice(imgFile);
     multiPart->append(imgPart);
 
-    QString effectivePrompt = m_cloudPrompt.isEmpty()
+    QString effectivePrompt = m_batchLandingPrompt.isEmpty()
         ? m_objList.join(" ; ")
-        : m_cloudPrompt;
+        : m_batchLandingPrompt;
     for (const QString &p : effectivePrompt.split(";")) {
         const QString label = p.trimmed();
         if (label.isEmpty()) continue;
@@ -1511,13 +1517,15 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
     multiPart->append(modelPart);
 
     QNetworkRequest req(QUrl(QString::fromLatin1(LANDING_AI_ENDPOINT)));
-    req.setRawHeader("Authorization", "Bearer " + m_landingApiKey.toUtf8());
+    req.setRawHeader("Authorization", "Bearer " + m_batchLandingApiKey.toUtf8());
     req.setTransferTimeout(30000);
 
     QNetworkReply *reply = m_landingNet->post(req, multiPart);
     multiPart->setParent(reply);
+    m_activeLandingReply = reply;
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, imagePath, retryCount, gen]() {
+        m_activeLandingReply = nullptr;
         reply->deleteLater();
 
         // Discard stale callbacks (e.g. after cancel + re-submit)
@@ -1592,50 +1600,9 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
 
         // Collect valid detections before touching the file — only write if non-empty
         // (consistent with the "no detections" path above, which preserves the file).
-        QStringList outputLines;
         QStringList skippedLabels;
-        for (const QJsonValue &v : detections) {
-            if (!v.isObject()) continue;
-            QJsonObject obj = v.toObject();
-            QString label   = obj.value("label").toString();
-
-            int classId = m_objList.indexOf(label);
-            if (classId < 0) {
-                // Case-insensitive fallback
-                for (int i = 0; i < m_objList.size(); ++i) {
-                    if (m_objList[i].compare(label, Qt::CaseInsensitive) == 0) {
-                        classId = i; break;
-                    }
-                }
-            }
-            if (classId < 0) {
-                if (!label.isEmpty() && !skippedLabels.contains(label))
-                    skippedLabels << label;
-                continue;
-            }
-
-            QJsonArray bb = obj.value("bounding_box").toArray();
-            if (bb.size() < 4) continue;
-            if (!bb[0].isDouble() || !bb[1].isDouble() ||
-                !bb[2].isDouble() || !bb[3].isDouble()) continue;
-            double x1 = bb[0].toDouble(), y1 = bb[1].toDouble();
-            double x2 = bb[2].toDouble(), y2 = bb[3].toDouble();
-
-            double cx = ((x1 + x2) / 2.0) / imgW;
-            double cy = ((y1 + y2) / 2.0) / imgH;
-            double nw = (x2 - x1) / imgW;
-            double nh = (y2 - y1) / imgH;
-
-            if (cx < 0.0 || cx > 1.0 || cy < 0.0 || cy > 1.0 ||
-                nw <= 0.0 || nw > 1.0 || nh <= 0.0 || nh > 1.0) continue;
-
-            outputLines << QString("%1 %2 %3 %4 %5")
-                .arg(classId)
-                .arg(QString::number(cx, 'f', 6))
-                .arg(QString::number(cy, 'f', 6))
-                .arg(QString::number(nw, 'f', 6))
-                .arg(QString::number(nh, 'f', 6));
-        }
+        QStringList outputLines = CloudAutoLabeler::parseLandingAIDetections(
+            detections, m_objList, imgW, imgH, &skippedLabels);
 
         if (!outputLines.isEmpty()) {
             QString labelPath = QFileInfo(imagePath).dir().filePath(
@@ -1670,6 +1637,7 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
         }
     });
 }
+
 
 void MainWindow::landingAIAutoLabelAll()
 {
@@ -1711,6 +1679,8 @@ void MainWindow::landingAIAutoLabelAll()
     save_label_data();
     ui->label_image->saveState();  // enable Ctrl+Z undo after batch labels are applied
 
+    m_batchLandingApiKey = m_landingApiKey;  // snapshot — cannot change mid-batch
+    m_batchLandingPrompt = m_cloudPrompt;
     m_landingCancelled = false;
     m_landingBusy = true;
     ++m_landingGeneration;
