@@ -1306,6 +1306,7 @@ void MainWindow::cancelAutoLabel()
     m_cloudLabeler->cancel();
     m_landingCancelled = true;
     m_landingQueue.clear();
+    resetCloudButtons();  // always reset — busyChanged may not fire when CloudAutoLabeler is already idle
 }
 
 // ── Cloud auto-label ────────────────────────────────────────────────────────
@@ -1464,8 +1465,6 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
         return;
     }
 
-    static constexpr int MAX_LANDING_RETRIES = 3;
-
     auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
     // Stream image via setBodyDevice() to avoid redundant in-memory copy.
@@ -1578,6 +1577,14 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
             imgSize = QImage(imagePath).size();
         double imgW = imgSize.width();
         double imgH = imgSize.height();
+
+        if (imgW <= 0 || imgH <= 0) {
+            statusBar()->showMessage(
+                "Landing AI: could not read image dimensions: " + imagePath, 5000);
+            if (m_landingQueue.isEmpty()) resetCloudButtons();
+            else                          landingAIProcessNextInQueue();
+            return;
+        }
 
         // Collect valid detections before touching the file — only write if non-empty
         // (consistent with the "no detections" path above, which preserves the file).

@@ -122,6 +122,8 @@ private:
     void landingAIProcessNextInQueue();
     bool checkLandingConsent();
 
+    static constexpr int MAX_LANDING_RETRIES = 3;
+
     QNetworkAccessManager *m_landingNet;
     QString      m_landingApiKey;
     QList<int>   m_landingQueue;
