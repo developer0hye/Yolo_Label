@@ -283,6 +283,8 @@ void MainWindow::set_args(int argc, char *argv[])
 
 void MainWindow::on_pushButton_open_files_clicked()
 {
+    if ((m_cloudLabeler && m_cloudLabeler->isBusy()) || m_landingBusy) return;
+
     bool bRetImgDir     = false;
     open_img_dir(bRetImgDir);
 
@@ -471,6 +473,8 @@ void MainWindow::clear_label_data()
 
 void MainWindow::remove_img()
 {
+    if ((m_cloudLabeler && m_cloudLabeler->isBusy()) || m_landingBusy) return;
+
     if(m_imgList.size() > 0) {
         //remove a image
         QFile::remove(m_imgList.at(m_imgIndex));
@@ -1649,18 +1653,19 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
             }
         }
 
-        if (!skippedLabels.isEmpty()) {
-            statusBar()->showMessage(
-                QString("Landing AI: detections skipped (unknown labels: %1)")
-                    .arg(skippedLabels.join(", ")), 5000);
-        }
-
         if (m_landingQueue.isEmpty()) {
             goto_img(m_imgIndex);
-            statusBar()->showMessage(
-                QString("Landing AI: %1 detection(s)").arg(outputLines.size()), 4000);
+            QString msg = QString("Landing AI: %1 detection(s)").arg(outputLines.size());
+            if (!skippedLabels.isEmpty())
+                msg += QString(" — skipped unknown labels: %1").arg(skippedLabels.join(", "));
+            statusBar()->showMessage(msg, 5000);
             resetCloudButtons();
         } else {
+            if (!skippedLabels.isEmpty()) {
+                statusBar()->showMessage(
+                    QString("Landing AI: detections skipped (unknown labels: %1)")
+                        .arg(skippedLabels.join(", ")), 5000);
+            }
             landingAIProcessNextInQueue();
         }
     });
