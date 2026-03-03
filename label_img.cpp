@@ -1,5 +1,7 @@
 #include "label_img.h"
+#include "qdir.h"
 #include <QPainter>
+#include <QTimer>
 #include <QImageReader>
 #include <math.h>       /* fabs */
 #include <algorithm>
@@ -26,7 +28,12 @@ label_img::label_img(QWidget *parent)
 
 void label_img::mouseMoveEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    const QPoint pos = ev->position().toPoint();
+#else
+    const QPoint pos = ev->pos();
+#endif
+    setMousePosition(pos.x(), pos.y());
 
     showImage();
     emit Mouse_Moved();
@@ -34,7 +41,12 @@ void label_img::mouseMoveEvent(QMouseEvent *ev)
 
 void label_img::mousePressEvent(QMouseEvent *ev)
 {
-    setMousePosition(ev->x(), ev->y());
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    const QPoint pos = ev->position().toPoint();
+#else
+    const QPoint pos = ev->pos();
+#endif
+    setMousePosition(pos.x(), pos.y());
 
     if(ev->button() == Qt::RightButton)
     {
@@ -67,13 +79,98 @@ void label_img::mousePressEvent(QMouseEvent *ev)
             showImage();
         }
     }
+    else if(ev->button() == Qt::MiddleButton)
+    {
+        qDebug() << "Get wheel";
+        // double  nearestBoxDistance   = 99999999999999.;
+
+        // for(int i = 0; i < m_objBoundingBoxes.size(); i++)
+        // {
+        //     QRectF objBox = m_objBoundingBoxes.at(i).box;
+
+
+        //     if(objBox.contains(m_relative_mouse_pos_in_ui))
+        //     {
+        //         m_objBoundingBoxes.at(i).label = (m_objBoundingBoxes.at(i).label + 1) % m_objList.size();
+
+        //         // Визуальный эффект - временное увеличение размера
+        //         QRectF original = box.box;
+        //         box.box.adjust(-5, -5, 5, 5);
+        //         showImage();
+        //         box.box = original;
+
+        //         QTimer::singleShot(100, this, [this]() {
+        //             showImage();
+        //         });
+        //     }
+        // }
+
+        for (auto& box : m_objBoundingBoxes) {
+            if (box.box.contains(m_relative_mouse_pos_in_ui)) {
+                box.label = (box.label + 1) % m_objList.size();
+
+                // Визуальный эффект - временное увеличение размера
+                QRectF original = box.box;
+                box.box.adjust(-5, -5, 5, 5);
+                showImage();
+                box.box = original;
+
+                QTimer::singleShot(100, this, [this]() {
+                    showImage();
+                });
+
+                // emit labelChanged();
+                // ev->accept();
+            }
+        }
+    }
 
     emit Mouse_Pressed();
 }
 
 void label_img::mouseReleaseEvent(QMouseEvent *ev)
 {
+    Q_UNUSED(ev);
     emit Mouse_Release();
+}
+
+bool label_img::zoomAtPosition(const QPoint& posInUi, int wheelDeltaY)
+{
+    if(m_inputImg.isNull()) return false;
+    if(this->width() <= 0 || this->height() <= 0) return false;
+    if(wheelDeltaY == 0) return false;
+
+    const QPoint clampedPos(
+        std::clamp(posInUi.x(), 0, this->width() - 1),
+        std::clamp(posInUi.y(), 0, this->height() - 1));
+    const QPointF anchorInImage = cvtAbsoluteToRelativePoint(clampedPos);
+
+    const double zoomStep = 1.1;
+    const bool isZoomIn = wheelDeltaY > 0;
+
+    if(isZoomIn)
+        m_zoomFactor = std::min(m_zoomFactor * zoomStep, m_maxZoomFactor);
+    else
+        m_zoomFactor = std::max(m_zoomFactor / zoomStep, m_minZoomFactor);
+
+    if(m_zoomFactor <= 1.0)
+    {
+        m_zoomFactor = 1.0;
+        m_viewTopLeftInImage = QPointF(0.0, 0.0);
+    }
+    else
+    {
+        const QPointF visibleSize = getVisibleRegionSize();
+        const QPointF anchorInUi(static_cast<double>(clampedPos.x()) / this->width(),
+                                 static_cast<double>(clampedPos.y()) / this->height());
+
+        m_viewTopLeftInImage.setX(anchorInImage.x() - anchorInUi.x() * visibleSize.x());
+        m_viewTopLeftInImage.setY(anchorInImage.y() - anchorInUi.y() * visibleSize.y());
+        clampViewTopLeft();
+    }
+
+    showImage();
+    return true;
 }
 
 void label_img::init()
@@ -81,6 +178,11 @@ void label_img::init()
     m_objBoundingBoxes.clear();
     m_bLabelingStarted              = false;
     m_focusedObjectLabel            = 0;
+    m_zoomFactor                    = 1.0;
+    m_minZoomFactor                 = 1.0;
+    m_maxZoomFactor                 = 20.0;
+    m_drawLineThickness             = 3;
+    m_viewTopLeftInImage            = QPointF(0.0, 0.0);
 
     QPoint mousePosInUi = this->mapFromGlobal(QCursor::pos());
     bool mouse_is_in_image = QRect(0, 0, this->width(), this->height()).contains(mousePosInUi);
@@ -127,6 +229,8 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
         m_inputImg          = m_inputImg.convertToFormat(QImage::Format_RGB888);
         m_resized_inputImg  = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
                 .convertToFormat(QImage::Format_RGB888);
+        m_zoomFactor        = 1.0;
+        m_viewTopLeftInImage = QPointF(0.0, 0.0);
 
         m_bLabelingStarted  = false;
 
@@ -147,11 +251,26 @@ void label_img::openImage(const QString &qstrImg, bool &ret)
 void label_img::showImage()
 {
     if(m_inputImg.isNull()) return;
-    if(m_resized_inputImg.width() != this->width() or m_resized_inputImg.height() != this->height())
-    {
-        m_resized_inputImg = m_inputImg.scaled(this->width(), this->height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)
-                .convertToFormat(QImage::Format_RGB888);
-    }
+    clampViewTopLeft();
+
+    const QPointF visibleRegionSize = getVisibleRegionSize();
+    int cropX = static_cast<int>(m_viewTopLeftInImage.x() * m_inputImg.width() + 0.5);
+    int cropY = static_cast<int>(m_viewTopLeftInImage.y() * m_inputImg.height() + 0.5);
+    int cropW = static_cast<int>(visibleRegionSize.x() * m_inputImg.width() + 0.5);
+    int cropH = static_cast<int>(visibleRegionSize.y() * m_inputImg.height() + 0.5);
+
+    cropW = std::max(cropW, 1);
+    cropH = std::max(cropH, 1);
+
+    if(cropX + cropW > m_inputImg.width()) cropX = m_inputImg.width() - cropW;
+    if(cropY + cropH > m_inputImg.height()) cropY = m_inputImg.height() - cropH;
+    cropX = std::clamp(cropX, 0, std::max(m_inputImg.width() - 1, 0));
+    cropY = std::clamp(cropY, 0, std::max(m_inputImg.height() - 1, 0));
+
+    const QRect cropRect(cropX, cropY, cropW, cropH);
+    m_resized_inputImg = m_inputImg.copy(cropRect)
+                             .scaled(this->width(), this->height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+                             .convertToFormat(QImage::Format_RGB888);
 
     QImage img = m_resized_inputImg;
 
@@ -164,7 +283,7 @@ void label_img::showImage()
     font.setBold(true);
     painter.setFont(font);
 
-    int penThick = 3;
+    int penThick = m_drawLineThickness;
 
     QColor crossLineColor(255, 187, 0);
 
@@ -179,10 +298,90 @@ void label_img::showImage()
 
 void label_img::loadLabelData(const QString& labelFilePath)
 {
+    //qDebug() << "Trying to load label file:" << labelFilePath;
+    m_objBoundingBoxes.clear();
+
+    QFile file(labelFilePath);
+    if (!file.exists()) {
+        //qDebug() << "File does not exist:" << labelFilePath;
+        return;
+    }
+
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        //qDebug() << "File opened successfully";
+        QTextStream in(&file);
+
+        while (!in.atEnd()) {
+            QString line = in.readLine().trimmed();
+            if (line.isEmpty()) continue;
+
+            QStringList values = line.split(' ', Qt::SkipEmptyParts);
+            if (values.size() != 5) {
+                //qDebug() << "Invalid line format:" << line;
+                continue;
+            }
+
+            bool ok;
+            ObjectLabelingBox objBox;
+
+            // Парсим класс
+            objBox.label = values[0].toInt(&ok);
+            if (!ok) {
+                //qDebug() << "Invalid class id:" << values[0];
+                continue;
+            }
+
+            // Парсим координаты
+            double midX = values[1].toDouble(&ok);
+            if (!ok || midX < 0 || midX > 1) {
+                //qDebug() << "Invalid x_center:" << values[1];
+                continue;
+            }
+
+            double midY = values[2].toDouble(&ok);
+            if (!ok || midY < 0 || midY > 1) {
+                //qDebug() << "Invalid y_center:" << values[2];
+                continue;
+            }
+
+            double width = values[3].toDouble(&ok);
+            if (!ok || width <= 0 || width > 1) {
+                //qDebug() << "Invalid width:" << values[3];
+                continue;
+            }
+
+            double height = values[4].toDouble(&ok);
+            if (!ok || height <= 0 || height > 1) {
+                //qDebug() << "Invalid height:" << values[4];
+                continue;
+            }
+
+            // Рассчитываем координаты прямоугольника
+            double leftX = midX - width/2.0;
+            double topY = midY - height/2.0;
+
+            objBox.box.setRect(leftX, topY, width, height);
+            m_objBoundingBoxes.push_back(objBox);
+
+            //qDebug() << "Loaded box:" << objBox.label << leftX << topY << width << height;
+        }
+        file.close();
+    } else {
+        qDebug() << "Failed to open file:" << labelFilePath
+                 << "Error:" << file.errorString();
+    }
+
+    //showImage(); // Обновляем отображение
+}
+
+void loadLabelData(const QString& labelFilePath)
+{
+    //qDebug() << "Inside loadLabelData";
     ifstream inputFile(qPrintable(labelFilePath));
 
     if(inputFile.is_open())
     {
+        //qDebug() << "loadLabelData " << labelFilePath << " is open";
         double          inputFileValue;
         QVector<double> inputFileValues;
 
@@ -192,6 +391,10 @@ void label_img::loadLabelData(const QString& labelFilePath)
         for(int i = 0; i < inputFileValues.size(); i += 5)
         {
             try {
+                // 0 0.304567 0.628547 0.094422 0.044712
+                // 0 0.815766 0.636715 0.091787 0.043852
+
+                //qDebug() << "Data loadLabelData" << inputFileValues.data();
                 ObjectLabelingBox objBox;
 
                 objBox.label = static_cast<int>(inputFileValues.at(i));
@@ -209,10 +412,10 @@ void label_img::loadLabelData(const QString& labelFilePath)
                 objBox.box.setWidth(width);
                 objBox.box.setHeight(height);
 
-                m_objBoundingBoxes.push_back(objBox);
+                // m_objBoundingBoxes.push_back(objBox);
             }
             catch (const std::out_of_range& e) {
-//                std::cout << "loadLabelData: Out of Range error.";
+                std::cout << "loadLabelData: Out of Range error.";
             }
         }
     }
@@ -384,10 +587,17 @@ QRectF label_img::getRelativeRectFromTwoPoints(QPointF p1, QPointF p2)
 
 QRect label_img::cvtRelativeToAbsoluteRectInUi(QRectF rectF)
 {
-    return QRect(static_cast<int>(rectF.x() * this->width() + 0.5),
-                 static_cast<int>(rectF.y() * this->height()+ 0.5),
-                 static_cast<int>(rectF.width() * this->width()+ 0.5),
-                 static_cast<int>(rectF.height()* this->height()+ 0.5));
+    const QPointF visibleSize = getVisibleRegionSize();
+
+    const double x = (rectF.x() - m_viewTopLeftInImage.x()) / visibleSize.x();
+    const double y = (rectF.y() - m_viewTopLeftInImage.y()) / visibleSize.y();
+    const double w = rectF.width() / visibleSize.x();
+    const double h = rectF.height() / visibleSize.y();
+
+    return QRect(static_cast<int>(x * this->width() + 0.5),
+                 static_cast<int>(y * this->height()+ 0.5),
+                 static_cast<int>(w * this->width()+ 0.5),
+                 static_cast<int>(h * this->height()+ 0.5));
 }
 
 QRect label_img::cvtRelativeToAbsoluteRectInImage(QRectF rectF)
@@ -400,12 +610,28 @@ QRect label_img::cvtRelativeToAbsoluteRectInImage(QRectF rectF)
 
 QPoint label_img::cvtRelativeToAbsolutePoint(QPointF p)
 {
-    return QPoint(static_cast<int>(p.x() * this->width() + 0.5), static_cast<int>(p.y() * this->height() + 0.5));
+    const QPointF visibleSize = getVisibleRegionSize();
+
+    const double x = (p.x() - m_viewTopLeftInImage.x()) / visibleSize.x();
+    const double y = (p.y() - m_viewTopLeftInImage.y()) / visibleSize.y();
+
+    return QPoint(static_cast<int>(x * this->width() + 0.5), static_cast<int>(y * this->height() + 0.5));
 }
 
 QPointF label_img::cvtAbsoluteToRelativePoint(QPoint p)
 {
-    return QPointF(static_cast<double>(p.x()) / this->width(), static_cast<double>(p.y()) / this->height());
+    if(this->width() <= 0 || this->height() <= 0)
+        return QPointF(0.0, 0.0);
+
+    const QPointF visibleSize = getVisibleRegionSize();
+
+    const double uiX = std::clamp(static_cast<double>(p.x()) / this->width(), 0.0, 1.0);
+    const double uiY = std::clamp(static_cast<double>(p.y()) / this->height(), 0.0, 1.0);
+
+    const double imgX = m_viewTopLeftInImage.x() + uiX * visibleSize.x();
+    const double imgY = m_viewTopLeftInImage.y() + uiY * visibleSize.y();
+
+    return QPointF(imgX, imgY);
 }
 
 void label_img::setContrastGamma(float gamma)
@@ -417,4 +643,85 @@ void label_img::setContrastGamma(float gamma)
         m_gammatransform_lut[i] = (unsigned char)s;
     }
     showImage();
+}
+
+void label_img::zoomIn()
+{
+    setZoomFactor(m_zoomFactor * 1.25);
+}
+
+void label_img::zoomOut()
+{
+    setZoomFactor(m_zoomFactor / 1.25);
+}
+
+void label_img::setZoomFactor(double zoomFactor)
+{
+    if(m_inputImg.isNull()) return;
+
+    const double clampedZoom = std::clamp(zoomFactor, m_minZoomFactor, m_maxZoomFactor);
+    if(std::abs(clampedZoom - m_zoomFactor) < 1e-9) return;
+
+    const QPointF oldVisibleSize = getVisibleRegionSize();
+    const QPointF viewCenter(m_viewTopLeftInImage.x() + oldVisibleSize.x() * 0.5,
+                             m_viewTopLeftInImage.y() + oldVisibleSize.y() * 0.5);
+
+    m_zoomFactor = clampedZoom;
+
+    const QPointF newVisibleSize = getVisibleRegionSize();
+    m_viewTopLeftInImage.setX(viewCenter.x() - newVisibleSize.x() * 0.5);
+    m_viewTopLeftInImage.setY(viewCenter.y() - newVisibleSize.y() * 0.5);
+    clampViewTopLeft();
+    showImage();
+}
+
+double label_img::zoomFactor() const
+{
+    return m_zoomFactor;
+}
+
+void label_img::panByUiPixels(int dx, int dy)
+{
+    if(m_inputImg.isNull()) return;
+    if(m_zoomFactor <= 1.0) return;
+    if(this->width() <= 0 || this->height() <= 0) return;
+
+    const QPointF visibleSize = getVisibleRegionSize();
+    const double dxInImage = visibleSize.x() * static_cast<double>(dx) / this->width();
+    const double dyInImage = visibleSize.y() * static_cast<double>(dy) / this->height();
+
+    m_viewTopLeftInImage.setX(m_viewTopLeftInImage.x() + dxInImage);
+    m_viewTopLeftInImage.setY(m_viewTopLeftInImage.y() + dyInImage);
+    clampViewTopLeft();
+    showImage();
+}
+
+void label_img::setLineThickness(int thickness)
+{
+    m_drawLineThickness = std::max(1, thickness);
+    showImage();
+}
+
+int label_img::lineThickness() const
+{
+    return m_drawLineThickness;
+}
+
+void label_img::clampViewTopLeft()
+{
+    const QPointF visibleSize = getVisibleRegionSize();
+
+    const double maxX = std::max(0.0, 1.0 - visibleSize.x());
+    const double maxY = std::max(0.0, 1.0 - visibleSize.y());
+
+    m_viewTopLeftInImage.setX(std::clamp(m_viewTopLeftInImage.x(), 0.0, maxX));
+    m_viewTopLeftInImage.setY(std::clamp(m_viewTopLeftInImage.y(), 0.0, maxY));
+}
+
+QPointF label_img::getVisibleRegionSize() const
+{
+    const double safeZoomFactor = std::max(m_zoomFactor, 1.0);
+    const double width = 1.0 / safeZoomFactor;
+    const double height = 1.0 / safeZoomFactor;
+    return QPointF(width, height);
 }

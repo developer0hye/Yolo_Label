@@ -45,6 +45,11 @@ private slots:
     void on_horizontalSlider_contrast_sliderMoved(int value);
 
     void on_checkBox_visualize_class_name_clicked(bool checked);
+    void on_pushButton_zoom_in_clicked();
+    void on_pushButton_zoom_out_clicked();
+    void on_spinBox_line_thickness_valueChanged(int value);
+
+    void on_textEdit_marker_textChanged(); // Добавляем в секцию private slots
 
 private:
     void            init();
@@ -79,6 +84,10 @@ private:
     int             m_objIndex;
     int             m_lastDeletedImgIndex;
     int             m_lastLabeledImgIndex;
+
+    void load_label_file_to_textedit();    // Добавляем в секцию private
+    int calculate_max_text_width() const;
+    void update_zoom_label();
 
 protected:
     void    wheelEvent(QWheelEvent *);

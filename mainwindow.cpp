@@ -7,6 +7,8 @@
 #include <QDebug>
 #include <QShortcut>
 #include <QCollator>
+#include <QPushButton>
+#include <QSpinBox>
 #include <iomanip>
 #include <cmath>
 
@@ -22,6 +24,20 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->textEdit_marker->setStyleSheet(
+        "background-color : rgb(0, 0, 17);"
+        "color : rgb(0, 255, 255);"
+        "border-style: outset;"
+        "border-width: 2px;"
+        "border-color: rgb(0, 255, 255);"
+        );
+    ui->textEdit_marker->setFont(QFont("Courier New", 10)); // Моноширинный шрифт для удобства
+    ui->textEdit_marker->setPlaceholderText("No labels found. Add labels in format:\n<class_id> <x_center> <y_center> <width> <height>");
+
+    // Подключаем сигнал изменения текста
+    connect(ui->textEdit_marker, &QTextEdit::textChanged,
+            this, &MainWindow::on_textEdit_marker_textChanged);
+
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), SIGNAL(activated()), this, SLOT(save_label_data()));
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), SIGNAL(activated()), this, SLOT(clear_label_data()));
 
@@ -32,6 +48,18 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(next_img()));
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), SIGNAL(activated()), this, SLOT(remove_img()));
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), SIGNAL(activated()), this, SLOT(remove_img()));
+    connect(new QShortcut(QKeySequence(Qt::Key_Plus), this), SIGNAL(activated()), this, SLOT(on_pushButton_zoom_in_clicked()));
+    connect(new QShortcut(QKeySequence(Qt::Key_Equal), this), SIGNAL(activated()), this, SLOT(on_pushButton_zoom_in_clicked()));
+    connect(new QShortcut(QKeySequence(Qt::Key_Minus), this), SIGNAL(activated()), this, SLOT(on_pushButton_zoom_out_clicked()));
+    connect(new QShortcut(QKeySequence(Qt::Key_Underscore), this), SIGNAL(activated()), this, SLOT(on_pushButton_zoom_out_clicked()));
+
+    connect(ui->pushButton_zoom_in, &QPushButton::clicked, this, &MainWindow::on_pushButton_zoom_in_clicked);
+    connect(ui->pushButton_zoom_out, &QPushButton::clicked, this, &MainWindow::on_pushButton_zoom_out_clicked);
+    connect(ui->spinBox_line_thickness, qOverload<int>(&QSpinBox::valueChanged),
+            this, &MainWindow::on_spinBox_line_thickness_valueChanged);
+
+    ui->label_image->setLineThickness(ui->spinBox_line_thickness->value());
+    update_zoom_label();
 
     init_table_widget();
 }
@@ -108,6 +136,7 @@ void MainWindow::set_focused_file(const int fileIndex)
 
 void MainWindow::goto_img(const int fileIndex)
 {
+    qDebug() << "goto_img with index" << fileIndex;
     bool bIndexIsOutOfRange = (fileIndex < 0 || fileIndex > m_imgList.size() - 1);
     if (bIndexIsOutOfRange) return;
 
@@ -118,6 +147,9 @@ void MainWindow::goto_img(const int fileIndex)
 
     ui->label_image->loadLabelData(get_labeling_data(m_imgList.at(m_imgIndex)));
     ui->label_image->showImage();
+    update_zoom_label();
+
+    load_label_file_to_textedit();
 
     set_label_progress(m_imgIndex);
     set_focused_file(m_imgIndex);
@@ -142,36 +174,71 @@ void MainWindow::prev_img(bool bSavePrev)
 
 void MainWindow::save_label_data()
 {
-    if(m_imgList.size() == 0) return;
+    if (m_imgList.size() == 0 || m_imgIndex < 0 || m_imgIndex >= m_imgList.size())
+        return;
 
-    QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
-    ofstream fileOutputLabelData(qPrintable(qstrOutputLabelData));
+    QString labelFilePath = get_labeling_data(m_imgList.at(m_imgIndex));
+    QFile file(labelFilePath);
 
-    if(fileOutputLabelData.is_open())
-    {
-        for(int i = 0; i < ui->label_image->m_objBoundingBoxes.size(); i++)
-        {
-            ObjectLabelingBox objBox = ui->label_image->m_objBoundingBoxes[i];
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out.setRealNumberPrecision(6);
+        out.setRealNumberNotation(QTextStream::FixedNotation);
 
-            double midX     = objBox.box.x() + objBox.box.width() / 2.;
-            double midY     = objBox.box.y() + objBox.box.height() / 2.;
-            double width    = objBox.box.width();
-            double height   = objBox.box.height();
+        for (const auto& objBox : ui->label_image->m_objBoundingBoxes) {
+            double midX = objBox.box.x() + objBox.box.width() / 2.0;
+            double midY = objBox.box.y() + objBox.box.height() / 2.0;
+            double width = objBox.box.width();
+            double height = objBox.box.height();
 
-            fileOutputLabelData << objBox.label;
-            fileOutputLabelData << " ";
-            fileOutputLabelData << std::fixed << std::setprecision(6) << midX;
-            fileOutputLabelData << " ";
-            fileOutputLabelData << std::fixed << std::setprecision(6) << midY;
-            fileOutputLabelData << " ";
-            fileOutputLabelData << std::fixed << std::setprecision(6) << width;
-            fileOutputLabelData << " ";
-            fileOutputLabelData << std::fixed << std::setprecision(6) << height << std::endl;
+            out << objBox.label << " "
+                << midX << " "
+                << midY << " "
+                << width << " "
+                << height << "\n";
         }
+
         m_lastLabeledImgIndex = m_imgIndex;
-        fileOutputLabelData.close();
+        file.close();
+        //qDebug() << "Labels saved to:" << labelFilePath;
+    } else {
+        qDebug() << "Failed to open file for writing:" << labelFilePath;
+        qDebug() << "Error:" << file.errorString();
     }
 }
+
+// void MainWindow::save_label_data()
+// {
+//     if(m_imgList.size() == 0) return;
+
+//     QString qstrOutputLabelData = get_labeling_data(m_imgList.at(m_imgIndex));
+//     ofstream fileOutputLabelData(qPrintable(qstrOutputLabelData));
+
+//     if(fileOutputLabelData.is_open())
+//     {
+//         for(int i = 0; i < ui->label_image->m_objBoundingBoxes.size(); i++)
+//         {
+//             ObjectLabelingBox objBox = ui->label_image->m_objBoundingBoxes[i];
+
+//             double midX     = objBox.box.x() + objBox.box.width() / 2.;
+//             double midY     = objBox.box.y() + objBox.box.height() / 2.;
+//             double width    = objBox.box.width();
+//             double height   = objBox.box.height();
+
+//             fileOutputLabelData << objBox.label;
+//             fileOutputLabelData << " ";
+//             fileOutputLabelData << std::fixed << std::setprecision(6) << midX;
+//             fileOutputLabelData << " ";
+//             fileOutputLabelData << std::fixed << std::setprecision(6) << midY;
+//             fileOutputLabelData << " ";
+//             fileOutputLabelData << std::fixed << std::setprecision(6) << width;
+//             fileOutputLabelData << " ";
+//             fileOutputLabelData << std::fixed << std::setprecision(6) << height << std::endl;
+//         }
+//         m_lastLabeledImgIndex = m_imgIndex;
+//         fileOutputLabelData.close();
+//     }
+// }
 
 void MainWindow::clear_label_data()
 {
@@ -258,7 +325,8 @@ QString MainWindow::get_labeling_data(QString qstrImgFile)const
 {
     string strImgFile = qstrImgFile.toStdString();
     string strLabelData = strImgFile.substr(0, strImgFile.find_last_of('.')) + ".txt";
-
+    qDebug() << "get_labeling_data image path: " << qstrImgFile;
+    qDebug() << "get_labeling_data txt path: " << QString().fromStdString(strLabelData);
     return QString().fromStdString(strLabelData);
 }
 
@@ -383,6 +451,15 @@ void MainWindow::keyPressEvent(QKeyEvent * event)
 {
     int     nKey = event->key();
 
+    if(ui->label_image->zoomFactor() > 1.0)
+    {
+        const int panStepUiPx = 40;
+        if(nKey == Qt::Key_Left)  { ui->label_image->panByUiPixels(-panStepUiPx, 0); return; }
+        if(nKey == Qt::Key_Right) { ui->label_image->panByUiPixels( panStepUiPx, 0); return; }
+        if(nKey == Qt::Key_Up)    { ui->label_image->panByUiPixels(0, -panStepUiPx); return; }
+        if(nKey == Qt::Key_Down)  { ui->label_image->panByUiPixels(0,  panStepUiPx); return; }
+    }
+
     bool    graveAccentKeyIsPressed    = (nKey == Qt::Key_QuoteLeft);
     bool    numKeyIsPressed            = (nKey >= Qt::Key_0 && nKey <= Qt::Key_9 );
 
@@ -430,6 +507,7 @@ void MainWindow::on_tableWidget_label_cellDoubleClicked(int row, int column)
 
 void MainWindow::on_tableWidget_label_cellClicked(int row, int column)
 {
+    Q_UNUSED(column);
     set_label(row);
 }
 
@@ -480,4 +558,94 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
     ui->label_image->showImage();
+}
+
+void MainWindow::on_pushButton_zoom_in_clicked()
+{
+    ui->label_image->zoomIn();
+    update_zoom_label();
+}
+
+void MainWindow::on_pushButton_zoom_out_clicked()
+{
+    ui->label_image->zoomOut();
+    update_zoom_label();
+}
+
+void MainWindow::on_spinBox_line_thickness_valueChanged(int value)
+{
+    ui->label_image->setLineThickness(value);
+}
+
+void MainWindow::load_label_file_to_textedit()
+{
+    if(m_imgList.size() == 0 || m_imgIndex < 0) return;
+
+    QString labelFile = get_labeling_data(m_imgList.at(m_imgIndex));
+    QFile file(labelFile);
+
+    if(file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream in(&file);
+        ui->textEdit_marker->setPlainText(in.readAll());
+        file.close();
+    }
+    else
+    {
+        ui->textEdit_marker->clear();
+        ui->textEdit_marker->setPlaceholderText("No label file found. Add labels in format:\n<class_id> <x_center> <y_center> <width> <height>");
+    }
+
+    // Разрешаем редактирование
+    ui->textEdit_marker->setReadOnly(false);
+
+    // Устанавливаем минимальную ширину
+    int min_width = calculate_max_text_width();
+    ui->textEdit_marker->setMinimumWidth(min_width);
+}
+
+void MainWindow::on_textEdit_marker_textChanged()
+{
+    if(m_imgList.size() == 0 || m_imgIndex < 0) return;
+
+    // Сохраняем изменения в файл
+    QString labelFile = get_labeling_data(m_imgList.at(m_imgIndex));
+    QFile file(labelFile);
+
+    if(file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream out(&file);
+        out << ui->textEdit_marker->toPlainText();
+        file.close();
+
+        // Обновляем отображение
+        ui->label_image->loadLabelData(labelFile);
+        ui->label_image->showImage();
+    }
+}
+
+int MainWindow::calculate_max_text_width() const
+{
+    QFontMetrics fm(ui->textEdit_marker->font());
+    int max_width = 0;
+
+    QString text = ui->textEdit_marker->toPlainText();
+    QStringList lines = text.split('\n');
+
+    for (const QString& line : lines) {
+        int line_width = fm.horizontalAdvance(line);
+        if (line_width > max_width) {
+            max_width = line_width;
+        }
+    }
+
+    // Добавляем отступы и рамку
+    return max_width + ui->textEdit_marker->contentsMargins().left()
+           + ui->textEdit_marker->contentsMargins().right() + 20;
+}
+
+void MainWindow::update_zoom_label()
+{
+    const int zoomPercent = static_cast<int>(ui->label_image->zoomFactor() * 100.0 + 0.5);
+    ui->label_zoom_value->setText(QString("Zoom: %1%").arg(zoomPercent));
 }

@@ -43,6 +43,14 @@ public:
     void init();
     void openImage(const QString &, bool& ret);
     void showImage();
+    bool zoomAtPosition(const QPoint& posInUi, int wheelDeltaY);
+    void zoomIn();
+    void zoomOut();
+    void setZoomFactor(double zoomFactor);
+    double zoomFactor() const;
+    void panByUiPixels(int dx, int dy);
+    void setLineThickness(int thickness);
+    int lineThickness() const;
 
     void loadLabelData(const QString & );
 
@@ -79,11 +87,19 @@ private:
 
     QPointF m_relative_mouse_pos_in_ui;
     QPointF m_relatvie_mouse_pos_LBtnClicked_in_ui;
+    QPointF m_viewTopLeftInImage;
+
+    double  m_zoomFactor;
+    double  m_minZoomFactor;
+    double  m_maxZoomFactor;
+    int     m_drawLineThickness;
 
     unsigned char m_gammatransform_lut[256];
     QVector<QRgb> colorTable;
 
     void setMousePosition(int , int);
+    void clampViewTopLeft();
+    QPointF getVisibleRegionSize() const;
 
     void drawCrossLine(QPainter& , QColor , int thickWidth = 3);
     void drawFocusedObjectBox(QPainter& , Qt::GlobalColor , int thickWidth = 3);
