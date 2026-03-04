@@ -148,6 +148,27 @@ private slots:
         QCOMPARE(skipped, QStringList{"ghost"});
     }
 
+    void crlfObjList_matchesTrimmed()
+    {
+        // objList entries with CRLF (Windows-formatted class file) must still match
+        QJsonArray dets;
+        dets << makeDetection("cat", 0, 0, 50, 50);
+        QStringList lines = CloudAutoLabeler::parseLandingAIDetections(
+            dets, {"cat\r", "dog\r"}, 100.0, 100.0);
+        QCOMPARE(lines.size(), 1);
+        QVERIFY(lines[0].startsWith("0 "));
+    }
+
+    void trailingSpaceLabel_matchesTrimmed()
+    {
+        QJsonArray dets;
+        dets << makeDetection("dog", 0, 0, 50, 50);
+        QStringList lines = CloudAutoLabeler::parseLandingAIDetections(
+            dets, {"cat", "dog  "}, 100.0, 100.0);
+        QCOMPARE(lines.size(), 1);
+        QVERIFY(lines[0].startsWith("1 "));
+    }
+
     void emptyDetectionArray_returnsEmpty()
     {
         QStringList lines = CloudAutoLabeler::parseLandingAIDetections(

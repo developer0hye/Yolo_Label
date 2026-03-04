@@ -532,7 +532,7 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
         {
             int nRow = ui->tableWidget_label->rowCount();
   
-            QString qstrLabel   = QString().fromStdString(strLabel);
+            QString qstrLabel   = QString().fromStdString(strLabel).trimmed();
             QColor  labelColor  = label_img::BOX_COLORS[(fileIndex++)%10];
             m_objList << qstrLabel;
 
@@ -1618,6 +1618,11 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
             } else {
                 statusBar()->showMessage(
                     "Landing AI: could not write label file: " + labelPath, 5000);
+                if (m_landingQueue.isEmpty())
+                    resetCloudButtons();
+                else
+                    landingAIProcessNextInQueue();
+                return;
             }
         }
 

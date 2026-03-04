@@ -717,15 +717,12 @@ QStringList CloudAutoLabeler::parseLandingAIDetections(const QJsonArray &detecti
     for (const QJsonValue &v : detections) {
         if (!v.isObject()) continue;
         QJsonObject obj = v.toObject();
-        QString label   = obj.value("label").toString();
+        QString label   = obj.value("label").toString().trimmed();
 
-        int classId = objList.indexOf(label);
-        if (classId < 0) {
-            // Case-insensitive fallback
-            for (int i = 0; i < objList.size(); ++i) {
-                if (objList[i].compare(label, Qt::CaseInsensitive) == 0) {
-                    classId = i; break;
-                }
+        int classId = -1;
+        for (int i = 0; i < objList.size(); ++i) {
+            if (objList[i].trimmed().compare(label, Qt::CaseInsensitive) == 0) {
+                classId = i; break;
             }
         }
         if (classId < 0) {
