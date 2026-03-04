@@ -201,6 +201,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_btnCloudAutoLabel->setToolTip("Label current image using cloud AI");
     m_btnCloudAutoLabel->setStyleSheet(cloudBtnStyle);
     connect(m_btnCloudAutoLabel, &QPushButton::clicked, this, [this](){
+        if (m_landingBusy || (m_cloudLabeler && m_cloudLabeler->isBusy())) return;
         if (m_modelCombo->currentIndex() == ProviderLandingAI) submitLandingAIJob();
         else                                                    submitCloudJob();
     });
@@ -209,6 +210,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_btnCloudAutoLabelAll->setToolTip("Label all images using cloud AI");
     m_btnCloudAutoLabelAll->setStyleSheet(cloudBtnStyle);
     connect(m_btnCloudAutoLabelAll, &QPushButton::clicked, this, [this](){
+        if (m_landingBusy || (m_cloudLabeler && m_cloudLabeler->isBusy())) return;
         if (m_modelCombo->currentIndex() == ProviderLandingAI) landingAIAutoLabelAll();
         else                                                    cloudAutoLabelAll();
     });
@@ -1311,9 +1313,9 @@ void MainWindow::cancelAutoLabel()
         m_activeLandingReply->abort();  // stop upload on the wire, not just in the callback
         m_activeLandingReply = nullptr;
     }
-    m_cloudLabeler->cancel();
     m_landingCancelled = true;
     m_landingQueue.clear();
+    m_cloudLabeler->cancel();
     resetCloudButtons();  // always reset — busyChanged may not fire when CloudAutoLabeler is already idle
 }
 
@@ -1456,7 +1458,9 @@ void MainWindow::submitLandingAIJob()
     ui->label_image->saveState();
 
     m_batchLandingApiKey = m_landingApiKey;  // snapshot — cannot change mid-request
-    m_batchLandingPrompt = m_cloudPrompt;
+    // Snapshot effective prompt at request start; when user-set prompt is empty,
+    // class names from m_objList are used — snapshot prevents mid-batch class file changes.
+    m_batchLandingPrompt = m_cloudPrompt.isEmpty() ? m_objList.join(" ; ") : m_cloudPrompt;
     m_landingCancelled = false;
     m_landingBusy = true;
     int gen = ++m_landingGeneration;
@@ -1497,10 +1501,7 @@ void MainWindow::doLandingAIJob(const QString &imagePath, int retryCount, int ge
     imgPart.setBodyDevice(imgFile);
     multiPart->append(imgPart);
 
-    QString effectivePrompt = m_batchLandingPrompt.isEmpty()
-        ? m_objList.join(" ; ")
-        : m_batchLandingPrompt;
-    for (const QString &p : effectivePrompt.split(";")) {
+    for (const QString &p : m_batchLandingPrompt.split(";")) {
         const QString label = p.trimmed();
         if (label.isEmpty()) continue;
         QHttpPart promptsPart;
@@ -1680,7 +1681,9 @@ void MainWindow::landingAIAutoLabelAll()
     ui->label_image->saveState();  // enable Ctrl+Z undo after batch labels are applied
 
     m_batchLandingApiKey = m_landingApiKey;  // snapshot — cannot change mid-batch
-    m_batchLandingPrompt = m_cloudPrompt;
+    // Snapshot effective prompt at batch start; when user-set prompt is empty,
+    // class names from m_objList are used — snapshot prevents mid-batch class file changes.
+    m_batchLandingPrompt = m_cloudPrompt.isEmpty() ? m_objList.join(" ; ") : m_cloudPrompt;
     m_landingCancelled = false;
     m_landingBusy = true;
     ++m_landingGeneration;
