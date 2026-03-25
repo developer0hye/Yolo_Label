@@ -139,6 +139,10 @@ jobs:
           ./test_yolo_detector
           make clean
 
+          qmake test_landing_ai_parser.pro && make -j$NPROC
+          ./test_landing_ai_parser
+          make clean
+
       - name: Build and run unit tests (Windows)
         if: runner.os == 'Windows'
         shell: cmd
@@ -160,6 +164,11 @@ jobs:
           qmake test_yolo_detector.pro "ONNXRUNTIME_DIR=%CD%\..\onnxruntime"
           nmake
           release\test_yolo_detector.exe
+          nmake clean
+
+          qmake test_landing_ai_parser.pro
+          nmake
+          release\test_landing_ai_parser.exe
           nmake clean
 
       # ── Accuracy Test (Linux only) ────────────────────────────

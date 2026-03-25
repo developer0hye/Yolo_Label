@@ -705,3 +705,58 @@ void CloudAutoLabeler::fetchBatchResults(int idx, int retryCount)
         fetchBatchResults(idx + 1);
     });
 }
+
+// ── Landing AI response parser ───────────────────────────────────────────────
+
+QStringList CloudAutoLabeler::parseLandingAIDetections(const QJsonArray &detections,
+                                                        const QStringList &objList,
+                                                        double imgW, double imgH,
+                                                        QStringList *skipped)
+{
+    QStringList outputLines;
+    for (const QJsonValue &v : detections) {
+        if (!v.isObject()) continue;
+        QJsonObject obj = v.toObject();
+        QString label   = obj.value("label").toString().trimmed();
+
+        int classId = -1;
+        for (int i = 0; i < objList.size(); ++i) {
+            if (objList[i].trimmed().compare(label, Qt::CaseInsensitive) == 0) {
+                classId = i; break;
+            }
+        }
+        if (classId < 0) {
+            if (skipped && !label.isEmpty() && !skipped->contains(label))
+                *skipped << label;
+            continue;
+        }
+
+        QJsonArray bb = obj.value("bounding_box").toArray();
+        if (bb.size() < 4) continue;
+        if (!bb[0].isDouble() || !bb[1].isDouble() ||
+            !bb[2].isDouble() || !bb[3].isDouble()) continue;
+        double x1 = bb[0].toDouble(), y1 = bb[1].toDouble();
+        double x2 = bb[2].toDouble(), y2 = bb[3].toDouble();
+
+        // Clamp corners to image bounds so partially off-image boxes are usable
+        x1 = qMax(0.0, qMin(x1, imgW));
+        y1 = qMax(0.0, qMin(y1, imgH));
+        x2 = qMax(0.0, qMin(x2, imgW));
+        y2 = qMax(0.0, qMin(y2, imgH));
+
+        double cx = ((x1 + x2) / 2.0) / imgW;
+        double cy = ((y1 + y2) / 2.0) / imgH;
+        double nw = (x2 - x1) / imgW;
+        double nh = (y2 - y1) / imgH;
+
+        if (nw <= 0.0 || nh <= 0.0) continue;
+
+        outputLines << QString("%1 %2 %3 %4 %5")
+            .arg(classId)
+            .arg(QString::number(cx, 'f', 6))
+            .arg(QString::number(cy, 'f', 6))
+            .arg(QString::number(nw, 'f', 6))
+            .arg(QString::number(nh, 'f', 6));
+    }
+    return outputLines;
+}
