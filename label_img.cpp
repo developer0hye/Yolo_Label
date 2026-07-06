@@ -201,7 +201,7 @@ void label_img::init()
     m_bDragPending                  = false;
     m_dragBoxIdx                    = -1;
     m_focusedObjectLabel            = 0;
-    m_bVisualizeClassName           = true;
+    m_bVisualizeClassName           = false;
     m_bVisualizeBoundedBoxes        = true;
     m_zoomFactor                    = 1.0;
     m_panOffset                     = QPointF(0.0, 0.0);
@@ -524,6 +524,24 @@ void label_img::clearAllBoxes()
 {
     saveState();
     m_objBoundingBoxes.clear();
+}
+
+void label_img::clearVisibleBoxes()
+{
+    bool removedAny = false;
+
+    for (int i = m_objBoundingBoxes.size() - 1; i >= 0; --i)
+    {
+        if (!shouldDrawObject(m_objBoundingBoxes.at(i).label)) continue;
+
+        if (!removedAny)
+        {
+            saveState();
+            removedAny = true;
+        }
+
+        m_objBoundingBoxes.removeAt(i);
+    }
 }
 
 void label_img::saveState()

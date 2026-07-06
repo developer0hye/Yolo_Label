@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::save_label_data);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Backspace), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
 
     connect(new QShortcut(QKeySequence(Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::next_label);
     connect(new QShortcut(QKeySequence(Qt::Key_W), this), &QShortcut::activated, this, &MainWindow::prev_label);
@@ -459,7 +460,8 @@ void MainWindow::save_label_data()
 
 void MainWindow::clear_label_data()
 {
-    ui->label_image->clearAllBoxes();
+    // ui->label_image->clearAllBoxes();
+    ui->label_image->clearVisibleBoxes();
     ui->label_image->showImage();
 }
 
