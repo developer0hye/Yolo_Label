@@ -39,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), &QShortcut::activated, this, [this]() { next_img(); });
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
+
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), &QShortcut::activated, this, &MainWindow::copy_annotations);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), &QShortcut::activated, this, &MainWindow::paste_annotations);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this), &QShortcut::activated, this, &MainWindow::reset_zoom);
@@ -517,8 +518,18 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
 
 void MainWindow::populate_label_table()
 {
+    QSettings s("YoloLabel", "Session");
+    QStringList hiddenClassNames = s.value("hiddenClassNames").toStringList();
+    bool visualizeBoundedBoxes = s.value("visualizeBoundedBoxes", true).toBool();
+
+    ui->checkBox_visualize_bounded_boxes->blockSignals(true);
+    ui->checkBox_visualize_bounded_boxes->setChecked(visualizeBoundedBoxes);
+    ui->checkBox_visualize_bounded_boxes->blockSignals(false);
+    ui->label_image->setVisualizeBoundedBoxes(visualizeBoundedBoxes);
+
     ui->tableWidget_label->setRowCount(0);
     ui->label_image->m_drawObjectBoxColor.clear();
+    ui->tableWidget_label->blockSignals(true);
 
     for (int i = 0; i < m_objList.size(); ++i) {
         int nRow = ui->tableWidget_label->rowCount();
@@ -529,18 +540,28 @@ void MainWindow::populate_label_table()
         ui->tableWidget_label->insertRow(nRow);
 
         QTableWidgetItem *nameItem = new QTableWidgetItem(qstrLabel);
-        nameItem->setFlags(nameItem->flags() ^ Qt::ItemIsEditable);
+        nameItem->setFlags(nameItem->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
+        nameItem->setCheckState(hiddenClassNames.contains(qstrLabel) ? Qt::Unchecked : Qt::Checked);
         ui->tableWidget_label->setItem(nRow, 0, nameItem);
 
         QTableWidgetItem *colorItem = new QTableWidgetItem(QString());
         colorItem->setBackground(labelColor);
-        colorItem->setFlags(colorItem->flags() ^ Qt::ItemIsEditable ^ Qt::ItemIsSelectable);
+        colorItem->setFlags(colorItem->flags() & ~Qt::ItemIsEditable & ~Qt::ItemIsSelectable);
         ui->tableWidget_label->setItem(nRow, 1, colorItem);
 
         ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
     }
     
     ui->label_image->m_objList = m_objList;
+    ui->label_image->resetClassVisibility();
+    for (int row = 0; row < ui->tableWidget_label->rowCount(); ++row)
+    {
+        QTableWidgetItem *nameItem = ui->tableWidget_label->item(row, 0);
+        if (!nameItem) continue;
+        ui->label_image->setClassVisible(row, nameItem->checkState() == Qt::Checked);
+    }
+    ui->tableWidget_label->blockSignals(false);
 }
 
 QString MainWindow::get_labeling_data(QString qstrImgFile)const
