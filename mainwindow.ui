@@ -107,7 +107,7 @@ border-color: rgb(0, 255, 255);}
            <number>3</number>
           </property>
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a Dataset Directory...&lt;/p&gt;&lt;p&gt;D: Next Image&lt;/p&gt;&lt;p&gt;A: Prev Image&lt;/p&gt;&lt;p&gt;S: Next Class&lt;/p&gt;&lt;p&gt;W: Prev Class&lt;/p&gt;&lt;p&gt;V: Visualize Class Name&lt;/p&gt;&lt;p&gt;O: Open Files&lt;br/&gt;Ctrl + S: Save&lt;/p&gt;&lt;p&gt;Ctrl + D: Delete an Image&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a Dataset Directory...&lt;/p&gt;&lt;p&gt;D: Next Image&lt;/p&gt;&lt;p&gt;A: Prev Image&lt;/p&gt;&lt;p&gt;S: Next Class&lt;/p&gt;&lt;p&gt;W: Prev Class&lt;/p&gt;&lt;p&gt;B: Visualize Bounded Boxes&lt;/p&gt;&lt;p&gt;V: Visualize Class Name&lt;/p&gt;&lt;p&gt;O: Open Files&lt;br/&gt;Ctrl + S: Save&lt;/p&gt;&lt;p&gt;Ctrl + D: Delete an Image&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -600,6 +600,31 @@ QTableWidget::item:selected {
         </property>
        </widget>
       </item>
+            <item>
+             <widget class="QCheckBox" name="checkBox_visualize_bounded_boxes">
+                <property name="font">
+                 <font>
+                    <family>Arial</family>
+                    <pointsize>12</pointsize>
+                    <underline>false</underline>
+                    <strikeout>false</strikeout>
+                 </font>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color : rgb(0, 255, 255);
+</string>
+                </property>
+                <property name="text">
+                 <string>Visualize Bounded Boxes</string>
+                </property>
+                <property name="shortcut">
+                 <string>B</string>
+                </property>
+             </widget>
+            </item>
      </layout>
     </item>
    </layout>

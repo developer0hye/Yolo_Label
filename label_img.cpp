@@ -201,6 +201,8 @@ void label_img::init()
     m_bDragPending                  = false;
     m_dragBoxIdx                    = -1;
     m_focusedObjectLabel            = 0;
+    m_bVisualizeClassName           = false;
+    m_bVisualizeBoundedBoxes        = true;
     m_zoomFactor                    = 1.0;
     m_panOffset                     = QPointF(0.0, 0.0);
     m_bPanning                      = false;
@@ -306,21 +308,24 @@ void label_img::showImage()
     gammaTransform(img);
 
     QPainter painter(&img);
-    QFont font = painter.font();
-    int fontSize = 16, xMargin = 5, yMargin = 2;
-    font.setPixelSize(fontSize);
-    font.setBold(true);
-    painter.setFont(font);
+    if (m_bVisualizeBoundedBoxes)
+    {
+        QFont font = painter.font();
+        int fontSize = 16, xMargin = 5, yMargin = 2;
+        font.setPixelSize(fontSize);
+        font.setBold(true);
+        painter.setFont(font);
 
-    int penThick = 3;
+        int penThick = 3;
 
-    QColor crossLineColor(255, 187, 0);
+        QColor crossLineColor(255, 187, 0);
 
-    drawCrossLine(painter, crossLineColor, penThick);
-    drawFocusedObjectBox(painter, Qt::magenta, penThick);
-    drawObjectBoxes(painter, penThick);
-    if(m_bVisualizeClassName)
-        drawObjectLabels(painter, penThick, fontSize, xMargin, yMargin);
+        drawCrossLine(painter, crossLineColor, penThick);
+        drawFocusedObjectBox(painter, Qt::magenta, penThick);
+        drawObjectBoxes(painter, penThick);
+        if(m_bVisualizeClassName)
+            drawObjectLabels(painter, penThick, fontSize, xMargin, yMargin);
+    }
 
     this->setPixmap(QPixmap::fromImage(img));
 }
@@ -401,7 +406,7 @@ void label_img::drawCrossLine(QPainter& painter, QColor color, int thickWidth)
 
 void label_img::drawFocusedObjectBox(QPainter& painter, Qt::GlobalColor color, int thickWidth)
 {
-    if(m_bLabelingStarted == true)
+    if(m_bLabelingStarted == true && shouldDrawObject(m_focusedObjectLabel))
     {
         QPen pen;
         pen.setWidth(thickWidth);
@@ -425,6 +430,8 @@ void label_img::drawObjectBoxes(QPainter& painter, int thickWidth)
 
     for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
     {
+        if (!shouldDrawObject(boundingbox.label)) continue;
+
         pen.setColor(m_drawObjectBoxColor.at(boundingbox.label));
         painter.setPen(pen);
 
@@ -439,6 +446,8 @@ void label_img::drawObjectLabels(QPainter& painter, int thickWidth, int fontPixe
 
     for(ObjectLabelingBox boundingbox: m_objBoundingBoxes)
     {
+        if (!shouldDrawObject(boundingbox.label)) continue;
+
         QColor labelColor = m_drawObjectBoxColor.at(boundingbox.label);
         QRect rectUi = cvtRelativeToAbsoluteRectInUi(boundingbox.box);
 
@@ -489,6 +498,7 @@ bool label_img::removeFocusedObjectBox(QPointF point)
     for(int i = 0; i < m_objBoundingBoxes.size(); i++)
     {
         QRectF objBox = m_objBoundingBoxes.at(i).box;
+        if (!shouldDrawObject(m_objBoundingBoxes.at(i).label)) continue;
 
         if(objBox.contains(point))
         {
@@ -514,6 +524,24 @@ void label_img::clearAllBoxes()
 {
     saveState();
     m_objBoundingBoxes.clear();
+}
+
+void label_img::clearVisibleBoxes()
+{
+    bool removedAny = false;
+
+    for (int i = m_objBoundingBoxes.size() - 1; i >= 0; --i)
+    {
+        if (!shouldDrawObject(m_objBoundingBoxes.at(i).label)) continue;
+
+        if (!removedAny)
+        {
+            saveState();
+            removedAny = true;
+        }
+
+        m_objBoundingBoxes.removeAt(i);
+    }
 }
 
 void label_img::saveState()
@@ -556,6 +584,8 @@ int label_img::findBoxUnderCursor(QPointF point) const
     for(int i = 0; i < m_objBoundingBoxes.size(); i++)
     {
         QRectF objBox = m_objBoundingBoxes.at(i).box;
+        if (!shouldDrawObject(m_objBoundingBoxes.at(i).label)) continue;
+
         if(objBox.contains(point))
         {
             double distance = objBox.width() + objBox.height();
@@ -727,6 +757,40 @@ void label_img::resetZoom()
     m_zoomFactor = 1.0;
     m_panOffset = QPointF(0.0, 0.0);
     showImage();
+}
+
+void label_img::setVisualizeBoundedBoxes(bool visible)
+{
+    m_bVisualizeBoundedBoxes = visible;
+    showImage();
+}
+
+void label_img::resetClassVisibility()
+{
+    m_classVisibility.fill(true, m_objList.size());
+}
+
+void label_img::setClassVisible(int label, bool visible)
+{
+    if (label < 0) return;
+    if (m_classVisibility.size() < m_objList.size()) m_classVisibility.fill(true, m_objList.size());
+    if (label >= m_classVisibility.size()) m_classVisibility.resize(label + 1);
+
+    m_classVisibility[label] = visible;
+    showImage();
+}
+
+bool label_img::isClassVisible(int label) const
+{
+    if (label < 0) return false;
+    if (label >= m_classVisibility.size()) return true;
+
+    return m_classVisibility.at(label);
+}
+
+bool label_img::shouldDrawObject(int label) const
+{
+    return m_bVisualizeBoundedBoxes && isClassVisible(label);
 }
 
 void label_img::clampPanOffset()

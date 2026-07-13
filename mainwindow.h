@@ -56,7 +56,10 @@ private slots:
 
     void on_horizontalSlider_contrast_sliderMoved(int value);
 
+    void on_checkBox_visualize_bounded_boxes_clicked(bool checked);
     void on_checkBox_visualize_class_name_clicked(bool checked);
+
+    void on_tableWidget_label_itemChanged(QTableWidgetItem *item);
 
     void copy_annotations();
     void paste_annotations();
@@ -82,6 +85,7 @@ private:
     void            goto_img(const int);
 
     void            load_label_list_data(QString);
+    void            populate_label_table();
     QString         get_labeling_data(QString)const;
 
     void            set_label(const int);

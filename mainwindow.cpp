@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::save_label_data);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
+    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Backspace), this), &QShortcut::activated, this, &MainWindow::clear_label_data);
 
     connect(new QShortcut(QKeySequence(Qt::Key_S), this), &QShortcut::activated, this, &MainWindow::next_label);
     connect(new QShortcut(QKeySequence(Qt::Key_W), this), &QShortcut::activated, this, &MainWindow::prev_label);
@@ -38,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(new QShortcut(QKeySequence(Qt::Key_Space), this), &QShortcut::activated, this, [this]() { next_img(); });
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), this), &QShortcut::activated, this, &MainWindow::remove_img);
     connect(new QShortcut(QKeySequence(Qt::Key_Delete), this), &QShortcut::activated, this, &MainWindow::remove_img);
+
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this), &QShortcut::activated, this, &MainWindow::copy_annotations);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this), &QShortcut::activated, this, &MainWindow::paste_annotations);
     connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this), &QShortcut::activated, this, &MainWindow::reset_zoom);
@@ -45,8 +47,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_visualize_class_name->setStyleSheet(
         "QCheckBox { color: rgb(0, 255, 255); }"
         "QCheckBox::indicator { width: 18px; height: 18px; border: 2px solid rgb(0, 255, 255); background-color: white; border-radius: 3px; }"
-        "QCheckBox::indicator:checked { background-color: rgb(0, 255, 255); }"
-    );
+        "QCheckBox::indicator:checked { background-color: rgb(0, 255, 255); }");
+    ui->checkBox_visualize_bounded_boxes->setStyleSheet(
+        "QCheckBox { color: rgb(0, 255, 255); }"
+        "QCheckBox::indicator { width: 18px; height: 18px; border: 2px solid rgb(0, 255, 255); background-color: white; border-radius: 3px; }"
+        "QCheckBox::indicator:checked { background-color: rgb(0, 255, 255); }");
 
     m_usageTimerElapsedSeconds = 0;
     m_usageTimer = new QTimer(this);
@@ -305,11 +310,22 @@ void MainWindow::saveSession()
     QSettings s("YoloLabel", "Session");
     s.setValue("imgDir",  m_imgDir);
     s.setValue("objFile", m_objFilePath);
+    s.setValue("visualizeBoundedBoxes", ui->checkBox_visualize_bounded_boxes->isChecked());
 
     QStringList colors;
     for (const QColor &c : ui->label_image->m_drawObjectBoxColor)
         colors << c.name();
     s.setValue("classColors", colors);
+
+    QStringList hiddenClassNames;
+    for (int row = 0; row < ui->tableWidget_label->rowCount(); ++row)
+    {
+        QTableWidgetItem *nameItem = ui->tableWidget_label->item(row, 0);
+        if (!nameItem || nameItem->checkState() == Qt::Checked)
+            continue;
+        hiddenClassNames << nameItem->text();
+    }
+    s.setValue("hiddenClassNames", hiddenClassNames);
 }
 
 void MainWindow::restoreLastSession()
@@ -445,7 +461,8 @@ void MainWindow::save_label_data()
 
 void MainWindow::clear_label_data()
 {
-    ui->label_image->clearAllBoxes();
+    // ui->label_image->clearAllBoxes();
+    ui->label_image->clearVisibleBoxes();
     ui->label_image->showImage();
 }
 
@@ -492,37 +509,59 @@ void MainWindow::load_label_list_data(QString qstrLabelListFile)
 
     if(inputLabelListFile.is_open())
     {
-        for(int i = 0 ; i <= ui->tableWidget_label->rowCount(); i++)
-            ui->tableWidget_label->removeRow(ui->tableWidget_label->currentRow());
-
         m_objList.clear();
-
-        ui->tableWidget_label->setRowCount(0);
-        ui->label_image->m_drawObjectBoxColor.clear();
-
         string strLabel;
-        int fileIndex = 0;
-        while(getline(inputLabelListFile, strLabel))
-        {
-            int nRow = ui->tableWidget_label->rowCount();
-  
-            QString qstrLabel   = QString().fromStdString(strLabel);
-            QColor  labelColor  = label_img::BOX_COLORS[(fileIndex++)%10];
-            m_objList << qstrLabel;
-
-            ui->tableWidget_label->insertRow(nRow);
-
-            ui->tableWidget_label->setItem(nRow, 0, new QTableWidgetItem(qstrLabel));
-            ui->tableWidget_label->item(nRow, 0)->setFlags(ui->tableWidget_label->item(nRow, 0)->flags() ^  Qt::ItemIsEditable);
-
-            ui->tableWidget_label->setItem(nRow, 1, new QTableWidgetItem(QString().fromStdString("")));
-            ui->tableWidget_label->item(nRow, 1)->setBackground(labelColor);
-            ui->tableWidget_label->item(nRow, 1)->setFlags(ui->tableWidget_label->item(nRow, 1)->flags() ^  Qt::ItemIsEditable ^  Qt::ItemIsSelectable);
-
-            ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
-        }
-        ui->label_image->m_objList = m_objList;
+        while(getline(inputLabelListFile, strLabel)) m_objList << QString::fromStdString(strLabel);
+        populate_label_table();
     }
+}
+
+void MainWindow::populate_label_table()
+{
+    QSettings s("YoloLabel", "Session");
+    QStringList hiddenClassNames = s.value("hiddenClassNames").toStringList();
+    bool visualizeBoundedBoxes = s.value("visualizeBoundedBoxes", true).toBool();
+
+    ui->checkBox_visualize_bounded_boxes->blockSignals(true);
+    ui->checkBox_visualize_bounded_boxes->setChecked(visualizeBoundedBoxes);
+    ui->checkBox_visualize_bounded_boxes->blockSignals(false);
+    ui->label_image->setVisualizeBoundedBoxes(visualizeBoundedBoxes);
+
+    ui->tableWidget_label->setRowCount(0);
+    ui->label_image->m_drawObjectBoxColor.clear();
+    ui->tableWidget_label->blockSignals(true);
+
+    for (int i = 0; i < m_objList.size(); ++i) {
+        int nRow = ui->tableWidget_label->rowCount();
+        QString qstrLabel = m_objList.at(i);
+        
+        QColor labelColor = label_img::BOX_COLORS[i % 10];
+
+        ui->tableWidget_label->insertRow(nRow);
+
+        QTableWidgetItem *nameItem = new QTableWidgetItem(qstrLabel);
+        nameItem->setFlags(nameItem->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
+        nameItem->setCheckState(hiddenClassNames.contains(qstrLabel) ? Qt::Unchecked : Qt::Checked);
+        ui->tableWidget_label->setItem(nRow, 0, nameItem);
+
+        QTableWidgetItem *colorItem = new QTableWidgetItem(QString());
+        colorItem->setBackground(labelColor);
+        colorItem->setFlags(colorItem->flags() & ~Qt::ItemIsEditable & ~Qt::ItemIsSelectable);
+        ui->tableWidget_label->setItem(nRow, 1, colorItem);
+
+        ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
+    }
+    
+    ui->label_image->m_objList = m_objList;
+    ui->label_image->resetClassVisibility();
+    for (int row = 0; row < ui->tableWidget_label->rowCount(); ++row)
+    {
+        QTableWidgetItem *nameItem = ui->tableWidget_label->item(row, 0);
+        if (!nameItem) continue;
+        ui->label_image->setClassVisible(row, nameItem->checkState() == Qt::Checked);
+    }
+    ui->tableWidget_label->blockSignals(false);
 }
 
 QString MainWindow::get_labeling_data(QString qstrImgFile)const
@@ -804,6 +843,21 @@ void MainWindow::on_checkBox_visualize_class_name_clicked(bool checked)
 {
     ui->label_image->m_bVisualizeClassName = checked;
     ui->label_image->showImage();
+    saveSession();
+}
+
+void MainWindow::on_checkBox_visualize_bounded_boxes_clicked(bool checked)
+{
+    ui->label_image->setVisualizeBoundedBoxes(checked);
+    saveSession();
+}
+
+void MainWindow::on_tableWidget_label_itemChanged(QTableWidgetItem *item)
+{
+    if (!item || item->column() != 0) return;
+
+    ui->label_image->setClassVisible(item->row(), item->checkState() == Qt::Checked);
+    saveSession();
 }
 
 void MainWindow::copy_annotations()
@@ -956,34 +1010,9 @@ void MainWindow::loadClassesFromModel()
     const auto& classNames = m_detector.getClassNames();
     if (classNames.empty()) return;
 
-    // Clear existing table
-    while (ui->tableWidget_label->rowCount() > 0)
-        ui->tableWidget_label->removeRow(0);
-
     m_objList.clear();
-    ui->label_image->m_drawObjectBoxColor.clear();
-
-    // Populate from model metadata (same pattern as load_label_list_data)
-    int fileIndex = 0;
-    for (const auto& pair : classNames) {
-        int nRow = ui->tableWidget_label->rowCount();
-        QString qstrLabel = QString::fromStdString(pair.second);
-        QColor labelColor = label_img::BOX_COLORS[(fileIndex++) % 10];
-        m_objList << qstrLabel;
-
-        ui->tableWidget_label->insertRow(nRow);
-        ui->tableWidget_label->setItem(nRow, 0, new QTableWidgetItem(qstrLabel));
-        ui->tableWidget_label->item(nRow, 0)->setFlags(
-            ui->tableWidget_label->item(nRow, 0)->flags() ^ Qt::ItemIsEditable);
-
-        ui->tableWidget_label->setItem(nRow, 1, new QTableWidgetItem(QString()));
-        ui->tableWidget_label->item(nRow, 1)->setBackground(labelColor);
-        ui->tableWidget_label->item(nRow, 1)->setFlags(
-            ui->tableWidget_label->item(nRow, 1)->flags() ^ Qt::ItemIsEditable ^ Qt::ItemIsSelectable);
-
-        ui->label_image->m_drawObjectBoxColor.push_back(labelColor);
-    }
-    ui->label_image->m_objList = m_objList;
+    for (const auto& pair : classNames) m_objList << QString::fromStdString(pair.second);
+    populate_label_table();
 
     if (!m_objList.isEmpty()) {
         set_label(0);
